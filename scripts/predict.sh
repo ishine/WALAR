@@ -2,12 +2,12 @@
 cd /mnt/gemini/data1/yifengliu/qe-lr/code
 
 data_name="IndicMT"
-model_name="metricX"
-model_size="xxl"  ### model_size can be discarded if your model_name is not XComet or metricX
+model_name="XComet"
+model_size="xl"  ### model_size can be discarded if your model_name is not XComet or metricX
 dtype="bf16"  ### dtype can be discarded if your model_name is not metricX
 batch_size=16 ### Should be divisible by the number of GPUs
 
-export CUDA_VISIBLE_DEVICES=7
+# export CUDA_VISIBLE_DEVICES=0
 
 num_gpus=$(echo "$CUDA_VISIBLE_DEVICES" | awk -F',' '{print NF}')
 # en->indic

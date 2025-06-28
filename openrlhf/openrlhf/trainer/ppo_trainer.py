@@ -151,7 +151,7 @@ class BasePPOTrainer(ABC):
             # 4. broadcast weights to vllm engines
             if self.vllm_engines is not None:
                 self._broadcast_to_vllm()
-
+        # breakpoint()
         # 5. wait remote critic model training done
         if self.critic_model_group and not self.strategy.args.colocate_all_models:
             status.update(ray.get(critic_status_ref)[0])
@@ -235,7 +235,7 @@ class BasePPOTrainer(ABC):
         val_lang_list = ["zho_simpl"]
         start_time = time.time()
         logger.info(f"⏰ Evaluation start time: {time.strftime('%Y-%m-%d %H:%M:%S')}")
-        breakpoint()
+        # breakpoint()
         # vLLM wakeup when vllm_enable_sleep
         if self.strategy.args.vllm_enable_sleep:
             from openrlhf.trainer.ray.vllm_engine import batch_vllm_engine_call
@@ -506,7 +506,8 @@ class PPOTrainer(BasePPOTrainer):
                 )
                 reward1_list = [sample.info.get('reward1', 0) for sample in rollout_samples]
                 reward2_list = [25 * sample.info.get('reward2', 0) for sample in rollout_samples]
-                
+                rule_penalty_percent = rollout_samples[0].info.get('rule_penalty_percent', 0)
+                lang_penalty_percent = rollout_samples[0].info.get('lang_penalty_percent', 0)
                 pbar.update()
                 # breakpoint()
                 # dynamic filtering
@@ -553,12 +554,13 @@ class PPOTrainer(BasePPOTrainer):
                         self.critic_model_group.async_run_method_batch(method_name="append", experience=experiences)
                     )
                 ray.get(refs)
-                breakpoint()
+                # breakpoint()
                 status = self.ppo_train(steps)
-                breakpoint()
+                # breakpoint()
                 status['reward1'] = sum(reward1_list) / len(reward1_list) if reward1_list else 0.0
                 status['reward2'] = sum(reward2_list) / len(reward2_list) if reward2_list else 0.0
-                
+                status['rule_penalty_percent'] = rule_penalty_percent
+                status['lang_penalty_percent'] = lang_penalty_percent
                 if "kl" in status:
                     self.kl_ctl.update(status["kl"], args.rollout_batch_size * args.n_samples_per_prompt)
 

@@ -1,4 +1,0 @@
-Model: /mnt/gemini/data1/yifengliu/checkpoints/Qwen2.5-0.5B-En-Zh-1M-bsz128/global_step360_hf
-Language Pair: eng-zho_simpl
-spBLEU: 1.61
-COMET Score: 0.72

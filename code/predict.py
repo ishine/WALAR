@@ -112,6 +112,7 @@ def get_tokenizer_and_model(
         "xxl": "/mnt/gemini/data1/yifengliu/model/models--Unbabel--XCOMET-XXL/snapshots/873bac1b1c461e410c4a6e379f6790d3d1c7c214/checkpoints/model.ckpt"
       },
       "Comet-qe-da": "/mnt/gemini/data1/yifengliu/model/models--Unbabel--wmt20-comet-qe-da/snapshots/2e7ffc84fb67d99cf92506611766463bb9230cfb/checkpoints/model.ckpt",
+      "Cometkiwi": "/mnt/gemini/data1/yifengliu/model/wmt22-cometkiwi-da/checkpoints/model.ckpt"
     }
     from comet import download_model, load_from_checkpoint
     # model_path = download_model("Unbabel/XCOMET-XXL", "/mnt/data1/yifengliu/model")
@@ -323,8 +324,12 @@ def main() -> None:
     model.to(device)
   model.eval()
   ds, name = preprocess_dataset(args.input_file)
+  ds = [{"source": "\"We now have 4-month-old mice that are non-diabetic that used to be diabetic,\" he added.",
+         "hypothesis": "“现在我们已经培育出4个月大的小鼠，这些小鼠都是无糖尿病的，而以前的实验中，这些小鼠都患有糖尿病。”他进一步解释道。"}]
   # ds = [{"source": "On Monday, scientists from the Stanford University School of Medicine announced the invention of a new diagnostic tool that can sort cells by type: a tiny printable chip that can be manufactured using standard inkjet printers for possibly about one U.S. cent each.",
-  #        "hypothesis": "On Monday, scientists from the Stanford University School of Medicine announced the development of a new diagnostic tool. This tool can identify cells based on their type. It is a tiny, printable chip that can be produced using standard inkjet printers. The cost of this tool is approximately one U.S. cent each."}]
+  #        "hypothesis": "On Monday, scientists from the Stanford University School of Medicine announced the invention of a new diagnostic tool that can sort cells by type: a tiny printable chip that can be manufactured using standard inkjet printers for possibly about one U.S. cent each.",}]
+  # ds = [{"source": "\"We now have 4-month-old mice that are non-diabetic that used to be diabetic,\" he added.", 
+  #        "hypothesis": "他补充道：“我们现在有 4 个月大没有糖尿病的老鼠，但它们曾经得过该病。”"}]
   ds = datasets.Dataset.from_list(ds)
   ds, data_collator = get_dataset(
       ds,

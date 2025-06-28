@@ -1,3 +1,4 @@
+import json
 import os
 import datasets
 from datasets import load_dataset
@@ -84,6 +85,9 @@ def predict(model_name_or_path, url, dataset, lang_pair):
         "zho_simpl": "Chinese",
         'swh': "Swahili",
         "tam": "Tamil",
+        "fra": 'French',
+        "rus": "Russian",
+        "deu": "German",
     }
     src_lang, tgt_lang = lang_dict[src_lang], lang_dict[tgt_lang]
     client = openai.Client(base_url=url, api_key="None")
@@ -100,7 +104,6 @@ def predict(model_name_or_path, url, dataset, lang_pair):
             n=1,
         )
         responses.append(response.choices[0].message.content)
-        import code; code.interact(local=locals())
     return responses
 
 
@@ -129,7 +132,7 @@ def main():
     print(f"Evaluating model {args.model_name_or_path} on {args.lang_pair}...")
     
     sources, references = load_flores_dataset(args.data_dir, args.lang_pair)
-    # sources, references = sources[:len(sources)//4], references[:len(references)//4]
+    sources, references = sources[:len(sources)], references[:len(references)]
     predictions = predict(args.model_name_or_path, url, sources, args.lang_pair)
     metrics = get_spBLEU(predictions, references)
     comet_score = calculate_comet_score(
@@ -146,15 +149,15 @@ def main():
     print(f"reference: {references[0]}")
     import code; code.interact(local=locals())
 
-    # dirname = os.path.dirname(args.output_file) if args.output_file else None
-    # if dirname and not os.path.exists(dirname):
-    #     os.makedirs(dirname)
-    # if args.output_file:
-    #     with open(args.output_file, 'w') as f:
-    #         f.write(f"Model: {args.model_name_or_path}\n")
-    #         f.write(f"Language Pair: {args.lang_pair}\n")
-    #         f.write(f"spBLEU: {metrics:.2f}\n")
-    #         f.write(f"COMET Score: {comet_score['mean_score']:.2f}\n")
+    dirname = os.path.dirname(args.output_file) if args.output_file else None
+    if dirname and not os.path.exists(dirname):
+        os.makedirs(dirname)
+    if args.output_file:
+        with open(args.output_file, 'w') as f:
+            for src, pred, ref in zip(sources, predictions, references):
+                f.write(json.dumps({'src': src, 'pred': pred, 'ref': ref}) + '\n')
+            f.write(f"spBLEU: {metrics:.4f}\n")
+            f.write(f"COMET Score: {comet_score['mean_score']:.4f}\n")
 
 if __name__ == "__main__":
     main()

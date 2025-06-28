@@ -1,4 +1,0 @@
-Model: /mnt/gemini/data1/yifengliu/model/Qwen2.5-3B-Instruct
-Language Pair: eng-swh
-spBLEU: 0.69
-COMET Score: 0.36

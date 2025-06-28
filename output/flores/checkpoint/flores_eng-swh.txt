@@ -1,4 +1,0 @@
-Model: /mnt/gemini/data1/yifengliu/checkpoints/Qwen2.5-3B-Instruct-MetricX/global_step40_hf
-Language Pair: eng-swh
-spBLEU: 0.70
-COMET Score: 0.36

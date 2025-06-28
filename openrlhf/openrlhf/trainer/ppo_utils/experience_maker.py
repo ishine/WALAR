@@ -208,8 +208,6 @@ def update_samples_with_rewards(rewards_info, samples_list, rwd1=None, rwd2=None
     for info in rewards_info:
         info["rewards"] = torch.tensor(info['rewards'])
         info["scores"] = torch.tensor(info['scores'])
-        for key in rewards_info[0]['extra_logs'].keys():
-            info["extra_logs"][key] = torch.tensor(info['extra_logs'][key])
     rewards_list = torch.cat([info["rewards"] for info in rewards_info], dim=0).chunk(len(samples_list))
     if "scores" in rewards_info[0]:
         scores_list = torch.cat([info["scores"] for info in rewards_info], dim=0).chunk(len(samples_list))
@@ -217,29 +215,21 @@ def update_samples_with_rewards(rewards_info, samples_list, rwd1=None, rwd2=None
         scores_list = rewards_list
 
     # Process extra_logs if present
-    if "extra_logs" in rewards_info[0]:
-        # Merge all extra_logs tensors first
-        merged_logs = {
-            key: torch.cat([logs[key] for logs in [info["extra_logs"] for info in rewards_info]], dim=0).chunk(
-                len(samples_list)
-            )
-            for key in rewards_info[0]["extra_logs"].keys()
-        }
+    # breakpoint()
     # Update samples with rewards, scores and extra logs
     for i, samples in enumerate(samples_list):
         samples.rewards = rewards_list[i]
         samples.scores = scores_list[i]
         samples.info["score"] = scores_list[i]
         samples.info["reward"] = rewards_list[i]
-        if "extra_logs" in rewards_info[0]:
-            for key, values in merged_logs.items():
-                samples.info[key] = values[i]
         if rwd1 is not None:
             # rwd1 = torch.tensor(rwd1)
             samples.info['reward1'] = torch.tensor(rwd1[i])
         if rwd2 is not None:
             # rwd2 = torch.tensor(rwd2)
             samples.info['reward2'] = torch.tensor(rwd2[i])
+        for key, value in rewards_info[0]['extra_logs'].items():
+            samples.info[key] = torch.tensor(value)
         for key, value in samples.info.items():
             samples.info[key] = value.unsqueeze(0)
         samples.rewards = samples.rewards.unsqueeze(0)
@@ -414,6 +404,7 @@ class SamplesGenerator:
             rwd1, rwd2 = None, None
             alpha = 25
             rewards_info = ray.get(remote_reward_model.get_rewards.remote(all_queries, all_prompts, all_labels))
+            rwd1 = rewards_info[0]['rewards']
             if remote_reward_model2 is not None:
                 new_rewards_info = {}
                 rewards_info2 = ray.get(remote_reward_model2.get_rewards.remote(all_queries, all_prompts, all_labels))
@@ -422,18 +413,21 @@ class SamplesGenerator:
                     rewards1, rewards2 = info1["rewards"], info2["rewards"]
                     rwd1, rwd2 = rewards1, rewards2
                     scores1, scores2 = info1["scores"], info2["scores"]
-                    dummy_rewards1, dummy_rewards2 = info1['extra_logs']['dummy_scores'], info2['extra_logs']['dummy_scores']
+                    # for key, value in info1["extra_logs"]:
+                        
+                    # dummy_rewards1, dummy_rewards2 = info1['extra_logs']['dummy_scores'], info2['extra_logs']['dummy_scores']
                     final_reward = [reward1 + alpha * reward2 for reward1, reward2 in zip(rewards1, rewards2)]
                     final_score = [score1 + alpha * score2 for score1, score2 in zip(scores1, scores2)]
-                    final_dummy_rewards = [dummy1 + alpha * dummy2 for dummy1, dummy2 in zip(dummy_rewards1, dummy_rewards2)]
+                    # final_dummy_rewards = [dummy1 + alpha * dummy2 for dummy1, dummy2 in zip(dummy_rewards1, dummy_rewards2)]
                     new_rewards_info['rewards'] = final_reward
                     new_rewards_info['scores'] = final_score
-                    new_rewards_info['extra_logs'] = {'dummy_scores': final_dummy_rewards}
+                    new_rewards_info['extra_logs'] = info1["extra_logs"]
+                    # new_rewards_info['extra_logs'] = {'dummy_scores': final_dummy_rewards}
                 rewards_info = [new_rewards_info]
                 print("Hybrid Reawrds made!")
             
             update_samples_with_rewards(rewards_info, samples_list, rwd1, rwd2)
-            # breakpoint()
+        
         return samples_list
 
 

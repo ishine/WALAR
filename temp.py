@@ -1,8 +1,6 @@
 import json
 import random
 import pandas as pd
-from transforemers import AutoTokenizer
-from vLLM import LLM, SamplingParams
 
 def load_dastset(file_path):
     """Load dataset from a JSONL file."""
@@ -18,25 +16,24 @@ if __name__ == "__main__":
     # dataset = load_dastset(file_path)
     
     import fasttext
-
+    lang_detect_model = fasttext.load_model("/mnt/gemini/data1/yifengliu/model/lid.176.bin")
+    
+    lang_info = lang_detect_model.predict(tgts)
+    detect_rewards = [True if language[0].replace("__label__", "") == "zh" else False for language in lang_info[0]]
+    print("Percentage: {:.2f}%".format(detect_rewards.count(True) / len(detect_rewards) * 100))
     # Load the language ID model
-    model = fasttext.load_model("/mnt/gemini/data1/yifengliu/model/lid.176.bin")
-
-    src = "Hello, how are you?"
-    model_path = "/mnt/gemini/data1/yifengliu/model/Qwen2.5-0.5B-Instruct"
-    tokenizer = AutoTokenizer.from_pretrained(model_path)
-    model = LLM(model_path)
-    samples = SamplingParams(n=1, temperature=0.0)
-    message = [
-        {'user': src}
-    ]
-    prompt = tokenizer.apply_chat_template(message, tokenize=False, add_generation_prompt=True)
-    output = model.generate(prompt, samples=samples)
+    # file_path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Qwen2.5-0.5B-En-Zh-1M-bsz128/global_step140_hf/eng-fra.txt"
+    # dataset = []
+    # with open(file_path, 'r') as f:
+    #     lines = f.readlines()
+    #     for line in lines[:-2]:
+    #         dataset.append(json.loads(line))
+    
+    # tgts = [data['pred'] for data in dataset]
+    
+    
+    
     # prediction = model.predict(sentence)
-    import code; code.interact(local=locals())
-    language_code = prediction[0][0].replace("__label__", "")  # e.g., 'fr'
-    confidence = prediction[1][0]
-
-    print(f"Language: {language_code}, Confidence: {confidence:.2f}")
+    
 
     import code; code.interact(local=locals())

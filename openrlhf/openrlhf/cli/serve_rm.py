@@ -193,16 +193,39 @@ class RewardModelProxy:
           mean_score = output.system_score
           scores.extend(output.scores)
           # scores, mean_score = output.scores, output.system_score
-        print(f"{self.model_name}: query: {queries[0]}")
-        print(f"{self.model_name}: prompt: {prompts[0]}")
-        print(f"{self.model_name}: score: {scores[0]}")
+        # print(f"{self.model_name}: query: {queries[0]}")
+        # print(f"{self.model_name}: prompt: {prompts[0]}")
+        # print(f"{self.model_name}: score: {scores[0]}")
+        extra_logs = {}
+        if self.args.rule:
+          min_reward = -25 if 'metricX' in self.model_name else 0
+          new_scores = []
+          cnt = 0
+          for score, tgt in zip(scores, tgts):
+            if "\n" in tgt:
+              cnt += 1
+              new_scores.append(min_reward)
+            else:
+              new_scores.append(score)
+          scores = new_scores
+          extra_logs['rule_penalty_percent'] = cnt / len(tgts)
+        
         if self.args.lang_detect:
           tgts = [tgt.replace("\n", "") for tgt in tgts]
           lang_info = self.lang_detect_model.predict(tgts)
           min_reward = -25 if 'metricX' in self.model_name else 0
-          detect_rewards = [float('inf') if language[0].replace("__label__", "") else min_reward for language in lang_info[0]]
+          detect_rewards = []
+          cnt = 0
+          for language in lang_info[0]:
+            if language[0].replace("__label__", "") == self.tgt:
+              detect_rewards.append(float('inf'))
+            else:
+              cnt += 1
+              detect_rewards.append(min_reward)
           scores = [min(score, detect_reward) for score, detect_reward in zip(scores, detect_rewards)]
-        return scores
+          logger.info(lang_info[0][:50])
+          extra_logs['lang_penalty_percent'] = cnt / len(tgts)
+        return scores, extra_logs
 
 
 
@@ -219,6 +242,7 @@ if __name__ == "__main__":
     parser.add_argument("--src", type=str, default="en", help="Source language code")
     parser.add_argument("--tgt", type=str, default="zh", help="Target language code")
     parser.add_argument("--lang_detect", type=bool, default=False, help="Enable language detection")
+    parser.add_argument("--rule", type=bool, default=False, help="Rule to use \\n as a reward or not")
     # Performance
     parser.add_argument("--load_in_4bit", action="store_true", default=False)
     parser.add_argument("--bf16", action="store_true", default=False, help="Enable bfloat16")
@@ -249,11 +273,11 @@ if __name__ == "__main__":
         prompts = data.get("prompts")
         labels = data.get("labels", None)
         # import code; code.interact(local=locals())
-        rewards = reward_model.get_reward(queries, prompts, labels)
+        rewards, extra_logs = reward_model.get_reward(queries, prompts, labels)
         # rewards = torch.tensor([float(reward) for reward in rewards])
         rewards = [float(reward) for reward in rewards]
-        result = {"rewards": rewards, "scores": rewards, "extra_logs": {"dummy_scores": rewards}}
-        logger.info(f"Sent JSON: {result}")
+        result = {"rewards": rewards, "scores": rewards, "extra_logs": extra_logs}
+        logger.info(f"Sent JSON: {result['rewards'][:50]}")
         return JSONResponse(result)
 
     uvicorn.run(app, host=args.host, port=args.port, log_level="info")
