@@ -24,6 +24,7 @@ lang_dict = {
   "en": "English",
   "zh": "Chinese",
   "sw": "Swahili",
+  "ru": "Russian",
 }
 
 
@@ -162,6 +163,7 @@ class RewardModelProxy:
             batch_size = self.batch_size
 
         logger.info(f"queries[0]: {queries[0]}")
+        logger.info(f"queries[1]: {queries[1]}")
 
         scores = []
         # batch
@@ -223,7 +225,7 @@ class RewardModelProxy:
               cnt += 1
               detect_rewards.append(min_reward)
           scores = [min(score, detect_reward) for score, detect_reward in zip(scores, detect_rewards)]
-          logger.info(lang_info[0][:50])
+          logger.info(lang_info[0][:20])
           extra_logs['lang_penalty_percent'] = cnt / len(tgts)
         return scores, extra_logs
 
@@ -277,7 +279,7 @@ if __name__ == "__main__":
         # rewards = torch.tensor([float(reward) for reward in rewards])
         rewards = [float(reward) for reward in rewards]
         result = {"rewards": rewards, "scores": rewards, "extra_logs": extra_logs}
-        logger.info(f"Sent JSON: {result['rewards'][:50]}")
+        logger.info(f"Sent JSON: {result['rewards'][:20]}")
         return JSONResponse(result)
 
     uvicorn.run(app, host=args.host, port=args.port, log_level="info")

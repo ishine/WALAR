@@ -77,7 +77,7 @@ def load_flores_dataset(data_dir, lang_pair):
     # Filter for the specific language pair
     return src_dataset, tgt_dataset
 
-def predict(model_name_or_path, url, dataset, lang_pair):
+def predict(model_name_or_path, url, dataset, lang_pair, max_tokens):
     """Generate predictions using the model."""
     src_lang, tgt_lang = lang_pair.split("-")
     lang_dict = {
@@ -88,6 +88,12 @@ def predict(model_name_or_path, url, dataset, lang_pair):
         "fra": 'French',
         "rus": "Russian",
         "deu": "German",
+        "spa": "Spanish",
+        "ben": "Bengali",
+        "hin": "Hindi",
+        "jpn": "Japanese",
+        "tgl": "Filipino (Tagalog)",
+        "fin": "Finnish",
     }
     src_lang, tgt_lang = lang_dict[src_lang], lang_dict[tgt_lang]
     client = openai.Client(base_url=url, api_key="None")
@@ -99,7 +105,7 @@ def predict(model_name_or_path, url, dataset, lang_pair):
         response = client.chat.completions.create(
             model=model_name_or_path,
             messages=[prompt_dict],
-            max_tokens=1024,
+            max_tokens=max_tokens,
             temperature=0,
             n=1,
         )
@@ -133,7 +139,7 @@ def main():
     
     sources, references = load_flores_dataset(args.data_dir, args.lang_pair)
     sources, references = sources[:len(sources)], references[:len(references)]
-    predictions = predict(args.model_name_or_path, url, sources, args.lang_pair)
+    predictions = predict(args.model_name_or_path, url, sources, args.lang_pair, args.max_tokens)
     metrics = get_spBLEU(predictions, references)
     comet_score = calculate_comet_score(
         sources, references, predictions

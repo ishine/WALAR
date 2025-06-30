@@ -154,6 +154,8 @@ def train(args):
         vllm_engines,
         prompt_split=args.prompt_split,
         eval_split=args.eval_split,
+        src=args.src,
+        tgt=args.tgt,
         # generate kwargs
         eval_dir=args.eval_dir,
         do_sample=True,

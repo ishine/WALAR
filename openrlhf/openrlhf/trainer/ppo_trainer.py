@@ -33,6 +33,8 @@ class BasePPOTrainer(ABC):
         dataloader_pin_memory: bool = True,
         prompt_split: str = "train",
         eval_split: str = "test",
+        src: str = "eng",
+        tgt: str = "zho_simpl",
         **generate_kwargs,
     ) -> None:
         super().__init__()
@@ -50,6 +52,9 @@ class BasePPOTrainer(ABC):
 
         self.prompt_split = prompt_split
         self.eval_split = eval_split
+        
+        self.src = src
+        self.tgt = tgt  
 
         self.prompt_max_len = prompt_max_len
         self.generate_kwargs = generate_kwargs
@@ -224,15 +229,24 @@ class BasePPOTrainer(ABC):
             n_samples_per_prompt: Number of samples to generate per prompt for pass@k calculation
         """
         import sacrebleu
-        
+        two2three = {
+            "en": "eng",
+            "zh": "zho_simpl",
+            "sw": "swh",
+            "ta": "tam",
+            "fr": "fra",
+            "bn": "bng",
+        }
         lang_dict = {
             'eng': "English",
             "zho_simpl": "Chinese",
             'swh': "Swahili",
             "tam": "Tamil",
+            "fra": "French",
+            "bng": "Bengali",
         }
-        src_lang = "eng"
-        val_lang_list = ["zho_simpl"]
+        src_lang = two2three[self.src]
+        val_lang_list = [two2three[self.tgt]]
         start_time = time.time()
         logger.info(f"⏰ Evaluation start time: {time.strftime('%Y-%m-%d %H:%M:%S')}")
         # breakpoint()
@@ -398,6 +412,8 @@ class PPOTrainer(BasePPOTrainer):
         dataloader_pin_memory: bool = True,
         prompt_split: str = "train",
         eval_split: str = "test",
+        src: str = "eng",
+        tgt: str = "zho_simpl",
         **generate_kwargs,
     ) -> None:
         super().__init__(
@@ -412,6 +428,8 @@ class PPOTrainer(BasePPOTrainer):
             dataloader_pin_memory,
             prompt_split,
             eval_split,
+            src,
+            tgt,
             **generate_kwargs,
         )
 

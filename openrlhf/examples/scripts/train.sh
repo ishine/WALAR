@@ -13,7 +13,8 @@ export RAY_DEBUG_POST_MORTEM=1
 wandb_token=5bebcc325992863eb55622d9ad2e7c85c95a1f115
 
 src="en"
-tgt="zh"
+tgt="ru"
+size="3B"
 lang_detect=True
 reward_name="Rule-Detect-MetricX"
 
@@ -33,7 +34,7 @@ ray job submit --address="http://127.0.0.1:8265" \
     --vllm_tensor_parallel_size 1 \
     --colocate_actor_ref \
     --ref_reward_offload \
-    --pretrain /mnt/gemini/data1/yifengliu/model/Qwen2.5-0.5B-Instruct \
+    --pretrain /mnt/gemini/data1/yifengliu/model/Qwen2.5-${size}-Instruct \
     --remote_rm_url http://localhost:5000/get_reward \
     --remote_comet_url http://localhost:4000/get_reward \
     --lang_detect ${lang_detect} \
@@ -69,12 +70,12 @@ ray job submit --address="http://127.0.0.1:8265" \
     --gradient_checkpointing \
     --temperature 1 \
     --save_steps 10 \
-    --save_path /mnt/gemini/data1/yifengliu/checkpoints/final/${reward_name}-Qwen2.5-0.5B-${src}-${tgt}-1M-bsz128 \
-    --ckpt_path /mnt/gemini/data1/yifengliu/checkpoints/${reward_name}-Qwen2.5-0.5B-${src}-${tgt}-1M-bsz128 \
+    --save_path /mnt/gemini/data1/yifengliu/checkpoints/final/${reward_name}-Qwen2.5-${size}-${src}-${tgt}-1M-bsz128 \
+    --ckpt_path /mnt/gemini/data1/yifengliu/checkpoints/${reward_name}-Qwen2.5-${size}-${src}-${tgt}-1M-bsz128 \
     --load_checkpoint \
     --save_hf_ckpt \
     --use_wandb ${wandb_token}\
-    --wandb_run_name "${reward_name}-Qwen2.5-0.5B-${src}-${tgt}-1M-bsz128"
+    --wandb_run_name "${reward_name}-Qwen2.5-${size}-${src}-${tgt}-1M-bsz128"
 
 # export CUDA_VISIBLE_DEVICES=4,5,6,7
 # # ray start --head --node-ip-address 0.0.0.0 --num-gpus 4

@@ -15,6 +15,7 @@ language_map = {
     'ja': 'Japanese',
     'sw': 'Swahili',
     'ta': 'Tamil',
+    "ru": "Russian",
 }
 
 def make_prompt(source, src, tgt, template_type='chat', tokenizer=None):

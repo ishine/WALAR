@@ -5,11 +5,11 @@ source /mnt/gemini/data1/yifengliu/miniconda3/bin/activate qe-rl
 cd /mnt/gemini/data1/yifengliu/qe-lr/openrlhf
 
 src="en"
-tgt="zh"
+tgt="ru"
 lang_detect=True
 rule=True
 
-export CUDA_VISIBLE_DEVICES=5
+export CUDA_VISIBLE_DEVICES=4
 python -m openrlhf.cli.serve_rm \
     --model_name  metricX\
     --port 5000 \
