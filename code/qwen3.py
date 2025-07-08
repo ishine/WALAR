@@ -7,6 +7,7 @@ import datasets
 import openai
 import os
 from mqm_utils import TEMPLATE_GEMBA_MQM, apply_template, parse_mqm_answer, TEMPLATE_GEMBA_ESA_ERROR_SPANS, TEMPLATE_GEMBA_ESA_RANKING, validate_number
+from mqm_utils import TEMPLATE_DA, extract_boxed_number
 
 from vllm import LLM, SamplingParams
 from collections import defaultdict
@@ -59,6 +60,14 @@ class EvaluationArguments:
     input_file: str = field(
         default="/dev/null",
         metadata={"help": "Directory containing FLORES-101 dataset"}
+    )
+    src: str = field(
+        default="eng",
+        metadata={"help": "Source language code (e.g., eng, zho_simpl, tam)"}
+    )
+    tgt: str = field(
+        default="fra",
+        metadata={"help": "Target language code (e.g., fra, deu, spa)"}
     )
     output_dir: Optional[str] = field(
         default=None,
@@ -130,6 +139,9 @@ def get_scores(eval_type: str, ds: List[Dict], sampling_params: SamplingParams, 
             prompt = apply_template(TEMPLATE_GEMBA_MQM, temp_data)
         elif eval_type == "esa":
             prompt = apply_template(TEMPLATE_GEMBA_ESA_ERROR_SPANS, temp_data)
+        elif eval_type == "da":
+            prompt = apply_template(TEMPLATE_DA, temp_data)
+            prompt = [{"role": "user", "content": prompt}]
         
         prompt = tokenizer.apply_chat_template(prompt, tokenize=False, add_generation_prompt=True, enable_thinking=False)
         prompts.append(prompt)
@@ -141,7 +153,6 @@ def get_scores(eval_type: str, ds: List[Dict], sampling_params: SamplingParams, 
     #     chat_template_kwargs={"enable_thinking": False},  # Set to False to strictly disable thinking
     # )
     outputs1 = [output.outputs[0].text for output in outputs]
-    # import code; code.interact(local=locals())
     if eval_type == "mqm":
         scores = [parse_mqm_answer(output) for output in outputs1]
     elif eval_type == "esa":
@@ -161,8 +172,13 @@ def get_scores(eval_type: str, ds: List[Dict], sampling_params: SamplingParams, 
             prompts.append(prompt)
         outputs = model.generate(prompts, sampling_params=sampling_params)
         outputs = [output.outputs[0].text for output in outputs]
-        scores  = [validate_number(output) for output in outputs]
+        # scores  = [validate_number(output) for output in outputs]
+        scores = [extract_boxed_number(output) for output in outputs]
         import code; code.interact(local=locals())
+    elif eval_type == "da":
+        scores = [extract_boxed_number(output) for output in outputs1]
+    import code; code.interact(local=locals())
+    scores = [score if score is not None else 0 for score in scores]
     return scores
 
 def main():
@@ -178,14 +194,14 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path, trust_remote_code=True)
     scores = get_scores(args.eval_type, ds, sampling_params, model, tokenizer)
     dirname = args.output_dir
-    dirname = os.path.join(dirname, args.model_name_or_path.split("/")[-1])
+    dirname = os.path.join(dirname)
     
     if dirname:
         os.makedirs(dirname, exist_ok=True)
 
     output_file = os.path.join(
         dirname,
-        f"{args.input_file.split('/')[-1]}",
+        f"{args.src}-{args.tgt}.jsonl",
     )
     write_to_file(output_file, ds, scores)
     

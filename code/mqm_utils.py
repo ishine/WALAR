@@ -314,6 +314,8 @@ TEMPLATE_GEMBA_ESA_ERROR_SPANS = esa_fewshot([esa_few_shots['ende'], esa_few_sho
 
 TEMPLATE_GEMBA_ESA_RANKING = 'Given the translation from {source_lang} to {target_lang} and the annotated error spans, assign a score on a continuous scale from 0 to 100. The scale has following reference points: 0="No meaning preserved", 33="Some meaning preserved", 66="Most meaning preserved and few grammar mistakes", up to 100="Perfect meaning and grammar". Please give the final score in \\boxed{{}} format.\n\nScore the following translation from {source_lang} source:\n```{source_seg}```\n{target_lang} translation:\n```{target_seg}```\nAnnotated error spans:\n```{error_spans}```\nScore (0-100): '
 
+TEMPLATE_DA = "Score the following translation from {source_lang} to {target_lang} on a continuous scale from 0 to 100, where a score of zero means \"no meaning preserved\" and score of one hundred means \"perfect meaning and grammar\". Please give your score in \\boxed{{}}.\n\n{source_lang} source: \"{source_seg}\"\n{target_lang} translation: \"{target_seg}\"\nScore: "
+
 def parse_and_check_numerical_answer(answer, min=None, max=None):
     attempt = parse_numerical_answer(answer, min, max)
     if attempt is not None:
@@ -342,6 +344,14 @@ def parse_numerical_answer(answer, min=None, max=None):
 
     return None
 
+def extract_boxed_number(answer):
+    # Extract the number from a string in the form of \boxed{number}
+    r = re.search(r"\\boxed\{(\d+)\}", answer)
+    if r is not None:
+        return int(r.group(1))
+
+    # If the boxed number is not found, try to parse it as a numerical answer
+    return parse_numerical_answer(answer)
 
 def validate_number(x, min=0, max=100):
     attempt = parse_and_check_numerical_answer(x, min, max)

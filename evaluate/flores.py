@@ -80,6 +80,10 @@ def predict(model, tokenizer, dataset, sampling_params, lang_pair):
         'swh': "Swahili",
         "tam": "Tamil",
         "asm": "Assamese",
+        "pan": "Punjabi",
+        "kan": "Kannada",
+        "eng_Latn": "English",
+        "mai_Deva": "Maithili",
     }
     src_lang, tgt_lang = lang_dict[src_lang], lang_dict[tgt_lang]
     prompts = []
