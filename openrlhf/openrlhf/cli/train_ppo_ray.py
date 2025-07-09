@@ -1,5 +1,6 @@
 import argparse
 import os
+os.environ['HF_HOME'] = "/mnt/gemini/data2/yifengliu/.cache/huggingface"
 from datetime import datetime
 
 import deepspeed

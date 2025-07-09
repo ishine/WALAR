@@ -1,4 +1,4 @@
-export CUDA_VISIBLE_DEVICES=6,7
+export CUDA_VISIBLE_DEVICES=
 ray start --head --node-ip-address 0.0.0.0 --num-gpus 2
 
 eval "$(/mnt/gemini/data1/yifengliu/miniconda3/bin/conda shell.bash hook)"
@@ -8,16 +8,17 @@ source /mnt/gemini/data1/yifengliu/miniconda3/bin/activate qe-rl
 
 cd /mnt/gemini/data1/yifengliu/qe-lr/openrlhf
 
+export HF_HOME=/mnt/gemini/data2/yifengliu/.cache/huggingface
 export DS_SKIP_CUDA_CHECK=1
 export RAY_DEBUG_POST_MORTEM=1
-wandb_token=5bebcc325992863eb55622d9ad2e7c85c95a1f115
+wandb_token=5bebcc325992863eb55622d9ad2e7c85c95a1f15
 
 src="en"
 tgt="zh"
-version="3"
-size="4B"
+version="2.5"
+size="3B-Instruct"
 lang_detect=True
-reward_name="Rule-Detect-MetricX"
+reward_name="Test-Rule-Detect-MetricX"
 
 # remote_rm_url
 # remote_rm_url2
@@ -45,7 +46,7 @@ ray job submit --address="http://127.0.0.1:8265" \
     --micro_rollout_batch_size 32 \
     --rollout_batch_size 128 \
     --n_samples_per_prompt 8 \
-    --max_samples 1000000 \
+    --max_samples 100000 \
     --max_epochs 1 \
     --prompt_max_len 1024 \
     --generate_max_len 1024 \

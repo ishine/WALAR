@@ -131,6 +131,7 @@ def get_dataset(
 class RewardModelProxy:
     def __init__(self, args):
         self.args = args
+        self.base_model = args.base_model
         self.lang_detect_model = fasttext.load_model("/mnt/gemini/data1/yifengliu/model/lid.176.bin")
         if 'metricX' in args.model_name:
             self.model_name = args.model_name
@@ -184,8 +185,12 @@ class RewardModelProxy:
 
               # Match tgt between "<|im_start|>assistant\n" and "<|im_end|>"
               # tgt_pattern = r"<\|im_start\|>assistant\n<think>(.*?)</think>(.*?)<\|im_end\|>"
-              tgt_pattern = r"<\|im_start\|>assistant\n<think>(.*?)</think>\n\n(.*?)<\|im_end\|>"
-              tgts = [re.search(tgt_pattern, q, re.DOTALL).group(2).strip() for q in queries]
+              if 'Qwen3' in self.base_model:
+                tgt_pattern = r"<\|im_start\|>assistant\n<think>(.*?)</think>\n\n(.*?)<\|im_end\|>"
+                tgts = [re.search(tgt_pattern, q, re.DOTALL).group(2).strip() for q in queries]
+              else:
+                tgt_pattern = r"<\|im_start\|>assistant\n(.*?)<\|im_end\|>"
+                tgts = [re.search(tgt_pattern, q, re.DOTALL).group(1).strip() for q in queries]
               # srcs = [match.group(1).strip() for query in queries if (match := pattern.search(query))]
               # srcs = [query.split('<|im_start|>user\n', 1)[1].split(f"Translate from {lang_dict[self.src]} to {lang_dict[self.tgt]}", 1)[0].strip() for query in queries]
               # tgts = [query.split('<|im_start|>assistant\n', 1)[1].split("<|im_end|>", 1)[0].strip() for query in queries]
@@ -214,8 +219,12 @@ class RewardModelProxy:
           # Match tgt between "<|im_start|>assistant\n" and "<|im_end|>"
           # tgt_pattern = r"<\|im_start\|>assistant\n<think>(.*?)</think>(.*?)<\|im_end\|>"
           print(f"queries[0]: {queries[0]}")
-          tgt_pattern = r"<\|im_start\|>assistant\n<think>(.*?)</think>\n\n(.*?)<\|im_end\|>"
-          tgts = [re.search(tgt_pattern, q, re.DOTALL).group(2).strip() for q in queries]
+          if 'Qwen3' in self.base_model:
+            tgt_pattern = r"<\|im_start\|>assistant\n<think>(.*?)</think>\n\n(.*?)<\|im_end\|>"
+            tgts = [re.search(tgt_pattern, q, re.DOTALL).group(2).strip() for q in queries]
+          else:
+            tgt_pattern = r"<\|im_start\|>assistant\n(.*?)<\|im_end\|>"
+            tgts = [re.search(tgt_pattern, q, re.DOTALL).group(1).strip() for q in queries]
           # srcs = [query.split('<|im_start|>user\n', 1)[1].split(f"Translate from {lang_dict[self.src]} to {lang_dict[self.tgt]}", 1)[0].strip() for query in queries]
           # tgts = [query.split('<|im_start|>assistant\n', 1)[1].split("<|im_end|>", 1)[0].strip() for query in queries]
           inputs = [{"src": src, "mt": mt, "ref": ref} for src, mt, ref in zip(srcs, tgts, labels)]
@@ -282,6 +291,7 @@ if __name__ == "__main__":
     parser.add_argument("--port", type=int, default=5000, help="Port number for the server")
     parser.add_argument("--host", type=str, default="0.0.0.0", help="IP for the server")
 
+    parser.add_argument('--base_model', type=str, default="Qwen2.5-3B-Instruct", help="Base model name or path")
     parser.add_argument("--lang_detect", type=bool, default=False, help="Enable language detection")
     parser.add_argument("--rule", type=bool, default=False, help="Rule to use \\n as a reward or not")
     # Performance
