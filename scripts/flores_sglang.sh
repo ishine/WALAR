@@ -1,5 +1,5 @@
 #!/bin/bash
-export CUDA_VISIBLE_DEVICES=5
+export CUDA_VISIBLE_DEVICES=7
 # Default values
 declare -A model_path
 
@@ -14,7 +14,7 @@ model_path["checkpoint"]="/mnt/gemini/data1/yifengliu/checkpoints/Rule-Detect-Me
 # /mnt/gemini/data1/yifengliu/checkpoints/Rule-Detect-MetricX-Qwen2.5-3B-en-zh-1M-bsz128/global_step120_hf
 # /mnt/gemini/data1/yifengliu/checkpoints/Rule-Detect-MetricX-Qwen2.5-3B-en-ru-1M-bsz128/global_step120_hf
 
-MODEL_NAME="checkpoint"
+MODEL_NAME="Qwen"
 MODEL_PATH=${model_path[$MODEL_NAME]}
 # zho_simpl, zho_trad, swh, tam, fra, rus
 # spa(Spanish), deu(German)， heb(Hebrew)
@@ -26,23 +26,23 @@ MODEL_PATH=${model_path[$MODEL_NAME]}
 # tur(Turkish)
 # LANG_PAIR="zho_simpl-deu"
 INPUT_DIR="/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest"
-PORT=8888
+PORT=1234
 MAX_TOKENS=512
 source_language="eng"
 target_language_list=(
-    "zho_simpl"
+    # "zho_simpl"
     # "fra"
-    "deu"
-    "jpn"
-    "spa"
-    "rus"
-    "fin"
+    # "deu"
+    # "jpn"
+    # "spa"
+    # "rus"
+    # "fin"
     "ara"
-    "tur"
+    # "tur"
     # "ben"
-    "hin"
+    # "hin"
     # "swh"
-    "tam"
+    # "tam"
     # "bel"
     # "pol"
     # "ukr"
@@ -86,6 +86,8 @@ else
             --data_dir "$INPUT_DIR"\
             --lang_pair "$LANG_PAIR" \
             --max_tokens "$MAX_TOKENS" \
+            --comet22 False \
+            --xcomet False \
             --output_file "$OUTPUT_FILE"\
             --port ${PORT}
     done

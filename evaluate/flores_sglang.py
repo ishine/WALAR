@@ -46,6 +46,14 @@ class EvaluationArguments:
         default=1234,
         metadata={"help": "Port for the OpenAI API server"}
     )
+    xcomet: bool = field(
+        default=False,
+        metadata={"help": "Whether to use XCOMET for evaluation"}
+    )
+    comet22: bool = field(
+        default=False,
+        metadata={"help": "Whether to use COMET22 for evaluation"}
+    )
 
 
 def my_load_dataset(data_dir, lang):
@@ -149,7 +157,7 @@ def calculate_comet_score(src_texts, references, predictions, model_path="/mnt/g
     
     # Prepare inputs for COMET
     inputs = [{"src": src.strip(), "mt": mt.strip(), "ref": ref.strip()} for src, mt, ref in zip(src_texts, predictions, references)]
-    
+    # model = model.to(f"cuda:0")
     output = model.predict(inputs)
     
     scores, mean_score = output.scores, output.system_score
@@ -165,30 +173,41 @@ def main():
     sources, references = sources[:len(sources)], references[:len(references)]
     predictions = predict(args.model_name_or_path, url, sources, args.lang_pair, args.max_tokens)
     metrics = get_spBLEU(predictions, references)
-    comet_score = calculate_comet_score(
-        sources, references, predictions
-    )
+    
     print("=====================================")
     print(f"args.model_name_or_path: {args.model_name_or_path}")
     print(f"Port: {args.port}")
     print(f"Results for {args.lang_pair}:")
     print(f"spBLEU: {metrics:.4f}")
-    print(f"COMET Score: {comet_score['mean_score']:.4f}")
-        
+    
+    if args.comet22:
+        comet_score = calculate_comet_score(
+            sources, references, predictions
+        )
+        print(f"COMET22 Score: {comet_score['mean_score']:.4f}")
+    if args.xcomet:
+        xcomet_score = calculate_comet_score(
+            sources, references, predictions,
+            model_path="/mnt/gemini/data1/yifengliu/model/models--Unbabel--XCOMET-XL/snapshots/6a123c5e8e6dccab25e5fcffa3c8b417abadb462/checkpoints/model.ckpt"
+        )
+        print(f"XCOMET Score: {xcomet_score['mean_score']:.4f}")
     print(f"source: {sources[0]}")
     print(f"prediction: {predictions[0]}")
     print(f"reference: {references[0]}")
-    # import code; code.interact(local=locals())
+    import code; code.interact(local=locals())
 
-    dirname = os.path.dirname(args.output_file) if args.output_file else None
-    if dirname and not os.path.exists(dirname):
-        os.makedirs(dirname)
-    if args.output_file:
-        with open(args.output_file, 'w') as f:
-            for src, pred, ref in zip(sources, predictions, references):
-                f.write(json.dumps({'src': src, 'pred': pred, 'ref': ref}) + '\n')
-            f.write(f"spBLEU: {metrics:.4f}\n")
-            f.write(f"COMET Score: {comet_score['mean_score']:.4f}\n")
+    # dirname = os.path.dirname(args.output_file) if args.output_file else None
+    # if dirname and not os.path.exists(dirname):
+    #     os.makedirs(dirname)
+    # if args.output_file:
+    #     with open(args.output_file, 'w') as f:
+    #         for src, pred, ref in zip(sources, predictions, references):
+    #             f.write(json.dumps({'src': src, 'pred': pred, 'ref': ref}) + '\n')
+    #         f.write(f"spBLEU: {metrics:.4f}\n")
+    #         if args.comet22:
+    #             f.write(f"COMET Score: {comet_score['mean_score']:.4f}\n")
+    #         if args.xcomet:
+    #             f.write(f"XCOMET Score: {xcomet_score['mean_score']:.4f}\n")
 
 if __name__ == "__main__":
     main()

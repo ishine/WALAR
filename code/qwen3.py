@@ -174,7 +174,6 @@ def get_scores(eval_type: str, ds: List[Dict], sampling_params: SamplingParams, 
         outputs = [output.outputs[0].text for output in outputs]
         # scores  = [validate_number(output) for output in outputs]
         scores = [extract_boxed_number(output) for output in outputs]
-        import code; code.interact(local=locals())
     elif eval_type == "da":
         scores = [extract_boxed_number(output) for output in outputs1]
     import code; code.interact(local=locals())
@@ -186,11 +185,12 @@ def main():
     args = parser.parse_args_into_dataclasses()[0]
     print(f"Evaluating model {args.model_name_or_path}...")
     ds, name = preprocess_dataset(args.input_file)
-    # ds = ds[:100]
     ds = datasets.Dataset.from_list(ds)
     # ds structure: source, hypothesis, reference
-    sampling_params = SamplingParams(temperature=0.6, top_p=0.95, top_k=20, max_tokens=args.max_tokens)
-    model = LLM(model=args.model_name_or_path, tensor_parallel_size=args.tensor_parallel_size, enforce_eager=True)
+    # sampling_params = SamplingParams(temperature=0.6, top_p=0.95, top_k=20, use_beam_search=True, best_of=4, max_tokens=args.max_tokens)
+    sampling_params = SamplingParams(temperature=0.0, top_p=1, top_k=-1, presence_penalty=0, frequency_penalty=0, max_tokens=args.max_tokens)
+    # sampling_params = BeamSearchParams(beam_width=5, max_tokens=50)
+    model = LLM(model=args.model_name_or_path, tensor_parallel_size=args.tensor_parallel_size, task="generate", enforce_eager=True)
     tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path, trust_remote_code=True)
     scores = get_scores(args.eval_type, ds, sampling_params, model, tokenizer)
     dirname = args.output_dir

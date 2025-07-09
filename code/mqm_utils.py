@@ -111,6 +111,7 @@ def parse_mqm_answer(x, list_mqm_errors=False, full_desc=True):
 
             if "critical" in line or "major" in line or "minor" in line:
                 if not any([line.startswith(x) for x in ['accuracy', 'fluency', 'locale convention', 'style', 'terminology', 'non-translation', 'other']]):
+                # if not any([x in line for x in ['accuracy', 'fluency', 'locale convention', 'style', 'terminology', 'non-translation', 'other']]):
                     print(line)
 
             if error_level is None:
@@ -120,7 +121,8 @@ def parse_mqm_answer(x, list_mqm_errors=False, full_desc=True):
             if "non-translation" in line:
                 errors["critical"].append(line)
             else:
-                errors[error_level].append(line)
+                if any([x in line for x in ['accuracy/', 'fluency/', 'locale convention', 'style/', 'terminology/', 'non-translation', 'other']]):
+                    errors[error_level].append(line)
 
     error_classes = defaultdict(list)
     final_score = 0
