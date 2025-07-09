@@ -20,7 +20,8 @@ model_path["Qwen"]="/mnt/gemini/data1/yifengliu/model/Qwen3-32B"
 MODEL_NAME="Qwen"
 data_name="IndicMT"
 MAX_TOKENS=2048
-EVAL_TYPE="mqm"
+EVAL_TYPE="da"
+TURNS=4
 MODEL_PATH=${model_path[$MODEL_NAME]}
 # zho_simpl, zho_trad, swh, tam, fra, rus
 # spa(Spanish), deu(German)， heb(Hebrew)
@@ -98,6 +99,7 @@ elif [ $data_name == "IndicMT" ]; then
             --src "$src" \
             --tgt "$tgt" \
             --tensor_parallel_size  $num_gpus \
+            --turns ${TURNS} \
             --output_dir "$OUTPUT_DIR" 
 
     done

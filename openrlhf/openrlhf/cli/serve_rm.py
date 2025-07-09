@@ -213,7 +213,8 @@ class RewardModelProxy:
 
           # Match tgt between "<|im_start|>assistant\n" and "<|im_end|>"
           # tgt_pattern = r"<\|im_start\|>assistant\n<think>(.*?)</think>(.*?)<\|im_end\|>"
-          tgt_pattern = r"<\|im_start\|>assistant\s*<think>(.*?)</think>\s*(.*?)<\|im_end\|>"
+          print(f"queries[0]: {queries[0]}")
+          tgt_pattern = r"<\|im_start\|>assistant\n<think>(.*?)</think>\n\n(.*?)<\|im_end\|>"
           tgts = [re.search(tgt_pattern, q, re.DOTALL).group(2).strip() for q in queries]
           # srcs = [query.split('<|im_start|>user\n', 1)[1].split(f"Translate from {lang_dict[self.src]} to {lang_dict[self.tgt]}", 1)[0].strip() for query in queries]
           # tgts = [query.split('<|im_start|>assistant\n', 1)[1].split("<|im_end|>", 1)[0].strip() for query in queries]

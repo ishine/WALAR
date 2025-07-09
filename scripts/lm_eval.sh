@@ -13,6 +13,6 @@ num_gpus=$(echo "$CUDA_VISIBLE_DEVICES" | awk -F',' '{print NF}')
 lm_eval --model vllm \
     --model_args pretrained=${model_path},tensor_parallel_size=${num_gpus},dtype="auto",gpu_memory_utilization=0.8 \
     --tasks mgsm_direct \
-    --output_path /mnt/gemini/data1/yifengliu/qe-lr/mgsm.jsonl \
+    --output_path /mnt/gemini/data1/yifengliu/qe-lr/output/mgsm \
     --log_samples \
     --batch_size auto

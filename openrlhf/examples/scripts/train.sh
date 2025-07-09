@@ -13,7 +13,7 @@ export RAY_DEBUG_POST_MORTEM=1
 wandb_token=5bebcc325992863eb55622d9ad2e7c85c95a1f115
 
 src="en"
-tgt="mix"
+tgt="zh"
 version="3"
 size="4B"
 lang_detect=True
@@ -38,6 +38,7 @@ ray job submit --address="http://127.0.0.1:8265" \
     --ref_reward_offload \
     --pretrain /mnt/gemini/data1/yifengliu/model/Qwen${version}-${size} \
     --remote_rm_url http://localhost:5000/get_reward \
+    --remote_comet_url http://localhost:4000/get_reward \
     --lang_detect ${lang_detect} \
     --micro_train_batch_size 32 \
     --train_batch_size 128 \
@@ -61,7 +62,7 @@ ray job submit --address="http://127.0.0.1:8265" \
     --tgt ${tgt} \
     --eval_dir "/mnt/gemini/data1/yifengliu/data/flores101_dataset/dev" \
     --eval_temperature 0.0 \
-    --eval_steps 100000 \
+    --eval_steps 10 \
     --eval_n_samples_per_prompt 1\
     --input_key input_key \
     --apply_chat_template \

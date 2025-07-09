@@ -8,13 +8,13 @@ which python
 source /mnt/gemini/home/yifengliu/miniconda3/bin/activate qe-rl
 
 model_path["Qwen"]="/mnt/gemini/data1/yifengliu/model/Qwen3-4B"
-model_path["checkpoint"]="/mnt/gemini/data1/yifengliu/checkpoints/Rule-Detect-MetricX-Qwen3-4B-en-mix-1M-bsz128/global_step120_hf"
+model_path["checkpoint"]="/mnt/gemini/data1/yifengliu/checkpoints/Rule-Detect-MetricX-Qwen3-4B-en-zh-1M-bsz128/global_step210_hf"
 
 # /mnt/gemini/data1/yifengliu/checkpoints/Qwen2.5-0.5B-En-Zh-1M-bsz128/global_step140_hf
 # /mnt/gemini/data1/yifengliu/checkpoints/Rule-Detect-MetricX-Qwen2.5-3B-en-zh-1M-bsz128/global_step120_hf
 # /mnt/gemini/data1/yifengliu/checkpoints/Rule-Detect-MetricX-Qwen2.5-3B-en-ru-1M-bsz128/global_step120_hf
 
-MODEL_NAME="Qwen"
+MODEL_NAME="checkpoint"
 MODEL_PATH=${model_path[$MODEL_NAME]}
 # zho_simpl, zho_trad, swh, tam, fra, rus
 # spa(Spanish), deu(German)， heb(Hebrew)
@@ -30,14 +30,14 @@ PORT=1234
 MAX_TOKENS=512
 source_language="eng"
 target_language_list=(
-    # "zho_simpl"
+    "zho_simpl"
     # "fra"
     # "deu"
     # "jpn"
     # "spa"
     # "rus"
     # "fin"
-    "ara"
+    # "ara"
     # "tur"
     # "ben"
     # "hin"

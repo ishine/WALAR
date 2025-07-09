@@ -81,6 +81,10 @@ class EvaluationArguments:
         default=512,
         metadata={"help": "Maximum number of tokens to generate"}
     )
+    turns: int = field(
+        default=1,
+        metadata={"help": "Number of turns for the evaluation"}
+    )
 
 def my_load_dataset(path):
     dataset = []
@@ -152,9 +156,9 @@ def get_scores(eval_type: str, ds: List[Dict], sampling_params: SamplingParams, 
     #     sampling_params,
     #     chat_template_kwargs={"enable_thinking": False},  # Set to False to strictly disable thinking
     # )
-    outputs1 = [output.outputs[0].text for output in outputs]
+    outputs1 = [[opt.text for opt in output.outputs] for output in outputs]
     if eval_type == "mqm":
-        scores = [parse_mqm_answer(output) for output in outputs1]
+        scores = [[parse_mqm_answer(opt) for opt in output] for output in outputs1]
     elif eval_type == "esa":
         print("Evaluating ESA Error Spans...")
         prompts = []
@@ -175,9 +179,13 @@ def get_scores(eval_type: str, ds: List[Dict], sampling_params: SamplingParams, 
         # scores  = [validate_number(output) for output in outputs]
         scores = [extract_boxed_number(output) for output in outputs]
     elif eval_type == "da":
-        scores = [extract_boxed_number(output) for output in outputs1]
-    import code; code.interact(local=locals())
-    scores = [score if score is not None else 0 for score in scores]
+        # scores = [extract_boxed_number(output) for output in outputs1]
+        scores = [[extract_boxed_number(opt) for opt in output] for output in outputs1]
+    
+    # scores = [score if score is not None else 0 for score in scores]
+    # import code; code.interact(local=locals())
+    scores = [[0 if sc is None else sc for sc in s]for s in scores]
+    scores = [sum(s) / len(s) for s in scores]
     return scores
 
 def main():
@@ -187,8 +195,8 @@ def main():
     ds, name = preprocess_dataset(args.input_file)
     ds = datasets.Dataset.from_list(ds)
     # ds structure: source, hypothesis, reference
-    # sampling_params = SamplingParams(temperature=0.6, top_p=0.95, top_k=20, use_beam_search=True, best_of=4, max_tokens=args.max_tokens)
-    sampling_params = SamplingParams(temperature=0.0, top_p=1, top_k=-1, presence_penalty=0, frequency_penalty=0, max_tokens=args.max_tokens)
+    sampling_params = SamplingParams(temperature=0.6, top_p=0.95, top_k=20, max_tokens=args.max_tokens, n=args.turns)
+    # sampling_params = SamplingParams(temperature=0.0, top_p=1, top_k=-1, presence_penalty=0, frequency_penalty=0, max_tokens=args.max_tokens, n=args.turns)
     # sampling_params = BeamSearchParams(beam_width=5, max_tokens=50)
     model = LLM(model=args.model_name_or_path, tensor_parallel_size=args.tensor_parallel_size, task="generate", enforce_eager=True)
     tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path, trust_remote_code=True)

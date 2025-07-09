@@ -41,7 +41,7 @@ class BasePPOTrainer(ABC):
 
         self.strategy = strategy
         self.args = strategy.args
-
+        self.pretrain = pretrain
         self.tokenizer = get_tokenizer(pretrain, None, "left", strategy, use_fast=not self.args.disable_fast_tokenizer)
         self.actor_model_group = actor_model_group
         self.critic_model_group = critic_model_group
@@ -272,7 +272,10 @@ class BasePPOTrainer(ABC):
                     message = [
                         {"role": "user", "content": prompt},
                     ]
-                    new_prompt = self.tokenizer.apply_chat_template(message, tokenize=False, add_generation_prompt=True)
+                    if 'Qwen3' in self.pretrain:
+                        new_prompt = self.tokenizer.apply_chat_template(message, tokenize=False, add_generation_prompt=True, enable_thinking=False)
+                    else:
+                        new_prompt = self.tokenizer.apply_chat_template(message, tokenize=False, add_generation_prompt=True)
                     all_prompts.append(new_prompt)
                     all_labels.append(tgt_text)
                 # for datasources, prompts, labels in eval_dataloader:
