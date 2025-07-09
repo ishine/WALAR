@@ -68,8 +68,14 @@ OUTPUT_DIR="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/${relative_path}"
 
 
 if [ "$server" = True ]; then
-    # python3 -m sglang.launch_server --model-path ${MODEL_PATH} --host 0.0.0.0 --port ${PORT}
-    python -m sglang.launch_server --model-path ${MODEL_PATH} --host 0.0.0.0 --port ${PORT} --chat-template /mnt/gemini/data1/yifengliu/qe-lr/config/qwen3_nonthinking.jinja
+    if [[ "${MODEL_PATH}" == *Qwen3* ]]; then
+        echo "Launching server for Qwen3 model..."
+        python3 -m sglang.launch_server --model-path ${MODEL_PATH} --host 0.0.0.0 --port ${PORT} --chat-template /mnt/gemini/data1/yifengliu/qe-lr/config/qwen3_nonthinking.jinja
+    else
+        echo "Launching server for non-Qwen3 model..."
+        python3 -m sglang.launch_server --model-path ${MODEL_PATH} --host 0.0.0.0 --port ${PORT}
+    fi
+    # python3 -m sglang.launch_server --model-path ${MODEL_PATH} --host 0.0.0.0 --port ${PORT} --chat-template /mnt/gemini/data1/yifengliu/qe-lr/config/qwen3_nonthinking.jinja
 else
     # Create output directory if it doesn't exist
     mkdir -p "$OUTPUT_DIR"
