@@ -22,6 +22,7 @@ import os
 import sys
 
 sys.path.insert(0, "/mnt/gemini/data1/yifengliu/qe-lr/code")
+from utils import write_to_file, preprocess_dataset, my_load_dataset
 import models
 import datasets
 from typing import Optional, Tuple, Union, List
@@ -258,51 +259,62 @@ def get_predictions(
   
   return predictions
 
-def my_load_dataset(path):
-  dataset = []
-  with open(path, 'r') as f:
-    for line in f:
-      dataset.append(json.loads(line))
-  return dataset
+# def my_load_dataset(path):
+#   dataset = []
+#   with open(path, 'r') as f:
+#     for line in f:
+#       dataset.append(json.loads(line))
+#   return dataset
 
-def preprocess_dataset(path):
-  # Load with my own function because of potential error when loading low-resource languages
-  name = ''
-  if 'IndicMT' in path:
-    name = 'IndicMT'
-    ds = my_load_dataset(path)
-    for data in ds:
-      data['source'] = data.pop('src')
-      data['hypothesis'] = data.pop('translation')
-      data['reference'] = data.pop('ref')
-  elif 'wmt' in path:
-    name = 'wmt'
-    with open(path, newline='') as f:
-      reader = csv.DictReader(f, delimiter='\t')
-      ds = []
-      for row in reader:
-        row['hypothesis'] = row.pop('target')
-        ds.append(row)
-  elif 'afriMTE' in path:
-    name = 'afriMTE'
-    ds = my_load_dataset(path)
-    for data in ds:
-      data['source'] = data.pop('src')
-      data['hypothesis'] = data.pop('hypothesis')
-      data['reference'] = data.pop('reference')
-  else:
-    raise ValueError(f"Unsupported dataset: {path}")
-  return ds, name
+# def preprocess_dataset(path):
+#   # Load with my own function because of potential error when loading low-resource languages
+#   name = ''
+#   if 'IndicMT' in path:
+#     name = 'IndicMT'
+#     ds = my_load_dataset(path)
+#     for data in ds:
+#       data['source'] = data.pop('src')
+#       data['hypothesis'] = data.pop('translation')
+#       data['reference'] = data.pop('ref')
+#   elif 'wmt' in path:
+#     name = 'wmt'
+#     with open(path, newline='') as f:
+#       reader = csv.DictReader(f, delimiter='\t')
+#       ds = []
+#       for row in reader:
+#         row['hypothesis'] = row.pop('target')
+#         ds.append(row)
+#   elif 'dev' in path:
+#     name = 'dev'
+#     ds = []
+#     with open('path', 'r', encoding='utf-8') as file:
+#       reader = csv.reader(file, delimiter='\t')
+#       for row in reader:
+#         data = {
+#             'source': row[1],
+#             'hypothesis': row[2],
+#         }
+#         ds.append(data)
+#   elif 'afriMTE' in path:
+#     name = 'afriMTE'
+#     ds = my_load_dataset(path)
+#     for data in ds:
+#       data['source'] = data.pop('src')
+#       data['hypothesis'] = data.pop('hypothesis')
+#       data['reference'] = data.pop('reference')
+#   else:
+#     raise ValueError(f"Unsupported dataset: {path}")
+#   return ds, name
   
-def write_to_file(output_file, ds, predictions, model_name):
-  with open(output_file, "w") as out:
-    for pred, example in zip(predictions, ds):
-      example["prediction"] = float(pred)
-      if model_name == "metricX":
-        del example["input"]
-        del example["input_ids"]
-        del example["attention_mask"]
-      out.write(json.dumps(example) + "\n")
+# def write_to_file(output_file, ds, predictions, model_name):
+#   with open(output_file, "w") as out:
+#     for pred, example in zip(predictions, ds):
+#       example["prediction"] = float(pred)
+#       if model_name == "metricX":
+#         del example["input"]
+#         del example["input_ids"]
+#         del example["attention_mask"]
+#       out.write(json.dumps(example) + "\n")
            
 def main() -> None:
   parser = transformers.HfArgumentParser(Arguments)
@@ -323,16 +335,7 @@ def main() -> None:
     model.to(device)
   model.eval()
   ds, name = preprocess_dataset(args.input_file)
-  # ds = [{"source": "\"We now have 4-month-old mice that are non-diabetic that used to be diabetic,\" he added.",
-  #        "hypothesis": "“现在我们已经培育出4个月大的小鼠，这些小鼠都是无糖尿病的，而以前的实验中，这些小鼠都患有糖尿病。”他进一步解释道。"}]
-  # ds = [{"source": "On Monday, scientists from the Stanford University School of Medicine announced the invention of a new diagnostic tool that can sort cells by type: a tiny printable chip that can be manufactured using standard inkjet printers for possibly about one U.S. cent each.",
-  #        "hypothesis": "On Monday, scientists from the Stanford University School of Medicine announced the invention of a new diagnostic tool that can sort cells by type: a tiny printable chip that can be manufactured using standard inkjet printers for possibly about one U.S. cent each.",}]
-  # ds = [{"source": "\"We now have 4-month-old mice that are non-diabetic that used to be diabetic,\" he added.", 
-  #        "hypothesis": "他补充道：“我们现在有 4 个月大没有糖尿病的老鼠，但它们曾经得过该病。”"}]
-  ds = [
-    {"source": "Dr. Tony Moll discovered the Extremely Drug Resistant Tuberculosis (XDR-TB) in the South African region KwaZulu-Natal",
-     "hypothesis": "Dr. Tony Moll在南非KwaZulu-Natal地区发现了一种非常难治疗的结核病类型--Extremely Drug Resistant Tuberculosis (XDR-TB)。这种病菌对大多数常规抗生素治疗无效，需要使用特定的抗结核药物进行治疗。"}
-  ]
+
   ds = datasets.Dataset.from_list(ds)
   ds, data_collator = get_dataset(
       ds,
@@ -346,15 +349,15 @@ def main() -> None:
   # print(predictions[0])
   dirname = args.output_dir
   dirname = os.path.join(dirname, args.model_name + "-" + args.model_size + "-" + args.dtype)
-  import code; code.interact(local=locals())
-  # if dirname:
-  #   os.makedirs(dirname, exist_ok=True)
+  # import code; code.interact(local=locals())
+  if dirname:
+    os.makedirs(dirname, exist_ok=True)
 
-  # output_file = os.path.join(
-  #     dirname,
-  #     f"{args.src}-{args.tgt}.jsonl",
-  # )
-  # write_to_file(output_file, ds, predictions, args.model_name)
+  output_file = os.path.join(
+      dirname,
+      f"{args.src}-{args.tgt}.jsonl",
+  )
+  write_to_file(output_file, ds, predictions, args.model_name)
 
 
 if __name__ == "__main__":

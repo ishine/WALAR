@@ -1,14 +1,20 @@
 import json
 import os
 import datasets
-from datasets import load_dataset
-from tqdm import tqdm
 import numpy as np
 import torch
 import transformers
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'code')))
+from utils import lang_dict
+
+from datasets import load_dataset
+from tqdm import tqdm
+
 from transformers import AutoTokenizer
 from dataclasses import dataclass, field
 from typing import Optional
+
 import sacrebleu
 from sacrebleu.metrics import BLEU, CHRF
 from comet import load_from_checkpoint, download_model
@@ -89,44 +95,6 @@ def load_flores_dataset(data_dir, lang_pair):
 def predict(model_name_or_path, url, dataset, lang_pair, max_tokens):
     """Generate predictions using the model."""
     src_lang, tgt_lang = lang_pair.split("-")
-    lang_dict = {
-        'eng': "English",
-        "zho_simpl": "Chinese",
-        'swh': "Swahili",
-        "tam": "Tamil",
-        "fra": 'French',
-        "deu": "German",
-        "spa": "Spanish",
-        "ben": "Bengali",
-        "hin": "Hindi",
-        "jpn": "Japanese",
-        "tgl": "Filipino (Tagalog)",
-        "fin": "Finnish",
-        "ara": "Arabic",
-        "tur": "Turkish",
-        ### Indo-European-Slavic
-        "bel": "Belarusian",
-        "bos": "Bosnian",
-        "bul": "Bulgarian",
-        "hrv": "Croatian",
-        "ces": "Czech",
-        "mkd": "Macedonian",
-        "pol": "Polish",
-        "rus": "Russian",
-        "srp": "Serbian",
-        "slk": "Slovak",
-        "sva": "Slovenian",
-        "ukr": "Ukrainian",
-        "kea": "Kabuverdianu",
-        "nso": "Northern Sotho",
-        "ind": "Indonesian",
-        "msa": "Malay",
-        "mlt": "Maltese",
-        "mkd": "Macedonian",
-        "slk": "Slovak",
-        "glg": "Galician",
-        "oci": "Occitan",
-    }
     src_lang, tgt_lang = lang_dict[src_lang], lang_dict[tgt_lang]
     client = openai.Client(base_url=url, api_key="None")
     responses = []
@@ -174,11 +142,6 @@ def main():
     predictions = predict(args.model_name_or_path, url, sources, args.lang_pair, args.max_tokens)
     metrics = get_spBLEU(predictions, references)
     
-    print("=====================================")
-    print(f"args.model_name_or_path: {args.model_name_or_path}")
-    print(f"Port: {args.port}")
-    print(f"Results for {args.lang_pair}:")
-    print(f"spBLEU: {metrics:.4f}")
     
     if args.comet22:
         comet_score = calculate_comet_score(
@@ -191,23 +154,28 @@ def main():
             model_path="/mnt/gemini/data1/yifengliu/model/models--Unbabel--XCOMET-XL/snapshots/6a123c5e8e6dccab25e5fcffa3c8b417abadb462/checkpoints/model.ckpt"
         )
         print(f"XCOMET Score: {xcomet_score['mean_score']:.4f}")
+    print("=====================================")
+    print(f"args.model_name_or_path: {args.model_name_or_path}")
+    print(f"Port: {args.port}")
+    print(f"Results for {args.lang_pair}:")
+    print(f"spBLEU: {metrics:.4f}")
     print(f"source: {sources[0]}")
     print(f"prediction: {predictions[0]}")
     print(f"reference: {references[0]}")
-    import code; code.interact(local=locals())
+    # import code; code.interact(local=locals())
 
-    # dirname = os.path.dirname(args.output_file) if args.output_file else None
-    # if dirname and not os.path.exists(dirname):
-    #     os.makedirs(dirname)
-    # if args.output_file:
-    #     with open(args.output_file, 'w') as f:
-    #         for src, pred, ref in zip(sources, predictions, references):
-    #             f.write(json.dumps({'src': src, 'pred': pred, 'ref': ref}) + '\n')
-    #         f.write(f"spBLEU: {metrics:.4f}\n")
-    #         if args.comet22:
-    #             f.write(f"COMET Score: {comet_score['mean_score']:.4f}\n")
-    #         if args.xcomet:
-    #             f.write(f"XCOMET Score: {xcomet_score['mean_score']:.4f}\n")
+    dirname = os.path.dirname(args.output_file) if args.output_file else None
+    if dirname and not os.path.exists(dirname):
+        os.makedirs(dirname)
+    if args.output_file:
+        with open(args.output_file, 'w') as f:
+            for src, pred, ref in zip(sources, predictions, references):
+                f.write(json.dumps({'src': src, 'pred': pred, 'ref': ref}) + '\n')
+            f.write(f"spBLEU: {metrics:.4f}\n")
+            if args.comet22:
+                f.write(f"COMET Score: {comet_score['mean_score']:.4f}\n")
+            if args.xcomet:
+                f.write(f"XCOMET Score: {xcomet_score['mean_score']:.4f}\n")
 
 if __name__ == "__main__":
     main()

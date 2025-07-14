@@ -1,9 +1,9 @@
 #!/bin/bash
-export CUDA_VISIBLE_DEVICES=0,1,2,3
+export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 # Default values
 declare -A model_path
 
-model_path["Qwen"]="/mnt/gemini/data1/yifengliu/model/Qwen3-32B"
+model_path["Qwen"]="/mnt/gemini/data1/yifengliu/model/Qwen3-235B-A22B-GPTQ-Int4"
 model_path["checkpoint"]="/mnt/gemini/data1/yifengliu/checkpoints/Qwen2.5-0.5B-En-Zh-1M-bsz128/global_step260_hf"
 
 # zho_simpl, zho_trad, swh, tam, asm

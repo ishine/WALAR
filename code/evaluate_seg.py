@@ -70,7 +70,8 @@ def _convert_to_matrices(
 
 def preprocess_dataset(input_file: str) -> list[dict[str, Any]]:
     instances = []
-    if 'IndicMT' or 'temp' in input_file:
+    # import code; code.interact(local=locals())
+    if 'IndicMT' in input_file or 'temp' in input_file:
       with open(input_file, "r") as f:
           lines = f.readlines()
           for line in lines:
@@ -78,13 +79,25 @@ def preprocess_dataset(input_file: str) -> list[dict[str, Any]]:
               instance['label'] = float(instance['full_score'])
             #   instance['label'] = instance['full_score']
               instances.append(instance)
+    elif 'dev' in input_file:
+        with open(input_file, "r") as f:
+            lines = f.readlines()
+            for line in lines:
+                instance = json.loads(line)
+                instances.append(instance)
     elif 'wmt' in input_file:
       with open(input_file, "r") as f:
           lines = f.readlines()
           for line in lines:
               instance = json.loads(line)
-              instance['label'] = instance['score']
+              instance['label'] = instance['label']
               instances.append(instance)
+    elif 'low-res' in input_file:
+        with open(input_file, "r") as f:
+            lines = f.readlines()
+            for line in lines:
+                instance = json.loads(line)
+                instances.append(instance)
     elif 'afriMTE' in input_file:
         with open(input_file, "r") as f:
             lines = f.readlines()

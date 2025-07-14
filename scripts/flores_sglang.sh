@@ -1,5 +1,5 @@
 #!/bin/bash
-export CUDA_VISIBLE_DEVICES=1
+export CUDA_VISIBLE_DEVICES=7
 # Default values
 declare -A model_path
 
@@ -8,13 +8,13 @@ which python
 source /mnt/gemini/home/yifengliu/miniconda3/bin/activate qe-rl
 
 model_path["Qwen"]="/mnt/gemini/data1/yifengliu/model/Qwen3-4B"
-model_path["checkpoint"]="/mnt/gemini/data1/yifengliu/checkpoints/Rule-Detect-MetricX-Qwen2.5-3B-en-fi-1M-bsz128/global_step120_hf"
+model_path["checkpoint"]="/mnt/gemini/data1/yifengliu/checkpoints/Rule-Detect-MetricX-Qwen3-4B-en-zh-1M-bsz128/global_step120_hf"
 
 # /mnt/gemini/data1/yifengliu/checkpoints/Qwen2.5-0.5B-En-Zh-1M-bsz128/global_step140_hf
 # /mnt/gemini/data1/yifengliu/checkpoints/Rule-Detect-MetricX-Qwen2.5-3B-en-zh-1M-bsz128/global_step120_hf
 # /mnt/gemini/data1/yifengliu/checkpoints/Rule-Detect-MetricX-Qwen2.5-3B-en-ru-1M-bsz128/global_step120_hf
 
-MODEL_NAME="checkpoint"
+MODEL_NAME="Qwen"
 MODEL_PATH=${model_path[$MODEL_NAME]}
 # zho_simpl, zho_trad, swh, tam, fra, rus
 # spa(Spanish), deu(German)， heb(Hebrew)
@@ -26,36 +26,73 @@ MODEL_PATH=${model_path[$MODEL_NAME]}
 # tur(Turkish)
 # LANG_PAIR="zho_simpl-deu"
 INPUT_DIR="/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest"
-PORT=1234
+PORT=7777
 MAX_TOKENS=512
 source_language="eng"
 target_language_list=(
-    "zho_simpl"
-    # "fra"
-    "deu"
-    "jpn"
-    "spa"
-    "rus"
-    "fin"
-    "ara"
-    "tur"
-    "ben"
-    "hin"
-    "swh"
-    "tam"
-    "bel"
-    "pol"
-    "ukr"
-    # "kea"
-    # "nso"
-    # "ind"
-    "msa"
-    # "mlt"
-    # "mkd"
-    "slk"
-    "glg"
-    "oci"
+    "afr"
+    "fra"
+    
+    "bos"
+    "slv"
+    
+    "npi"
+
+    "orm"
+    # "zho_simpl"
+    # "deu"
+    # "spa"
+    # "rus"
+    # "jpa"
+    # "tam"
+    # "hin"
+    # "ara"
+    # "tur"
+
+    # "dan"
+    # "nld"
+    # "nob"
+    # "cat"
+    # "por"
+    # "ron"
+
+    # "bul"
+    # "hrv"
+    # "ces"
+    # "srp"
+    
+    # "guj"
+    "npi"
+    # "pan"
+    # "snd"
+    # "urd"
+
+    # "ell"
+    # "gle"
+
+    # "cym"
+    # "ita"
+    # "lav"
+    # "lit"
+    # "pus"
+    # "fas"
+    # "ckb"
+    # "tgk"
+
+    # "jav"
+    # "mri"
+
+    # "amh"
+    # "ful"
+    # "som"
+
+    # "azj"
+    # "kaz"
+    # "kir"
+    # "uzb"
 )
+# isl, ltz, ast, glg, oci, mkd, slk, asm, mar, hye, tgk, mlt
+# for train: tur
 server=False
 # 1234
 
@@ -92,7 +129,7 @@ else
             --data_dir "$INPUT_DIR"\
             --lang_pair "$LANG_PAIR" \
             --max_tokens "$MAX_TOKENS" \
-            --comet22 False \
+            --comet22 True \
             --xcomet True \
             --output_file "$OUTPUT_FILE"\
             --port ${PORT}

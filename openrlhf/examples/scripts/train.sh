@@ -1,4 +1,4 @@
-export CUDA_VISIBLE_DEVICES=
+export CUDA_VISIBLE_DEVICES=4,5
 ray start --head --node-ip-address 0.0.0.0 --num-gpus 2
 
 eval "$(/mnt/gemini/data1/yifengliu/miniconda3/bin/conda shell.bash hook)"
@@ -14,11 +14,11 @@ export RAY_DEBUG_POST_MORTEM=1
 wandb_token=5bebcc325992863eb55622d9ad2e7c85c95a1f15
 
 src="en"
-tgt="zh"
+tgt="mix"
 version="2.5"
 size="3B-Instruct"
 lang_detect=True
-reward_name="Test-Rule-Detect-MetricX"
+reward_name="Rule-Detect-MetricX"
 
 # remote_rm_url
 # remote_rm_url2
@@ -46,7 +46,7 @@ ray job submit --address="http://127.0.0.1:8265" \
     --micro_rollout_batch_size 32 \
     --rollout_batch_size 128 \
     --n_samples_per_prompt 8 \
-    --max_samples 100000 \
+    --max_samples 140000 \
     --max_epochs 1 \
     --prompt_max_len 1024 \
     --generate_max_len 1024 \
@@ -63,7 +63,7 @@ ray job submit --address="http://127.0.0.1:8265" \
     --tgt ${tgt} \
     --eval_dir "/mnt/gemini/data1/yifengliu/data/flores101_dataset/dev" \
     --eval_temperature 0.0 \
-    --eval_steps 10 \
+    --eval_steps 10000000000 \
     --eval_n_samples_per_prompt 1\
     --input_key input_key \
     --apply_chat_template \
