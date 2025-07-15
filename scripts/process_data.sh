@@ -1,5 +1,29 @@
-src="en"
-tgt="ja" # all you need to care
+src="eng"
+tgt_list=(
+    # "ltz"
+    "ast"
+    "oci"
+    "bos"
+    "hrv"
+    "mkd"
+    "pol"
+    "srp"
+    "slk"
+    "slv"
+    "ben"
+    "guj"
+    "hin"
+    "mar"
+    "ory"
+    "pan"
+    "hye"
+    "ell"
+    "lav"
+    "lit"
+    "fas"
+    "tgl"
+    "jav"
+)
 
 model_path=/mnt/gemini/data1/yifengliu/model/Qwen2.5-3B-Instruct #set your model path
 template_type=base
@@ -14,12 +38,13 @@ eval "$(/mnt/gemini/home/yifengliu/miniconda3/bin/conda shell.bash hook)"
 which python
 source /mnt/gemini/home/yifengliu/miniconda3/bin/activate qe-rl
 
-
-python3 /mnt/gemini/data1/yifengliu/qe-lr/code/process_data.py \
-    --src ${src} \
-    --tgt ${tgt} \
-    --input_file "/mnt/gemini/data1/yifengliu/data/wmt24_news_crawl/en/en1m.jsonl"\
-    --tokenizer_path ${model_path} \
-    --template_type ${template_type} \
-    --output_file ${output_file_path} \
-    --type ${type}
+for tgt in "${tgt_list[@]}"; do
+    python3 /mnt/gemini/data1/yifengliu/qe-lr/code/process_data.py \
+        --src ${src} \
+        --tgt ${tgt} \
+        --input_file "/mnt/gemini/data1/yifengliu/data/wmt24_news_crawl/en/en1m.jsonl"\
+        --tokenizer_path ${model_path} \
+        --template_type ${template_type} \
+        --output_file ${output_file_path} \
+        --type ${type}
+done

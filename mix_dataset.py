@@ -9,7 +9,8 @@ def load_dataset(path):
     return dataset
 
 if __name__ == "__main__":
-    lang_list = ["de", "es", "ru", "hi", "ar", "tr", "ta", "ja", "zh"]
+    lang_list = ["ltz", "ast", "oci", "bos", "hrv", "mkd", "pol", "srp", "slk", "slv", "ben", "guj", "hin", "mar", "ory", "pan", "hye", "ell", "lav", "lit", "fas", "tgl", "jav"]
+    lang_list = 
     # tenk_lang_list = ["de", "es", "ru", "ms", "ja", "zh"]
     # twenty_lang_list = ["hi", "ar", "tr", "ta"]
     num_dict = {
@@ -24,7 +25,7 @@ if __name__ == "__main__":
         "ja": 10000,
         "zh": 10000,
     }
-    save_path = "/mnt/gemini/data1/yifengliu/qe-lr/data/train/base_en-mix-1m.jsonl"
+    save_path = "/mnt/gemini/data1/yifengliu/qe-lr/data/train/base_en-mix-mid-1m.jsonl"
     new_dataset = []
     index = 0
     for lang in lang_list:

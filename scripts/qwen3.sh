@@ -2,7 +2,7 @@
 # Default values
 
 declare -A model_path
-export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+export CUDA_VISIBLE_DEVICES=0,1,2,3
 
 eval "$(/mnt/gemini/home/yifengliu/miniconda3/bin/conda shell.bash hook)"
 which python
@@ -11,10 +11,10 @@ source /mnt/gemini/home/yifengliu/miniconda3/bin/activate qe-rl
 model_path["Qwen3-32B"]="/mnt/gemini/data1/yifengliu/model/Qwen3-32B"
 model_path["Qwen3-235B"]="/mnt/gemini/data1/yifengliu/model/Qwen3-235B-A22B-GPTQ-Int4"
 
-MODEL_NAME="Qwen3-235B"
+MODEL_NAME="Qwen3-32B"
 data_name="IndicMT"
 MAX_TOKENS=2048
-EVAL_TYPE="da"
+EVAL_TYPE="mqm"
 TURNS=1
 MODEL_PATH=${model_path[$MODEL_NAME]}
 # zho_simpl, zho_trad, swh, tam, fra, rus
@@ -73,8 +73,8 @@ elif [ $data_name == "IndicMT" ]; then
     language_pairs_list=(
         "eng-assamese"
         # "eng-maithili"
-        "eng-punjabi"
-        "eng-kannada"
+        # "eng-punjabi"
+        # "eng-kannada"
     )
     for pair in "${language_pairs_list[@]}"; do
         src=$(echo $pair | cut -d'-' -f1)

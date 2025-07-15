@@ -17,8 +17,13 @@ def load_dataset(file_path):
 if __name__ == "__main__":
     # Example usage
     dataset = []
-    path = "/mnt/gemini/data1/yifengliu/qe-lr/output/wmt23-dev/metricX-xxl-bf16/en-gu.jsonl"
-    dataset = load_dataset(path)
+    path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Qwen3-4B/eng-zho_simpl.txt"
+    with open(path, 'r') as f:
+        lines = f.readlines()
+        for line in lines[:-3]:
+            data = json.loads(line.strip())
+            dataset.append(data)
+    # dataset = load_dataset(path)
     # path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Rule-Detect-MetricX-Qwen2.5-3B-Instruct-en-mix-1M-bsz128/global_step180_hf/eng-zho_simpl.txt"
     # with open(path, 'r') as f:
     #     lines = f.readlines()

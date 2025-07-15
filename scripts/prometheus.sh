@@ -1,11 +1,11 @@
-export CUDA_VISIBLE_DEVICES=6
+export CUDA_VISIBLE_DEVICES=0
 
 cd /mnt/gemini/data1/yifengliu/qe-lr
 
 MODEL_PATH="/mnt/gemini/data1/yifengliu/model/M-Prometheus-7B"
-TURNS=4
+TURNS=1
 LANG_PAIR_LIST=(
-    "eng-assamese"
+    # "eng-zh"
     # "eng-maithili"
     # "eng-kannada"
     # "eng-punjabi"

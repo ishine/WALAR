@@ -8,6 +8,7 @@ from utils import preprocess_dataset, write_to_file
   
 lang_dict = {
   "eng": "English",
+  "zh": "Chinese",
   "assamese": "Assamese",
   "punjabi": "Punjabi",
   "kannada": "Kannada",
@@ -34,6 +35,12 @@ if __name__ == "__main__":
   #   # "hypothesis": "卡耐基梅隆大学以其计算机科学和技术而闻名。",
   #   },
   # ]
+  ds = [
+    {
+      "source": "\"We now have 4-month-old mice that are non-diabetic that used to be diabetic,\" he added.",
+      "hypothesis": "现在我们有四个月大的老鼠，这些老鼠曾经是糖尿病患者。\n\n中文翻译如下：\n\n现在我们有四个月大的老鼠，这些老鼠曾经是糖尿病患者。"
+    }
+  ]
   # ds = ds[:10]
   instructions, sources, responses = [], [], []
   for data in ds:
@@ -67,14 +74,14 @@ if __name__ == "__main__":
   # print("Feedback:", feedbacks)
   # print("Score:", scores)
   import code; code.interact(local=locals())
-  final_scores = [score / args.turns for score in final_scores]
-  dirname = args.output_dir
-  if dirname:
-    os.makedirs(dirname, exist_ok=True)
+  # final_scores = [score / args.turns for score in final_scores]
+  # dirname = args.output_dir
+  # if dirname:
+  #   os.makedirs(dirname, exist_ok=True)
 
-  output_file = os.path.join(
-      dirname,
-      f"{args.src}-{args.tgt}.jsonl",
-  )
-  write_to_file(output_file, ds, final_scores, "prometheus")
+  # output_file = os.path.join(
+  #     dirname,
+  #     f"{args.src}-{args.tgt}.jsonl",
+  # )
+  # write_to_file(output_file, ds, final_scores, "prometheus")
 

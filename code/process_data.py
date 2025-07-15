@@ -1,5 +1,6 @@
 import os
 import argparse
+from utils import lang_dict
 from datasets import Dataset, load_dataset
 from tqdm import tqdm
 import json
@@ -8,32 +9,15 @@ import pandas as pd
 from transformers import AutoTokenizer
 
 # Language code to language name mapping table
-language_map = {
-    'en': 'English',
-    'de': 'German',
-    'zh': 'Chinese',
-    'ja': 'Japanese',
-    'sw': 'Swahili',
-    'ta': 'Tamil',
-    "ru": "Russian",
-    "fi": 'Finnish',
-    "de": 'German',
-    "es": 'Spanish',
-    "ru": 'Russian',
-    "hi": 'Hindi',
-    "ms": 'Malay',
-    "ar": 'Arabic',
-    "tr": 'Turkish',
-    "ja": 'Japanese',
-}
+
 
 def make_prompt(source, src, tgt, template_type='chat', tokenizer=None):
     if template_type == 'base':
-        return f"{source}\nTranslate from {language_map[src]} to {language_map[tgt]}:"
+        return f"{source}\nTranslate from {lang_dict[src]} to {lang_dict[tgt]}:"
     elif template_type == 'chat':
-        return f"You are a helpful assistant. Translate this text from {language_map[src]} to {language_map[tgt]}:\n{source}"
+        return f"You are a helpful assistant. Translate this text from {lang_dict[src]} to {lang_dict[tgt]}:\n{source}"
     elif template_type == 'rl':
-        return f"Translate this text from {language_map[src]} to {language_map[tgt]}:\n{source}"
+        return f"Translate this text from {lang_dict[src]} to {lang_dict[tgt]}:\n{source}"
     else:
         raise ValueError(f"Unknown template type: {template_type}")
 
@@ -124,7 +108,7 @@ def main():
     print(train_pdf['prompt'][0])
     
     print(f"Train dataset saved to: {args.output_file}")
-    import code; code.interact(local=locals())
+    # import code; code.interact(local=locals())
 
 if __name__ == '__main__':
     main()

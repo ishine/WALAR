@@ -190,7 +190,7 @@ def get_scores(eval_type: str, ds: List[Dict], sampling_params: SamplingParams, 
     # import code; code.interact(local=locals())
     scores = [[0 if sc is None else sc for sc in s]for s in scores]
     scores = [sum(s) / len(s) for s in scores]
-    # import code; code.interact(local=locals())
+    import code; code.interact(local=locals())
     return scores
 
 def main():
@@ -199,6 +199,15 @@ def main():
     print(f"Evaluating model {args.model_name_or_path}...")
     ds, name = preprocess_dataset(args.input_file)
     ds = datasets.Dataset.from_list(ds)
+    ds = [
+        {
+            "src_lang": "English",
+            "tgt_lang": "Chinese",
+            "source": "\"We now have 4-month-old mice that are non-diabetic that used to be diabetic,\" he added.",
+            # "hypothesis": "现在我们有四个月大的老鼠，这些老鼠曾经是糖尿病患者。\n\n中文翻译如下：\n\n现在我们有四个月大的老鼠，这些老鼠曾经是糖尿病患者。"
+            "hypothesis": "现在我们有四个月大的老鼠，这些老鼠曾经是糖尿病患者。",
+        }
+    ]
     # ds structure: source, hypothesis, reference
     if args.model_name_or_path == "Qwen3-235B":
         sampling_params = SamplingParams(temperature=0.7, top_p=0.8, top_k=20, min_p=0, presence_penalty=1.5, max_tokens=args.max_tokens, n=args.turns)
@@ -210,17 +219,17 @@ def main():
     model = LLM(model=args.model_name_or_path, tensor_parallel_size=args.tensor_parallel_size, task="generate", enforce_eager=True)
     tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path, trust_remote_code=True)
     scores = get_scores(args.eval_type, ds, sampling_params, model, tokenizer)
-    dirname = args.output_dir
-    dirname = os.path.join(dirname)
+    # dirname = args.output_dir
+    # dirname = os.path.join(dirname)
     
-    if dirname:
-        os.makedirs(dirname, exist_ok=True)
+    # if dirname:
+    #     os.makedirs(dirname, exist_ok=True)
 
-    output_file = os.path.join(
-        dirname,
-        f"{args.src}-{args.tgt}.jsonl",
-    )
-    write_to_file(output_file, ds, scores)
+    # output_file = os.path.join(
+    #     dirname,
+    #     f"{args.src}-{args.tgt}.jsonl",
+    # )
+    # write_to_file(output_file, ds, scores)
     
 
 if __name__ == "__main__":
