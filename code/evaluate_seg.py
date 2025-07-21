@@ -79,7 +79,7 @@ def preprocess_dataset(input_file: str) -> list[dict[str, Any]]:
               instance['label'] = float(instance['full_score'])
             #   instance['label'] = instance['full_score']
               instances.append(instance)
-    elif 'dev' in input_file:
+    elif 'wmt23-dev' in input_file or 'wmt24-test' in input_file:
         with open(input_file, "r") as f:
             lines = f.readlines()
             for line in lines:

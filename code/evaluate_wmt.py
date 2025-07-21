@@ -20,8 +20,9 @@ import json
 import os
 import sys
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-import code.models as models
+# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+# import code.models as models
+import models
 
 from typing import Optional, Tuple, Union, List
 import scipy
@@ -31,8 +32,15 @@ from mt_metrics_eval import meta_info
 from mt_metrics_eval import tasks
 import torch
 import numpy as np
+from vllm import LLM, SamplingParams
 import transformers
 import datasets
+
+from transformers import AutoTokenizer
+from typing import Optional, List, Dict
+from utils import preprocess_dataset, mm_dict, lang_dict
+from mqm_utils import TEMPLATE_GEMBA_MQM, apply_template, parse_mqm_answer, TEMPLATE_GEMBA_ESA_ERROR_SPANS, TEMPLATE_GEMBA_ESA_RANKING, validate_number
+from mqm_utils import TEMPLATE_DA, extract_boxed_number
 
 
 @dataclasses.dataclass
@@ -68,6 +76,22 @@ class Arguments:
       metadata={
           "help": "The size of the model to use for evaluation. "
                   "Supported sizes: 'xxl', 'xl'."
+      },
+  )
+  
+  turns: int = dataclasses.field(
+      default=1,
+      metadata={
+          "help": "The number of turns to use for the evaluation. "
+                  "This is only used for Qwen models."
+      },
+  )
+  
+  eval_type: str = dataclasses.field(
+      default="mqm",
+      metadata={
+          "help": "The type of evaluation to perform. "
+                  "Supported types: 'mqm', 'esa', 'da'."
       },
   )
   
@@ -178,6 +202,7 @@ def load_tokenizer_and_model(metric_name: str, model_size: str, model_dtype:str,
     model = models.MT5ForRegression.from_pretrained(
        path, torch_dtype="auto", device_map="auto", cache_dir="/mnt/data1/yifengliu/model"
     )
+    model.eval()
   elif 'Comet' in metric_name:
     path_dict = {
       "XComet": "/mnt/data1/yifengliu/model/models--Unbabel--XCOMET-XL/snapshots/6a123c5e8e6dccab25e5fcffa3c8b417abadb462/checkpoints/model.ckpt",
@@ -187,12 +212,113 @@ def load_tokenizer_and_model(metric_name: str, model_size: str, model_dtype:str,
     from comet import download_model, load_from_checkpoint
     print(f"Loading model from {model_path}")
     model = load_from_checkpoint(model_path)
+    model.eval()
+  elif 'Qwen' in metric_name:
+    path_dict = {
+      "Qwen3-32B": "/mnt/gemini/data1/yifengliu/model/Qwen3-32B",
+      "Qwen3-32B-AWQ": "/mnt/gemini/data1/yifengliu/model/Qwen3-32B-AWQ",
+      "Qwen3-235B": "/mnt/gemini/data1/yifengliu/model/Qwen3-235B-A22B-GPTQ-Int4",
+    }
+    if metric_name == 'Qwen3-235B':
+      tensor_parallel_size = 4
+    elif metric_name == 'Qwen3-32B-AWQ':
+      tensor_parallel_size = 1
+    elif metric_name == 'Qwen3-32B':
+      tensor_parallel_size = 4
+    else:
+      raise ValueError(f"Unsupported metric name: {metric_name}")
+    model_path = path_dict.get(metric_name, None)
+    model = LLM(model=model_path, tensor_parallel_size=tensor_parallel_size, task="generate", enforce_eager=True)
+    tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
   else:
     raise ValueError(f"Unsupported metric name: {metric_name}")
   # model.to(device)
   # model.parallelize() 
-  model.eval()
   return tokenizer, model
+
+def get_sampling_params(metric_name, args):
+  if metric_name == "Qwen3-235B":
+      sampling_params = SamplingParams(temperature=0.7, top_p=0.8, top_k=20, min_p=0, presence_penalty=1.5, max_tokens=2048, n=args.turns)
+  elif metric_name == "Qwen3-32B-AWQ":
+      sampling_params = SamplingParams(temperature=1, top_p=0.9, top_k=-1, min_p=0, max_tokens=2048, n=args.turns)
+  else:
+      # sampling_params = SamplingParams(temperature=0.7, top_p=0.8, top_k=20, min_p=0, max_tokens=args.max_tokens, n=args.turns)
+      sampling_params = SamplingParams(temperature=0.0, top_p=1, top_k=-1, presence_penalty=0, frequency_penalty=0, max_tokens=2048, n=args.turns)
+  return sampling_params
+
+def get_scores(eval_type: str, ds: List[Dict], sampling_params: SamplingParams, model: LLM, tokenizer: AutoTokenizer=None, src_lang="English", tgt_lang="Chinese"):
+    # source_lang, source_seg, target_lang, target_seg
+    prompts = []
+    for data in ds:
+        temp_data = {
+            'source_lang': src_lang,
+            'target_lang': tgt_lang,
+            'source_seg': data['source'],
+            'target_seg': data['hypothesis'],
+        }        
+        if eval_type == "mqm":
+            prompt = apply_template(TEMPLATE_GEMBA_MQM, temp_data)
+        elif eval_type == "esa":
+            prompt = apply_template(TEMPLATE_GEMBA_ESA_ERROR_SPANS, temp_data)
+        elif eval_type == "da":
+            prompt = apply_template(TEMPLATE_DA, temp_data)
+            prompt = [{"role": "user", "content": prompt}]
+        
+        prompt = tokenizer.apply_chat_template(prompt, tokenize=False, add_generation_prompt=True, enable_thinking=False)
+        prompts.append(prompt)
+            
+    outputs = model.generate(prompts, sampling_params=sampling_params)
+    # outputs = model.chat(
+    #     prompts, 
+    #     sampling_params,
+    #     chat_template_kwargs={"enable_thinking": False},  # Set to False to strictly disable thinking
+    # )
+    outputs1 = [[opt.text for opt in output.outputs] for output in outputs]
+    if eval_type == "mqm":
+        scores = [[parse_mqm_answer(opt) for opt in output] for output in outputs1]
+    elif eval_type == "esa":
+        print("Evaluating ESA Error Spans...")
+        prompts = []
+        n1 = len(outputs1)
+        outputs1 = [opt for output in outputs1 for opt in output]
+        turns = len(outputs1) // n1
+        for data, error_span in zip(ds, outputs1):
+            temp_data = {
+                'source_lang':  src_lang,
+                'target_lang':  tgt_lang,
+                'source_seg':   data['source'],
+                'target_seg':   data['hypothesis'],
+                "error_spans":  error_span,
+            }
+            prompt = apply_template(TEMPLATE_GEMBA_ESA_RANKING, temp_data)
+            prompt = [{"role": "user", "content": prompt}]
+            prompt = tokenizer.apply_chat_template(prompt, tokenize=False, add_generation_prompt=True, enable_thinking=False)
+            prompts.append(prompt)
+        outputs = model.generate(prompts, sampling_params=sampling_params)
+        outputs = [output.outputs[0].text for output in outputs]
+        # scores  = [validate_number(output) for output in outputs]
+        scores = [extract_boxed_number(output) for output in outputs]
+        scores = [scores[i:i+turns] for i in range(0, len(scores), turns)]
+    elif eval_type == "da":
+        # scores = [extract_boxed_number(output) for output in outputs1]
+        scores = [[extract_boxed_number(opt) for opt in output] for output in outputs1]
+    
+    # scores = [score if score is not None else 0 for score in scores]
+    scores = [[0 if sc is None else sc for sc in s]for s in scores]
+    scores = [sum(s) / len(s) for s in scores]
+    # import code; code.interact(local=locals())
+    return scores
+
+def get_langs(src, tgt):
+    src_lang, tgt_lang = mm_dict.get(src, ''), mm_dict.get(tgt, '')
+    if len(src_lang) == 0 or len(tgt_lang) == 0:
+        src_lang, tgt_lang = lang_dict.get(src, ''), lang_dict.get(tgt, '')
+    # The case for IndicMT
+    if tgt_lang == '':
+        tgt_lang = tgt.capitalize()
+        # raise ValueError(f"Unsupported language codes: {src}, {tgt}")
+    print(f"Source language: {src_lang}, Target language: {tgt_lang}")
+    return src_lang, tgt_lang
 
 def get_predictions(
     metric_name: str,
@@ -201,6 +327,8 @@ def get_predictions(
     srcs: List[str],
     hyps: List[str],
     refs: List[str],
+    lp: str,
+    args: Arguments,
 ) -> np.ndarray:
   predictions = None
   if metric_name == 'metricX':
@@ -226,6 +354,13 @@ def get_predictions(
     model_output = model.predict(inputs, batch_size=1, gpus=torch.cuda.device_count())
     predictions = model_output.scores
     predictions = np.array(predictions)
+  elif 'Qwen' in metric_name:
+    src, tgt = lp.split('-')[0], lp.split('-')[1]
+    ds = [{"source": src, "hypothesis": hyp} for src, hyp in zip(srcs, hyps)]
+    sampling_params = get_sampling_params(metric_name, args)
+    src_lang, tgt_lang = get_langs(src, tgt)
+    predictions = get_scores(args.eval_type, ds, sampling_params, model, tokenizer, src_lang, tgt_lang)
+    # ds = datasets.Dataset.from_list(ds)
   return predictions
 
 def NewMetric(
@@ -237,7 +372,8 @@ def NewMetric(
     docs: dict[str, list[int]],
     src: list[str],
     ref: list[str],
-    hyps: dict[list[str]]
+    hyps: dict[list[str]],
+    args: Arguments,
 ) -> dict[str, list[float]]:
   """
   Generate metric scores.
@@ -265,13 +401,17 @@ def NewMetric(
   tokenizer, model = load_tokenizer_and_model(metric_name, model_size, model_dtype, torch.device('cuda' if torch.cuda.is_available() else 'cpu'))
   for sysname, hyp in hyps.items():
     print(f"Evaluating {metric_name}-{model_size}-{model_dtype} for system {sysname} on {lp}...")
-    predictions = get_predictions(metric_name, model, tokenizer, src, hyp, ref)
+    # src, hyp, ref = src[:len(src)//100], hyp[:len(hyp)//100], ref[:len(ref)//100]
+    predictions = get_predictions(metric_name, model, tokenizer, src, hyp, ref, lp, args)
     if metric_name == 'metricX':
       seg_scores[sysname] = -predictions
       sys_scores[sysname] = [-predictions.mean()]
     elif 'Comet' in metric_name:
       seg_scores[sysname] = predictions
       sys_scores[sysname] = [predictions.mean()]
+    else:
+      seg_scores[sysname] = predictions
+      sys_scores[sysname] = [np.mean(predictions)]
   return seg_scores, sys_scores
 
 def get_lps(wmt_year: int) -> list[str]:
@@ -301,8 +441,11 @@ def get_tasks(wmt_year: int, lps: list[str], k: int = 0) -> Tuple[tasks.Task, di
   else:
     raise ValueError(f"Unsupported WMT year: {wmt_year}")
 
-def write_result(metric_name: str, model_size: str, lp: str, seg_scores: dict[str, list[float]], sys_scores: dict[str, list[float]], output_dir: str) -> None:
-  output_dir = os.path.join(output_dir, metric_name + '-' + model_size)
+def write_result(metric_name: str, model_size: str, lp: str, seg_scores: dict[str, list[float]], sys_scores: dict[str, list[float]], output_dir: str, args: Arguments) -> None:
+  if 'Qwen' not in metric_name:
+    output_dir = os.path.join(output_dir, metric_name + '-' + model_size)
+  else:
+    output_dir = os.path.join(output_dir, metric_name + "-" + args.eval_type + "-" + str(args.turns))
   seg_file = os.path.join(output_dir, "seg", f"{lp}.jsonl")
   sys_file = os.path.join(output_dir, "sys", f"{lp}.jsonl")
   os.makedirs(os.path.dirname(seg_file), exist_ok=True)
@@ -348,24 +491,28 @@ def main() -> None:
 
   lps = get_lps(args.wmt_year)
   baseline_metainfo = get_meta_info(args.wmt_year)
-  evs_dict = {(f'wmt{args.wmt_year}', lp): data.EvalSet(f'wmt{args.wmt_year}', lp, True) for lp in lps}
+  evs_dict = {(f'wmt{args.wmt_year}', lp): data.EvalSet(f'wmt{args.wmt_year}', lp, True, path="/mnt/gemini/home/yifengliu/.mt-metrics-eval/mt-metrics-eval-v2") for lp in lps}
   model_scores, sy_scores = {}, {}
   # ESA
   # lps = ["en-cs", "en-hi", "en-is"]
-  lps = ["cs-uk"]
+  # lps = ["cs-uk"]
   
   # MQM
   # lps = ["en-de", "en-es", "ja-zh"]
+  # lps = ["ja-zh", "en-es"]
+  lps = ["en-de"]
   
   for lp in lps:
     evs = evs_dict[(f'wmt{args.wmt_year}', lp)]
-    # gold_scores = evs.Scores("seg", "mqm")
-    gold_scores = evs.Scores("seg", "esa")
+    gold_scores = evs.Scores("seg", "mqm")
+    # gold_scores = evs.Scores("seg", "esa")
+    # import code; code.interact(local=locals())
     for refname, ref in evs.all_refs.items():
       seg_scores, sys_scores = NewMetric(
-          args.model_name, args.model_size, args.dtype, evs.lp, evs.domains, evs.docs, evs.src, ref, evs.sys_outputs)
+          args.model_name, args.model_size, args.dtype, evs.lp, evs.domains, evs.docs, evs.src, ref, evs.sys_outputs, args)
       evs.AddMetric(args.model_name, {refname}, 'sys', sys_scores, replace=True)
       evs.AddMetric(args.model_name, {refname}, 'seg', seg_scores, replace=True)
+    # import code; code.interact(local=locals())
     m_scores, s_scores = [], []
     keys = sorted(seg_scores.keys())
     m_value, s_value = [seg_scores[key] for key in keys], [gold_scores[key] for key in keys]
@@ -377,13 +524,14 @@ def main() -> None:
     model_scores[lp] = np.array(m_scores, dtype=np.float32)
     sy_scores[lp] = np.array(s_scores, dtype=np.float32)
     
-
+  # import code; code.interact(local=locals())
   # Add new metric to the primary lists, so it will get picked up when tasks get
   # run with primary=True (avoiding having to evaluate all contrastive
   # submissions as well).
-  for lp in lps:
-    write_result(args.model_name, args.model_size, lp, seg_scores, sys_scores, args.output_dir)
   
+  for lp in lps:
+    write_result(args.model_name, args.model_size, lp, seg_scores, sys_scores, args.output_dir, args)
+  # import code; code.interact(local=locals())
   for evs in evs_dict.values():
     evs.SetPrimaryMetrics(evs.primary_metrics | {args.model_name})
 
@@ -406,7 +554,7 @@ def main() -> None:
       baselines_metainfo=baseline_metainfo)
 
   print(table)
-  import code; code.interact(local=locals())
+  # import code; code.interact(local=locals())
   evaluate(lps, model_scores, sy_scores)
   
   

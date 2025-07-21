@@ -100,7 +100,7 @@ def preprocess_dataset(input_file: str) -> list[dict[str, Any]]:
 def main() -> None:
     parser = transformers.HfArgumentParser(Arguments)
     (args,) = parser.parse_args_into_dataclasses()
-
+    # import code; code.interact(local=locals())
     instances = []
     instances = preprocess_dataset(args.input_file)
 

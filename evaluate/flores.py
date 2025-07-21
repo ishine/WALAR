@@ -1,15 +1,21 @@
 import os
 import datasets
-from datasets import load_dataset
-from tqdm import tqdm
 import numpy as np
 import torch
 import transformers
+import json
+import sacrebleu
+
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'code')))
+from utils import lang_dict
+
+from datasets import load_dataset
+from tqdm import tqdm
 from transformers import AutoTokenizer
 from vllm import LLM, SamplingParams
 from dataclasses import dataclass, field
 from typing import Optional
-import sacrebleu
 from sacrebleu.metrics import BLEU, CHRF
 from comet import load_from_checkpoint, download_model
 
@@ -40,6 +46,14 @@ class EvaluationArguments:
     max_tokens: int = field(
         default=512,
         metadata={"help": "Maximum number of tokens to generate"}
+    )
+    comet22: bool = field(
+        default=False,
+        metadata={"help": "Whether to compute COMET22 score"}
+    )
+    xcomet: bool = field(
+        default=False,
+        metadata={"help": "Whether to compute XCOMET score"}
     )
 
 
@@ -74,17 +88,6 @@ def load_flores_dataset(data_dir, lang_pair):
 def predict(model, tokenizer, dataset, sampling_params, lang_pair):
     """Generate predictions using the model."""
     src_lang, tgt_lang = lang_pair.split("-")
-    lang_dict = {
-        'eng': "English",
-        "zho_simpl": "Chinese",
-        'swh': "Swahili",
-        "tam": "Tamil",
-        "asm": "Assamese",
-        "pan": "Punjabi",
-        "kan": "Kannada",
-        "eng_Latn": "English",
-        "mai_Deva": "Maithili",
-    }
     src_lang, tgt_lang = lang_dict[src_lang], lang_dict[tgt_lang]
     prompts = []
     for src_text in tqdm(dataset, desc="Generating predictions"):
@@ -160,9 +163,17 @@ def main():
     )
     pred.append(predictions)
     metrics = get_spBLEU(predictions, references)
-    comet_score = calculate_comet_score(
-        sources, references, predictions
-    )
+    if args.comet22:
+        comet_score = calculate_comet_score(
+            sources, references, predictions
+        )
+        print(f"COMET22 Score: {comet_score['mean_score']:.4f}")
+    if args.xcomet:
+        xcomet_score = calculate_comet_score(
+            sources, references, predictions,
+            model_path="/mnt/gemini/data1/yifengliu/model/models--Unbabel--XCOMET-XL/snapshots/6a123c5e8e6dccab25e5fcffa3c8b417abadb462/checkpoints/model.ckpt"
+        )
+        print(f"XCOMET Score: {xcomet_score['mean_score']:.4f}")
     print("=====================================")
     print(f"args.model_name_or_path: {args.model_name_or_path}")
     print(f"Results for {args.lang_pair}:")
@@ -174,15 +185,18 @@ def main():
     print(f"reference: {references[0]}")
     import code; code.interact(local=locals())
 
-    # dirname = os.path.dirname(args.output_file) if args.output_file else None
-    # if dirname and not os.path.exists(dirname):
-    #     os.makedirs(dirname)
-    # if args.output_file:
-    #     with open(args.output_file, 'w') as f:
-    #         f.write(f"Model: {args.model_name_or_path}\n")
-    #         f.write(f"Language Pair: {args.lang_pair}\n")
-    #         f.write(f"spBLEU: {metrics:.2f}\n")
-    #         f.write(f"COMET Score: {comet_score['mean_score']:.2f}\n")
+    dirname = os.path.dirname(args.output_file) if args.output_file else None
+    if dirname and not os.path.exists(dirname):
+        os.makedirs(dirname)
+    if args.output_file:
+        with open(args.output_file, 'w') as f:
+            for src, pred, ref in zip(sources, predictions, references):
+                f.write(json.dumps({'src': src, 'pred': pred, 'ref': ref}) + '\n')
+            f.write(f"spBLEU: {metrics:.4f}\n")
+            if args.comet22:
+                f.write(f"COMET Score: {comet_score['mean_score']:.4f}\n")
+            if args.xcomet:
+                f.write(f"XCOMET Score: {xcomet_score['mean_score']:.4f}\n")
 
 if __name__ == "__main__":
     main()

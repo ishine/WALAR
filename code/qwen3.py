@@ -6,6 +6,7 @@ import argparse
 import datasets
 import openai
 import os
+from utils import preprocess_dataset, mm_dict, lang_dict
 from mqm_utils import TEMPLATE_GEMBA_MQM, apply_template, parse_mqm_answer, TEMPLATE_GEMBA_ESA_ERROR_SPANS, TEMPLATE_GEMBA_ESA_RANKING, validate_number
 from mqm_utils import TEMPLATE_DA, extract_boxed_number
 
@@ -14,36 +15,6 @@ from collections import defaultdict
 from datasets import load_dataset
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict
-
-lang_dict = {
-    'eng': "English",
-    "zho_simpl": "Chinese",
-    'swh': "Swahili",
-    "tam": "Tamil",
-    "fra": 'French',
-    "deu": "German",
-    "spa": "Spanish",
-    "ben": "Bengali",
-    "hin": "Hindi",
-    "jpn": "Japanese",
-    "tgl": "Filipino (Tagalog)",
-    "fin": "Finnish",
-    "ara": "Arabic",
-    "tur": "Turkish",
-    ### Indo-European-Slavic
-    "bel": "Belarusian",
-    "bos": "Bosnian",
-    "bul": "Bulgarian",
-    "hrv": "Croatian",
-    "ces": "Czech",
-    "mkd": "Macedonian",
-    "pol": "Polish",
-    "rus": "Russian",
-    "srp": "Serbian",
-    "slk": "Slovak",
-    "sva": "Slovenian",
-    "ukr": "Ukrainian",
-}
 
 @dataclass
 class EvaluationArguments:
@@ -94,48 +65,19 @@ def my_load_dataset(path):
             dataset.append(json.loads(line.strip()))
     return dataset
 
-def preprocess_dataset(path):
-  # Load with my own function because of potential error when loading low-resource languages
-  name = ''
-  if 'IndicMT' in path:
-    name = 'IndicMT'
-    ds = my_load_dataset(path)
-    for data in ds:
-      data['source'] = data.pop('src')
-      data['hypothesis'] = data.pop('translation')
-      data['reference'] = data.pop('ref')
-  elif 'wmt' in path:
-    name = 'wmt'
-    with open(path, newline='') as f:
-      reader = csv.DictReader(f, delimiter='\t')
-      ds = []
-      for row in reader:
-        row['hypothesis'] = row.pop('target')
-        ds.append(row)
-  elif 'afriMTE' in path:
-    name = 'afriMTE'
-    ds = my_load_dataset(path)
-    for data in ds:
-      data['source'] = data.pop('src')
-      data['hypothesis'] = data.pop('hypothesis')
-      data['reference'] = data.pop('reference')
-  else:
-    raise ValueError(f"Unsupported dataset: {path}")
-  return ds, name
-
 def write_to_file(output_file, ds, predictions):
   with open(output_file, "w") as out:
     for pred, example in zip(predictions, ds):
       example["prediction"] = float(pred) if pred is not None else pred
       out.write(json.dumps(example) + "\n")
 
-def get_scores(eval_type: str, ds: List[Dict], sampling_params: SamplingParams, model: LLM, tokenizer: AutoTokenizer=None):
+def get_scores(eval_type: str, ds: List[Dict], sampling_params: SamplingParams, model: LLM, tokenizer: AutoTokenizer=None, src_lang="English", tgt_lang="Chinese"):
     # source_lang, source_seg, target_lang, target_seg
     prompts = []
     for data in ds:
         temp_data = {
-            'source_lang': data['src_lang'],
-            'target_lang': data['tgt_lang'],
+            'source_lang': src_lang,
+            'target_lang': tgt_lang,
             'source_seg': data['source'],
             'target_seg': data['hypothesis'],
         }        
@@ -167,8 +109,8 @@ def get_scores(eval_type: str, ds: List[Dict], sampling_params: SamplingParams, 
         turns = len(outputs1) // n1
         for data, error_span in zip(ds, outputs1):
             temp_data = {
-                'source_lang':  data['src_lang'],
-                'target_lang':  data['tgt_lang'],
+                'source_lang':  src_lang,
+                'target_lang':  tgt_lang,
                 'source_seg':   data['source'],
                 'target_seg':   data['hypothesis'],
                 "error_spans":  error_span,
@@ -193,32 +135,46 @@ def get_scores(eval_type: str, ds: List[Dict], sampling_params: SamplingParams, 
     import code; code.interact(local=locals())
     return scores
 
+def get_langs(args):
+    src, tgt = args.src, args.tgt
+    src_lang, tgt_lang = mm_dict.get(src, ''), mm_dict.get(tgt, '')
+    if len(src_lang) == 0 or len(tgt_lang) == 0:
+        src_lang, tgt_lang = lang_dict.get(src, ''), lang_dict.get(tgt, '')
+    # The case for IndicMT
+    if tgt_lang == '':
+        tgt_lang = args.tgt.capitalize()
+        # raise ValueError(f"Unsupported language codes: {src}, {tgt}")
+    print(f"Source language: {src_lang}, Target language: {tgt_lang}")
+    # import code; code.interact(local=locals())
+    return src_lang, tgt_lang
+
 def main():
     parser = transformers.HfArgumentParser(EvaluationArguments)
     args = parser.parse_args_into_dataclasses()[0]
     print(f"Evaluating model {args.model_name_or_path}...")
-    ds, name = preprocess_dataset(args.input_file)
-    ds = datasets.Dataset.from_list(ds)
+    # ds, name = preprocess_dataset(args.input_file)
+    # ds = datasets.Dataset.from_list(ds)
     ds = [
         {
             "src_lang": "English",
             "tgt_lang": "Chinese",
-            "source": "\"We now have 4-month-old mice that are non-diabetic that used to be diabetic,\" he added.",
-            # "hypothesis": "现在我们有四个月大的老鼠，这些老鼠曾经是糖尿病患者。\n\n中文翻译如下：\n\n现在我们有四个月大的老鼠，这些老鼠曾经是糖尿病患者。"
-            "hypothesis": "现在我们有四个月大的老鼠，这些老鼠曾经是糖尿病患者。",
+            "source": "Dr. Ehud Ur, professor of medicine at Dalhousie University in Halifax, Nova Scotia and chair of the clinical and scientific division of the Canadian Diabetes Association cautioned that the research is still in its early days.",
+            "hypothesis": "Dr. Ehud Ur, Dalhousie University in Halifax, Nova Scotia's professor of medicine and the chair of the clinical and scientific division of the Canadian Diabetes Association, cautioned that the research is still in its early stages.。"
         }
     ]
     # ds structure: source, hypothesis, reference
     if args.model_name_or_path == "Qwen3-235B":
         sampling_params = SamplingParams(temperature=0.7, top_p=0.8, top_k=20, min_p=0, presence_penalty=1.5, max_tokens=args.max_tokens, n=args.turns)
+    elif args.model_name_or_path == "Qwen3-32B-AWQ":
+        sampling_params = SamplingParams(temperature=1, top_p=0.9, top_k=-1, min_p=0, max_tokens=args.max_tokens, n=args.turns)
     else:
         sampling_params = SamplingParams(temperature=0.7, top_p=0.8, top_k=20, min_p=0, max_tokens=args.max_tokens, n=args.turns)
         # sampling_params = SamplingParams(temperature=0.0, top_p=1, top_k=-1, presence_penalty=0, frequency_penalty=0, max_tokens=args.max_tokens, n=args.turns)
-    # sampling_params = SamplingParams(temperature=0.0, top_p=1, top_k=-1, presence_penalty=0, frequency_penalty=0, max_tokens=args.max_tokens, n=args.turns)
-    # sampling_params = BeamSearchParams(beam_width=5, max_tokens=50)
+
     model = LLM(model=args.model_name_or_path, tensor_parallel_size=args.tensor_parallel_size, task="generate", enforce_eager=True)
     tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path, trust_remote_code=True)
-    scores = get_scores(args.eval_type, ds, sampling_params, model, tokenizer)
+    src_lang, tgt_lang = get_langs(args)
+    scores = get_scores(args.eval_type, ds, sampling_params, model, tokenizer, src_lang, tgt_lang)
     # dirname = args.output_dir
     # dirname = os.path.join(dirname)
     

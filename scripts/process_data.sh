@@ -1,44 +1,48 @@
 src="eng"
 tgt_list=(
+    "ara"
+    "tur"
+    "tam"
+    "fin"
     # "ltz"
-    "ast"
-    "oci"
-    "bos"
-    "hrv"
-    "mkd"
-    "pol"
-    "srp"
-    "slk"
-    "slv"
-    "ben"
-    "guj"
-    "hin"
-    "mar"
-    "ory"
-    "pan"
-    "hye"
-    "ell"
-    "lav"
-    "lit"
-    "fas"
-    "tgl"
-    "jav"
+    # "ast"
+    # "oci"
+    # "bos"
+    # "hrv"
+    # "mkd"
+    # "pol"
+    # "srp"
+    # "slk"
+    # "slv"
+    # "ben"
+    # "guj"
+    # "hin"
+    # "mar"
+    # "ory"
+    # "pan"
+    # "hye"
+    # "ell"
+    # "lav"
+    # "lit"
+    # "fas"
+    # "tgl"
+    # "jav"
 )
 
 model_path=/mnt/gemini/data1/yifengliu/model/Qwen2.5-3B-Instruct #set your model path
 template_type=base
 type=openrlhf
-if [ ${type} == "openrlhf" ]; then
-    output_file_path=/mnt/gemini/data1/yifengliu/qe-lr/data/train/${template_type}_${src}-${tgt}-1m.jsonl
-elif [ ${type} == "verl" ]; then
-    output_file_path=/mnt/gemini/data1/yifengliu/qe-lr/data/train/${template_type}_${src}-${tgt}-1m.parquet
-fi
 
 eval "$(/mnt/gemini/home/yifengliu/miniconda3/bin/conda shell.bash hook)"
 which python
 source /mnt/gemini/home/yifengliu/miniconda3/bin/activate qe-rl
 
 for tgt in "${tgt_list[@]}"; do
+    if [ ${type} == "openrlhf" ]; then
+        output_file_path=/mnt/gemini/data1/yifengliu/qe-lr/data/train/${template_type}_${src}-${tgt}-1m.jsonl
+    elif [ ${type} == "verl" ]; then
+        output_file_path=/mnt/gemini/data1/yifengliu/qe-lr/data/train/${template_type}_${src}-${tgt}-1m.parquet
+    fi
     python3 /mnt/gemini/data1/yifengliu/qe-lr/code/process_data.py \
         --src ${src} \
         --tgt ${tgt} \

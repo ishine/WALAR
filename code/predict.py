@@ -259,62 +259,6 @@ def get_predictions(
   
   return predictions
 
-# def my_load_dataset(path):
-#   dataset = []
-#   with open(path, 'r') as f:
-#     for line in f:
-#       dataset.append(json.loads(line))
-#   return dataset
-
-# def preprocess_dataset(path):
-#   # Load with my own function because of potential error when loading low-resource languages
-#   name = ''
-#   if 'IndicMT' in path:
-#     name = 'IndicMT'
-#     ds = my_load_dataset(path)
-#     for data in ds:
-#       data['source'] = data.pop('src')
-#       data['hypothesis'] = data.pop('translation')
-#       data['reference'] = data.pop('ref')
-#   elif 'wmt' in path:
-#     name = 'wmt'
-#     with open(path, newline='') as f:
-#       reader = csv.DictReader(f, delimiter='\t')
-#       ds = []
-#       for row in reader:
-#         row['hypothesis'] = row.pop('target')
-#         ds.append(row)
-#   elif 'dev' in path:
-#     name = 'dev'
-#     ds = []
-#     with open('path', 'r', encoding='utf-8') as file:
-#       reader = csv.reader(file, delimiter='\t')
-#       for row in reader:
-#         data = {
-#             'source': row[1],
-#             'hypothesis': row[2],
-#         }
-#         ds.append(data)
-#   elif 'afriMTE' in path:
-#     name = 'afriMTE'
-#     ds = my_load_dataset(path)
-#     for data in ds:
-#       data['source'] = data.pop('src')
-#       data['hypothesis'] = data.pop('hypothesis')
-#       data['reference'] = data.pop('reference')
-#   else:
-#     raise ValueError(f"Unsupported dataset: {path}")
-#   return ds, name
-  
-# def write_to_file(output_file, ds, predictions, model_name):
-#   with open(output_file, "w") as out:
-#     for pred, example in zip(predictions, ds):
-#       example["prediction"] = float(pred)
-#       if model_name == "metricX":
-#         del example["input"]
-#         del example["input_ids"]
-#         del example["attention_mask"]
-#       out.write(json.dumps(example) + "\n")
            
 def main() -> None:
   parser = transformers.HfArgumentParser(Arguments)

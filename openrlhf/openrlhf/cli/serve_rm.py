@@ -329,7 +329,7 @@ class RewardModelProxy:
           new_scores = []
           cnt = 0
           for score, tgt in zip(scores, tgts):
-            print(tgt, '\n' in tgt)
+            # print(tgt, '\n' in tgt)
             if "\n" in tgt:
               cnt += 1
               new_scores.append(min_reward)
@@ -379,8 +379,8 @@ if __name__ == "__main__":
     parser.add_argument("--host", type=str, default="0.0.0.0", help="IP for the server")
 
     parser.add_argument('--base_model', type=str, default="Qwen2.5-3B-Instruct", help="Base model name or path")
-    parser.add_argument("--lang_detect", type=bool, default=False, help="Enable language detection")
-    parser.add_argument("--rule", type=bool, default=False, help="Rule to use \\n as a reward or not")
+    parser.add_argument("--lang_detect", action="store_true", default=False, help="Enable language detection")
+    parser.add_argument("--rule", action="store_true", default=False, help="Rule to use \\n as a reward or not")
     # Performance
     parser.add_argument("--load_in_4bit", action="store_true", default=False)
     parser.add_argument("--bf16", action="store_true", default=False, help="Enable bfloat16")
@@ -417,5 +417,5 @@ if __name__ == "__main__":
         result = {"rewards": rewards, "scores": rewards, "extra_logs": extra_logs}
         logger.info(f"Sent JSON: {result['rewards'][:20]}")
         return JSONResponse(result)
-
+    print(args.rule, args.lang_detect)
     uvicorn.run(app, host=args.host, port=args.port, log_level="info")

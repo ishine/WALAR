@@ -407,7 +407,6 @@ if __name__ == "__main__":
     parser.add_argument("--remote_rm_url2", type=str, default=None, help="remote RM API (HTTP) for second RM")
     parser.add_argument("--remote_comet_url", type=str, default=None, help="remote comet for authentication")    
     parser.add_argument("--remote_metric_reference_url", type=str, default=None, help="remote metric_reference for authentication")    
-    parser.add_argument("--lang_detect", type=bool, default=False, help="Language detection")
 
     parser.add_argument("--critic_pretrain", type=str, default=None, help="HF model name or path")
     parser.add_argument("--value_head_prefix", type=str, default="score")

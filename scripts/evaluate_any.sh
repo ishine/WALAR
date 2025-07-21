@@ -1,7 +1,7 @@
 export CUDA_VISIBLE_DEVICES=1
 
-cd /mnt/data1/yifengliu/qe-lr/code
+cd /mnt/gemini/data1/yifengliu/qe-lr/code
 
 python evaluate_any.py \
-  --input_file /mnt/data1/yifengliu/qe-lr/output/IndicMT/Comet-qe-da/eng-maithili.jsonl\
-  --output_file /mnt/data1/yifengliu/qe-lr/output/output2.jsonl
+  --input_file /mnt/gemini/data1/yifengliu/qe-lr/output/wmt23-dev/Qwen3-32B-da/en-te.jsonl \
+  --output_file /mnt/gemini/data1/yifengliu/qe-lr/output/output2.jsonl

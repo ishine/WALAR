@@ -1,5 +1,5 @@
 #!/bin/bash
-export CUDA_VISIBLE_DEVICES=6
+export CUDA_VISIBLE_DEVICES=5
 # Default values
 declare -A model_path
 
@@ -8,7 +8,7 @@ which python
 source /mnt/gemini/home/yifengliu/miniconda3/bin/activate qe-rl
 
 model_path["Qwen"]="/mnt/gemini/data1/yifengliu/model/Qwen3-4B"
-model_path["checkpoint"]="/mnt/gemini/data1/yifengliu/checkpoints/Rule-Detect-MetricX-Qwen3-4B-en-zh-1M-bsz128/global_step120_hf"
+model_path["checkpoint"]="/mnt/gemini/data1/yifengliu/checkpoints/Rule-Detect-MetricX-Qwen3-4B-en-mix-mid2-1M-bsz128/global_step150_hf"
 
 # /mnt/gemini/data1/yifengliu/checkpoints/Qwen2.5-0.5B-En-Zh-1M-bsz128/global_step140_hf
 # /mnt/gemini/data1/yifengliu/checkpoints/Rule-Detect-MetricX-Qwen2.5-3B-en-zh-1M-bsz128/global_step120_hf
@@ -26,25 +26,47 @@ MODEL_PATH=${model_path[$MODEL_NAME]}
 # tur(Turkish)
 # LANG_PAIR="zho_simpl-deu"
 INPUT_DIR="/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest"
-PORT=7777
+PORT=2222
 MAX_TOKENS=512
 source_language="eng"
 target_language_list=(
-    "afr"
-    "fra"
-    
-    "bos"
-    "slv"
-    
-    "npi"
+    # "kan"
+    # "mal"
+    # "tel"
+    "ltz"
+    # "ast"
+    # "oci"
 
-    "orm"
-    # "zho_simpl"
-    # "deu"
-    # "spa"
-    # "rus"
-    # "jpa"
-    # "tam"
+    # "bos"
+    # "hrv"
+    "mkd"
+    "pol"
+    "srp"    
+    "slk"
+    "slv"
+
+    "ben"
+    "guj"
+    "hin"
+    "mar"
+
+    # "afr"
+    # "fra"
+    
+    # "bos"
+    # "slv"
+    
+    # "npi"
+
+    # "orm"
+
+    "zho_simpl"
+    "deu"
+    "spa"
+    "rus"
+    "jpn"
+    "tam"
+
     # "hin"
     # "ara"
     # "tur"
@@ -62,7 +84,7 @@ target_language_list=(
     # "srp"
     
     # "guj"
-    "npi"
+    # "npi"
     # "pan"
     # "snd"
     # "urd"
@@ -90,6 +112,19 @@ target_language_list=(
     # "kaz"
     # "kir"
     # "uzb"
+
+    # "est"
+    # "hun"
+    # "kat"
+    # "hau"
+    # "heb"
+    # "khm"
+    # "vie"
+    # "kor"
+    # "lao"
+    # "tha"
+    # "luo"
+    # "mon"
 )
 # isl, ltz, ast, glg, oci, mkd, slk, asm, mar, hye, tgk, mlt
 # for train: tur

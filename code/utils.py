@@ -20,7 +20,9 @@ lang_dict = {
     "hrv": "Croatian",
     "ces": "Czech",
     "dan": "Danish",
+    "ary": "Darija",
     "nld": "Dutch",
+    "arz": "Egyptian Arabic",
     "eng": "English",
     "est": "Estonian",
     "tgl": "Filipino",
@@ -48,6 +50,7 @@ lang_dict = {
     "kam": "Kamba",
     "kan": "Kannada",
     "kaz": "Kazakh",
+    "kik": "Kikuyu",
     "khm": "Khmer",
     "kor": "Korean",
     "kir": "Kyrgyz",
@@ -93,6 +96,7 @@ lang_dict = {
     "tel": "Telugu",
     "tha": "Thai",
     "tur": "Turkish",
+    "twi": "Twi",
     "ukr": "Ukrainian",
     "umb": "Umbundu",
     "urd": "Urdu",
@@ -113,6 +117,7 @@ mm_dict = {
   "as": "Assamese",
   "ast": "Asturian",
   "az": "Azerbaijani",
+  "eu": "Basque",
   "be": "Belarusian",
   "bn": "Bengali",
   "bs": "Bosnian",
@@ -120,6 +125,7 @@ mm_dict = {
   "my": "Burmese",
   "ca": "Catalan",
   "ceb": "Cebuano",
+  "zh": "Chinese",
   "zho": "Chinese",
   "hr": "Croatian",
   "cs": "Czech",
@@ -209,6 +215,10 @@ mm_dict = {
   "zu": "Zulu",
 }
 
+three2two = {'afr': 'af', 'amh': 'am', 'ara': 'ar', 'hye': 'hy', 'asm': 'as', 'ast': 'ast', 'azj': 'az', 'bel': 'be', 'ben': 'bn', 'bos': 'bs', 'bul': 'bg', 'mya': 'my', 'cat': 'ca', 'ceb': 'ceb', 'zho_simpl': 'zho', 'hrv': 'hr', 'ces': 'cs', 'dan': 'da', 'nld': 'nl', 'eng': 'en', 'est': 'et', 'tgl': 'tl', 'fin': 'fi', 'fra': 'fr', 'ful': 'ff', 'glg': 'gl', 'lug': 'lg', 'kat': 'ka', 'deu': 'de', 'ell': 'el', 'guj': 'gu', 'hau': 'ha', 'heb': 'he', 'hin': 'hi', 'hun': 'hu', 'isl': 'is', 'ibo': 'ig', 'ind': 'id', 'gle': 'ga', 'ita': 'it', 'jpn': 'ja', 'jav': 'jv', 'kea': 'kea', 'kam': 'kam', 'kan': 'kn', 'kaz': 'kk', 'khm': 'km', 'kor': 'ko', 'kir': 'ky', 'lao': 'lo', 'lav': 'lv', 'lin': 'ln', 'lit': 'lt', 'luo': 'luo', 'ltz': 'lb', 'mkd': 'mk', 'msa': 'ms', 'mal': 'ml', 'mlt': 'mt', 'mri': 'mi', 'mar': 'mr', 'mon': 'mn', 'nob': 'no', 'npi': 'ne', 'nso': 'ns', 'nya': 'ny', 'oci': 'oc', 'ory': 'or', 'orm': 'om', 'pus': 'ps', 'fas': 'fa', 'pol': 'pl', 'por': 'pt', 'pan': 'pa', 'ron': 'ro', 'rus': 'ru', 'srp': 'sr', 'sna': 'sn', 'snd': 'sd', 'slk': 'sk', 'slv': 'sl', 'som': 'so', 'ckb': 'ku', 'spa': 'es', 'swa': 'sw', 'swe': 'sv', 'tgk': 'tg', 'tam': 'ta', 'tel': 'te', 'tha': 'th', 'tur': 'tr', 'ukr': 'uk', 'umb': 'umb', 'urd': 'ur', 'uzb': 'uz', 'vie': 'vi', 'cym': 'cy', 'wol': 'wo', 'xho': 'xh', 'yor': 'yo', 'zul': 'zu'}
+
+two2three = {'af': 'afr', 'am': 'amh', 'ar': 'ara', 'hy': 'hye', 'as': 'asm', 'ast': 'ast', 'az': 'azj', 'be': 'bel', 'bn': 'ben', 'bs': 'bos', 'bg': 'bul', 'my': 'mya', 'ca': 'cat', 'ceb': 'ceb', 'zho': 'zho_simpl', 'hr': 'hrv', 'cs': 'ces', 'da': 'dan', 'nl': 'nld', 'en': 'eng', 'et': 'est', 'tl': 'tgl', 'fi': 'fin', 'fr': 'fra', 'ff': 'ful', 'gl': 'glg', 'lg': 'lug', 'ka': 'kat', 'de': 'deu', 'el': 'ell', 'gu': 'guj', 'ha': 'hau', 'he': 'heb', 'hi': 'hin', 'hu': 'hun', 'is': 'isl', 'ig': 'ibo', 'id': 'ind', 'ga': 'gle', 'it': 'ita', 'ja': 'jpn', 'jv': 'jav', 'kea': 'kea', 'kam': 'kam', 'kn': 'kan', 'kk': 'kaz', 'km': 'khm', 'ko': 'kor', 'ky': 'kir', 'lo': 'lao', 'lv': 'lav', 'ln': 'lin', 'lt': 'lit', 'luo': 'luo', 'lb': 'ltz', 'mk': 'mkd', 'ms': 'msa', 'ml': 'mal', 'mt': 'mlt', 'mi': 'mri', 'mr': 'mar', 'mn': 'mon', 'ne': 'npi', 'ns': 'nso', 'no': 'nob', 'ny': 'nya', 'oc': 'oci', 'or': 'ory', 'om': 'orm', 'ps': 'pus', 'fa': 'fas', 'pl': 'pol', 'pt': 'por', 'pa': 'pan', 'ro': 'ron', 'ru': 'rus', 'sr': 'srp', 'sn': 'sna', 'sd': 'snd', 'sk': 'slk', 'sl': 'slv', 'so': 'som', 'ku': 'ckb', 'es': 'spa', 'sw': 'swa', 'sv': 'swe', 'tg': 'tgk', 'ta': 'tam', 'te': 'tel', 'th': 'tha', 'tr': 'tur', 'uk': 'ukr', 'umb': 'umb', 'ur': 'urd', 'uz': 'uzb', 'vi': 'vie', 'cy': 'cym', 'wo': 'wol', 'xh': 'xho', 'yo': 'yor', 'zu': 'zul'}
+
 def my_load_dataset(path):
   dataset = []
   with open(path, 'r') as f:
@@ -227,7 +237,7 @@ def preprocess_dataset(path):
       data['source'] = data.pop('src')
       data['hypothesis'] = data.pop('translation')
       data['reference'] = data.pop('ref')
-  elif 'dev23' in path:
+  elif 'wmt23-dev' in path:
     name = 'dev23'
     ds = []
     with open(path, 'r', encoding='utf-8') as file:
@@ -239,6 +249,19 @@ def preprocess_dataset(path):
             'source': row[1],
             'hypothesis': row[2],
             "label": float(row[4]),
+        }
+        ds.append(data)
+  elif 'wmt24-test' in path:
+    name = 'test24'
+    ds = []
+    with open(path, 'r', encoding='utf-8') as file:
+      lines = file.readlines()
+      for line in lines:
+        tmp = json.loads(line)
+        data = {
+          'source': tmp['src'],
+          "hypothesis": tmp['hyp'],
+          "label": float(tmp['score']),
         }
         ds.append(data)
   elif 'wmt' in path:
@@ -283,3 +306,23 @@ def write_to_file(output_file, ds, predictions, model_name):
         del example["input_ids"]
         del example["attention_mask"]
       out.write(json.dumps(example) + "\n")
+  
+
+def build_matching_lang_dict(lang_dict, mm_dict):
+    # Invert mm_dict: value -> key for reverse lookup
+    reversed_mm = {v: k for k, v in lang_dict.items()}
+    
+    # Result: keys from lang_dict, values from mm_dict
+    matched_dict = {}
+    
+    for key1, value1 in mm_dict.items():
+        if value1 in reversed_mm:
+            matched_dict[key1] = reversed_mm[value1]
+    
+    return matched_dict
+
+  
+      
+if __name__ == '__main__':      
+  dct = build_matching_lang_dict(lang_dict, mm_dict)
+  import code; code.interact(local=locals())
