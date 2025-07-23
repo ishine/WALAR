@@ -154,12 +154,37 @@ def main():
     print(f"Evaluating model {args.model_name_or_path}...")
     # ds, name = preprocess_dataset(args.input_file)
     # ds = datasets.Dataset.from_list(ds)
+    # ds = [
+    #     {
+    #         "src_lang": "English",
+    #         "tgt_lang": "Chinese",
+    #         "source": "\"We now have 4-month-old mice that are non-diabetic that used to be diabetic,\" he added.",
+    #         "hypothesis": "现在我们有四个月大的老鼠，这些老鼠曾经是糖尿病患者。\n\n中文翻译如下：\n\n现在我们有四个月大的老鼠，这些老鼠曾经是糖尿病患者。"
+    #     }
+    # ]
+    
+    # ds = [
+    #     {
+    #         "src_lang": "English",
+    #         "tgt_lang": "Chinese",
+    #         "source": "Dr. Ehud Ur, professor of medicine at Dalhousie University in Halifax, Nova Scotia and chair of the clinical and scientific division of the Canadian Diabetes Association cautioned that the research is still in its early days.",
+    #         "hypothesis": "Dr. Ehud Ur, Dalhousie University in Halifax, Nova Scotia's professor of medicine and the chair of the clinical and scientific division of the Canadian Diabetes Association, cautioned that the research is still in its early stages.。"
+    #     }
+    # ]
+    # ds = [
+    #     {
+    #         "src_lang": "English",
+    #         "tgt_lang": "Chinese",
+    #         "source": "One antibody cocktail, ZMapp, initially showed promise in the field, but formal studies indicated it had less benefit than sought in preventing death.",
+    #         "hypothesis": "最初，一种名为ZMapp的抗体混合物在临床试验中表现出一定的治疗潜力，但后续的正式研究结果表明，它在预防病毒性感染导致死亡方面的效果并不如预期那样显著。"
+    #     }
+    # ]
     ds = [
         {
             "src_lang": "English",
             "tgt_lang": "Chinese",
-            "source": "Dr. Ehud Ur, professor of medicine at Dalhousie University in Halifax, Nova Scotia and chair of the clinical and scientific division of the Canadian Diabetes Association cautioned that the research is still in its early days.",
-            "hypothesis": "Dr. Ehud Ur, Dalhousie University in Halifax, Nova Scotia's professor of medicine and the chair of the clinical and scientific division of the Canadian Diabetes Association, cautioned that the research is still in its early stages.。"
+            "source": "Dr. Tony Moll discovered the Extremely Drug Resistant Tuberculosis (XDR-TB) in the South African region KwaZulu-Natal.",
+            "hypothesis": "南非夸祖鲁-纳塔尔地区医学家托尼·莫尔博士首次发现了耐多药肺结核（XDR-TB）这种新型肺结核病。"
         }
     ]
     # ds structure: source, hypothesis, reference

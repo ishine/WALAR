@@ -183,7 +183,7 @@ def main():
     print(f"source: {sources[0]}")
     print(f"prediction: {predictions[0]}")
     print(f"reference: {references[0]}")
-    import code; code.interact(local=locals())
+    # import code; code.interact(local=locals())
 
     dirname = os.path.dirname(args.output_file) if args.output_file else None
     if dirname and not os.path.exists(dirname):
@@ -191,7 +191,7 @@ def main():
     if args.output_file:
         with open(args.output_file, 'w') as f:
             for src, pred, ref in zip(sources, predictions, references):
-                f.write(json.dumps({'src': src, 'pred': pred, 'ref': ref}) + '\n')
+                f.write(json.dumps({'src': src, 'pred': pred, 'ref': ref}, ensure_ascii=False) + '\n')
             f.write(f"spBLEU: {metrics:.4f}\n")
             if args.comet22:
                 f.write(f"COMET Score: {comet_score['mean_score']:.4f}\n")

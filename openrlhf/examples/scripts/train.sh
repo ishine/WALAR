@@ -20,7 +20,7 @@ src="en"
 tgt="zh"
 version="2.5"
 size="3B-Instruct"
-reward_name="Qwen3-32B-AWQ-DA"
+reward_name="Detect-Qwen3-32B-AWQ-DA"
 
 # remote_rm_url
 # remote_rm_url2

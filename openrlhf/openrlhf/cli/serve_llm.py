@@ -201,7 +201,7 @@ class RewardModelProxy:
         self.args = args
         self.src = args.src
         self.tgt = args.tgt
-        # self.lang_detect_model = fasttext.load_model("/mnt/gemini/data1/yifengliu/model/lid.176.bin")
+        self.lang_detect_model = fasttext.load_model("/mnt/gemini/data1/yifengliu/model/lid.176.bin")
         self.model_name = args.model_name
         self.base_model = args.base_model
         path_dict = {
@@ -216,33 +216,49 @@ class RewardModelProxy:
         # self.model = 
 
     def get_reward(self, queries, prompts, labels):
+        logger.info(f"queries[0]: {queries[0]}")
+        logger.info(f"queries[1]: {queries[1]}")
 
-      logger.info(f"queries[0]: {queries[0]}")
-      logger.info(f"queries[1]: {queries[1]}")
+        scores = []
+        # batch
+        src_pattern = r"<\|im_start\|>user\n(.*?)Translate from (.*?) to (.*?)"
+        srcs = [re.search(src_pattern, q, re.DOTALL).group(1).strip() for q in queries]
+        src_langs = [re.search(src_pattern, q, re.DOTALL).group(2).strip() for q in queries]
+        tgt_langs = [re.search(src_pattern, q, re.DOTALL).group(3).strip() for q in queries]
 
-      scores = []
-      # batch
-      src_pattern = r"<\|im_start\|>user\n(.*?)Translate from (.*?) to (.*?)"
-      srcs = [re.search(src_pattern, q, re.DOTALL).group(1).strip() for q in queries]
-      src_langs = [re.search(src_pattern, q, re.DOTALL).group(2).strip() for q in queries]
-      tgt_langs = [re.search(src_pattern, q, re.DOTALL).group(3).strip() for q in queries]
-
-      # Match tgt between "<|im_start|>assistant\n" and "<|im_end|>"
-      # tgt_pattern = r"<\|im_start\|>assistant\n<think>(.*?)</think>(.*?)<\|im_end\|>"
-      print(f"queries[0]: {queries[0]}")
-      if 'Qwen3' in self.base_model:
-        tgt_pattern = r"<\|im_start\|>assistant\n<think>(.*?)</think>\n\n(.*?)<\|im_end\|>"
-        tgts = [re.search(tgt_pattern, q, re.DOTALL).group(2).strip() for q in queries]
-      else:
-        tgt_pattern = r"<\|im_start\|>assistant\n(.*?)<\|im_end\|>"
-        tgts = [re.search(tgt_pattern, q, re.DOTALL).group(1).strip() for q in queries]
-      ds = [{"source": src, "hypothesis": tgt} for src, tgt in zip(srcs, tgts)]
-      scores = get_scores(args.eval_type, ds, self.sampling_params, self.model, self.tokenizer, src_langs, tgt_langs)
-      # print(f"{self.model_name}: query: {queries[0]}")
-      # print(f"{self.model_name}: prompt: {prompts[0]}")
-      # print(f"{self.model_name}: score: {scores[0]}")
-      extra_logs = {}
-      return scores, extra_logs
+        # Match tgt between "<|im_start|>assistant\n" and "<|im_end|>"
+        # tgt_pattern = r"<\|im_start\|>assistant\n<think>(.*?)</think>(.*?)<\|im_end\|>"
+        if 'Qwen3' in self.base_model:
+            tgt_pattern = r"<\|im_start\|>assistant\n<think>(.*?)</think>\n\n(.*?)<\|im_end\|>"
+            tgts = [re.search(tgt_pattern, q, re.DOTALL).group(2).strip() for q in queries]
+        else:
+            tgt_pattern = r"<\|im_start\|>assistant\n(.*?)<\|im_end\|>"
+            tgts = [re.search(tgt_pattern, q, re.DOTALL).group(1).strip() for q in queries]
+        ds = [{"source": src, "hypothesis": tgt} for src, tgt in zip(srcs, tgts)]
+        scores = get_scores(args.eval_type, ds, self.sampling_params, self.model, self.tokenizer, src_langs, tgt_langs)
+        extra_logs = {}
+        # Hope to remove the following code one day
+        detect_rewards = []
+        if self.args.lang_detect:
+            tgts = [tgt.replace("\n", "") for tgt in tgts]
+            lang_info = self.lang_detect_model.predict(tgts)
+            min_reward = 0
+            cnt = 0
+            for language, tgt in zip(lang_info[0], tgt_langs):
+                lang_code = language[0].replace("__label__", "")
+                pred_lang = lang_dict.get(lang_code, "")
+                if pred_lang == tgt:
+                    detect_rewards.append(float('inf'))
+                else:
+                    cnt += 1
+                    detect_rewards.append(min_reward)
+            scores = [min(s, r) for s, r in zip(scores, detect_rewards)]
+            extra_logs['lang_penalty_percent'] = cnt / len(tgts)
+            logger.info(lang_info[0][:20])
+        # print(f"{self.model_name}: query: {queries[0]}")
+        # print(f"{self.model_name}: prompt: {prompts[0]}")
+        # print(f"{self.model_name}: score: {scores[0]}")
+        return scores, extra_logs
 
 
 
@@ -260,8 +276,8 @@ if __name__ == "__main__":
     parser.add_argument("--eval_type", type=str, default="mqm", choices=["mqm", "esa", "da"], help="Evaluation type: mqm, esa, or da")
     parser.add_argument("--src", type=str, default="en", help="Source language code")
     parser.add_argument("--tgt", type=str, default="zh", help="Target language code")
-    parser.add_argument("--lang_detect", type=bool, default=False, help="Enable language detection")
-    parser.add_argument("--rule", type=bool, default=False, help="Rule to use \\n as a reward or not")
+    parser.add_argument("--lang_detect", action="store_true", default=False, help="Enable language detection")
+    parser.add_argument("--rule", action="store_true", default=False, help="Rule to use \\n as a reward or not")
     # Performance
     parser.add_argument("--load_in_4bit", action="store_true", default=False)
     parser.add_argument("--tensor_parallel_size", type=int, default=1, help="Tensor parallel size for distributed training")
@@ -297,7 +313,7 @@ if __name__ == "__main__":
         # rewards = torch.tensor([float(reward) for reward in rewards])
         rewards = [float(reward) for reward in rewards]
         result = {"rewards": rewards, "scores": rewards, "extra_logs": extra_logs}
-        logger.info(f"Sent JSON: {result['rewards'][:20]}")
+        logger.info(f"Sent JSON: {result['rewards'][:20]}, {len(result['rewards'])} rewards")
         return JSONResponse(result)
 
     uvicorn.run(app, host=args.host, port=args.port, log_level="info")
