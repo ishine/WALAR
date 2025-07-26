@@ -7,7 +7,7 @@ eval "$(/mnt/gemini/home/yifengliu/miniconda3/bin/conda shell.bash hook)"
 which python
 source /mnt/gemini/home/yifengliu/miniconda3/bin/activate qe-rl
 
-model_path["Qwen"]="/mnt/gemini/data1/yifengliu/model/Qwen3-4B"
+model_path["Qwen"]="/mnt/gemini/data1/yifengliu/model/Qwen2.5-3B-Instruct"
 model_path["checkpoint"]="/mnt/gemini/data1/yifengliu/checkpoints/Rule-Detect-MetricX-Qwen3-4B-en-mix-mid2-1M-bsz128/global_step150_hf"
 
 # /mnt/gemini/data1/yifengliu/checkpoints/Qwen2.5-0.5B-En-Zh-1M-bsz128/global_step140_hf
@@ -33,22 +33,24 @@ target_language_list=(
     # "kan"
     # "mal"
     # "tel"
-    "ltz"
+    # "ltz"
     # "ast"
     # "oci"
 
     # "bos"
     # "hrv"
-    "mkd"
-    "pol"
-    "srp"    
-    "slk"
-    "slv"
+    # "mkd"
+    # "pol"
+    # "srp"    
+    # "slk"
+    # "slv"
 
-    "ben"
-    "guj"
-    "hin"
-    "mar"
+    # "ben"
+    # "guj"
+    # "hin"
+    # "ind"
+    # "msa"
+    # "mar"
 
     # "afr"
     # "fra"
@@ -61,11 +63,11 @@ target_language_list=(
     # "orm"
 
     "zho_simpl"
-    "deu"
-    "spa"
-    "rus"
-    "jpn"
-    "tam"
+    # "deu"
+    # "spa"
+    # "rus"
+    # "jpn"
+    # "tam"
 
     # "hin"
     # "ara"
@@ -165,7 +167,7 @@ else
             --lang_pair "$LANG_PAIR" \
             --max_tokens "$MAX_TOKENS" \
             --comet22 True \
-            --xcomet True \
+            --xcomet False \
             --output_file "$OUTPUT_FILE"\
             --port ${PORT}
     done

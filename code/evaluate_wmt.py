@@ -499,9 +499,9 @@ def main() -> None:
   
   # MQM
   # lps = ["en-de", "en-es", "ja-zh"]
-  lps = ["en-es"]
-  # lps = ["ja-zh", "en-es"]
-  # lps = ["en-de"]
+  # lps = ["en-es"]
+  # lps = ["ja-zh"]
+  lps = ["en-de"]
   
   for lp in lps:
     evs = evs_dict[(f'wmt{args.wmt_year}', lp)]

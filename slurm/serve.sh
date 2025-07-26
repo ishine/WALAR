@@ -9,7 +9,7 @@
 #SBATCH --error=/mnt/gemini/data1/yifengliu/qe-lr/logs/serve_%j_%t.err
 #SBATCH --mail-type=BEGIN
 #SBATCH --mail-user=yifengl@andrew.cmu.edu
-#SBATCH --partition=taurus
+#SBATCH --partition=aries
 
 eval "$(/mnt/gemini/home/yifengliu/miniconda3/bin/conda shell.bash hook)"
 source /mnt/gemini/home/yifengliu/miniconda3/bin/activate qe-rl

@@ -90,7 +90,8 @@ class Actor(nn.Module):
                 torch_dtype=torch.bfloat16 if bf16 else "auto",
                 device_map=device_map,
             )
-
+            self.freeze_parameters()
+            # self.print_trainable_parameters()
             # LoRA
             if lora_rank > 0:
                 # https://github.com/huggingface/peft/issues/137
@@ -188,7 +189,8 @@ class Actor(nn.Module):
         action_log_probs = log_probs[:, -action_mask.shape[1] :] * action_mask.float()
 
         return (action_log_probs, output) if return_output else action_log_probs
-
+    
+    
     def gradient_checkpointing_enable(self, gradient_checkpointing_kwargs={"use_reentrant": False}):
         self.model.gradient_checkpointing_enable(gradient_checkpointing_kwargs=gradient_checkpointing_kwargs)
 
@@ -197,3 +199,10 @@ class Actor(nn.Module):
 
     def print_trainable_parameters(self):
         self.model.print_trainable_parameters()
+
+    def freeze_parameters(self):
+        for name, param in self.model.named_parameters():
+            if 'layer' in name:
+                number = int(name.split(".")[2])
+                if number >= 8:
+                    param.requires_grad = False

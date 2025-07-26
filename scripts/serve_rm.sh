@@ -5,20 +5,22 @@ source /mnt/gemini/data1/yifengliu/miniconda3/bin/activate qe-rl
 cd /mnt/gemini/data1/yifengliu/qe-lr/openrlhf
 
 base_model="Qwen2.5-3B-Instruct"
-lang_detect=false
-rule=false
+lang_detect=True
+rule=True
+truncate=False
 
-# export CUDA_VISIBLE_DEVICES=2
-# python -m openrlhf.cli.serve_rm \
-#     --model_name  metricX\
-#     --base_model $base_model \
-#     --port 4000 \
-#     --max_len 1536 \
-#     --rule $rule \
-#     --lang_detect $lang_detect \
-#     --batch_size 8 &
+export CUDA_VISIBLE_DEVICES=3
+python -m openrlhf.cli.serve_rm \
+    --model_name  metricX\
+    --base_model $base_model \
+    --port 2000 \
+    --max_len 1536 \
+    --rule $rule \
+    --lang_detect $lang_detect \
+    --truncate $truncate \
+    --batch_size 8 &
 
-# echo "MetricX serves successfully!"
+echo "MetricX serves successfully!"
 
 # export CUDA_VISIBLE_DEVICES=5
 # python -m openrlhf.cli.serve_rm \
@@ -48,8 +50,11 @@ export CUDA_VISIBLE_DEVICES=4
 python -m openrlhf.cli.serve_rm \
     --model_name XComet\
     --base_model $base_model \
-    --port 4000 \
+    --port 3000 \
     --max_len 1536 \
+    --rule False \
+    --lang_detect False \
+    --truncate False \
     --batch_size 16 &
 
 echo "XComet serves successfully!"

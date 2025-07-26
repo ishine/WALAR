@@ -4,7 +4,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
-#SBATCH --gpus=1            # You might adjust this depending on your cluster
+#SBATCH --gpus=2            # You might adjust this depending on your cluster
 #SBATCH --mem=32G
 #SBATCH --output=/mnt/gemini/data1/yifengliu/qe-lr/logs/temp_%j.out
 #SBATCH --error=/mnt/gemini/data1/yifengliu/qe-lr/logs/temp_%j.err

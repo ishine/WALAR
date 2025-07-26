@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Directory to clean
-CHECKPOINT_DIR="/mnt/gemini/data1/yifengliu/checkpoints/Qwen2.5-3B-Instruct-En-Zh-1M"
+CHECKPOINT_DIR="/mnt/gemini/data1/yifengliu/checkpoints/Rule-Qwen3-32B-AWQ-DA-Qwen2.5-3B-Instruct-en-zh-1M-bsz128"
 
 cd "$CHECKPOINT_DIR" || exit 1
 

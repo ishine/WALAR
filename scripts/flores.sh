@@ -1,13 +1,13 @@
 #!/bin/bash
-export CUDA_VISIBLE_DEVICES=4
+export CUDA_VISIBLE_DEVICES=7
 # Default values
 declare -A model_path
 
 model_path["Qwen"]="/mnt/gemini/data1/yifengliu/model/Qwen2.5-3B-Instruct"
-model_path["checkpoint"]="/mnt/gemini/data1/yifengliu/checkpoints/Rule-Qwen3-32B-AWQ-DA-Qwen2.5-3B-Instruct-en-zh-1M-bsz128/global_step170_hf"
-
+model_path["checkpoint"]="/mnt/gemini/data1/yifengliu/checkpoints/Detect-Qwen3-32B-AWQ-DA-Qwen3-4B-en-zh-1M-bsz128/global_step320_hf"
+model_path["nllb"]="/mnt/gemini/data1/yifengliu/model/nllb-200-distilled-1.3B"
 # zho_simpl, zho_trad, swh, tam, asm
-MODEL_NAME="checkpoint"
+MODEL_NAME="nllb"
 MODEL_PATH=${model_path[$MODEL_NAME]}
 # LANG_PAIR="eng-asm"
 src="eng"
@@ -37,13 +37,16 @@ target_language_list=(
     # "fin"
 
     # "tam"
+    # "hin"
+    # "ind"
+    # "msa"
     "zho_simpl"
-    "deu"
-    "spa"
-    "rus"
-    "jpn"
-    "ara"
-    "fin"
+    # "deu"
+    # "spa"
+    # "rus"
+    # "jpn"
+    # "ara"
+    # "fin"
 
     # "tur"
     # "asm"

@@ -4,7 +4,8 @@ import pandas as pd
 import re
 import os
 import sacrebleu
-
+from transformers import AutoTokenizer, AutoModelForCausalLM
+from sentence_transformers import SentenceTransformer
 from comet import load_from_checkpoint, download_model
 
 def load_dataset(file_path):
@@ -39,24 +40,76 @@ def calculate_comet_score(src_texts, references, predictions, model_path="/mnt/g
 if __name__ == "__main__":
     # Example usage
     dataset = []
-    path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Rule-Detect-MetricX-Qwen3-4B-en-zh-1M-bsz128/global_step120_hf/eng-zho_simpl.txt"
-    # dataset = load_dataset(path)
-    # dataset = load_dataset(path)
-    # path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Rule-Detect-MetricX-Qwen2.5-3B-Instruct-en-mix-1M-bsz128/global_step180_hf/eng-zho_simpl.txt"
-    with open(path, 'r') as f:
-        lines = f.readlines()
-        for line in lines[:-3]:
-            dataset.append(json.loads(line.strip()))
-    # srcs = [data['src'] for data in dataset]
-    # hyps = [data['pred'] for data in dataset]
-    # refs = [data['ref'] for data in dataset]
-    # score = calculate_comet_score(srcs, refs, hyps)
+    # path = f"/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Rule-Detect-MetricX-Qwen2.5-0.5B-en-zh-1M-bsz128/global_step780_hf/eng-zho_simpl.txt"
     
-    # with open(path, 'a') as f:
-    #     f.write(f"COMET Score: {score['mean_score']:.4f}\n")
+    # tgt_list = ["zho_simpl", "ara", "deu", "spa", "fin", "jpn", "rus"]
+    # for tgt in tgt_list:
+    #     path = f"/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Rule-Qwen3-32B-AWQ-DA-Qwen2.5-3B-Instruct-en-zh-1M-bsz128/global_step90_hf/eng-{tgt}.txt"
+    #     os.environ["CUDA_VISIBLE_DEVICES"] = "7"
+    #     # dataset = load_dataset(path)
+    #     # dataset = load_dataset(path)
+    #     # path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Rule-Detect-MetricX-Qwen2.5-3B-Instruct-en-mix-1M-bsz128/global_step180_hf/eng-zho_simpl.txt"
+    #     with open(path, 'r') as f:
+    #         lines = f.readlines()
+    #         for line in lines[:-2]:
+    #             dataset.append(json.loads(line.strip()))
+    #     srcs = [data['src'] for data in dataset]
+    #     hyps = [data['pred'] for data in dataset]
+    #     refs = [data['ref'] for data in dataset]
+    #     xcomet_path = "/mnt/gemini/data1/yifengliu/model/models--Unbabel--XCOMET-XL/snapshots/6a123c5e8e6dccab25e5fcffa3c8b417abadb462/checkpoints/model.ckpt"
+    #     score = calculate_comet_score(srcs, refs, hyps, model_path=xcomet_path)
+    #     print(lines[-2])
+    #     print(lines[-1])
+    #     print(f"{path}: {score['mean_score']}")
+    #     with open(path, 'a') as f:
+    #         f.write(f"XCOMET Score: {score['mean_score']:.4f}\n")
+    # Requires transformers>=4.51.0
+# Requires sentence-transformers>=2.7.0
+
+
+
+    # Load the model
+    # os.environ["CUDA_VISIBLE_DEVICES"] = "7"
+    # model = SentenceTransformer("/mnt/gemini/data1/yifengliu/model/Qwen3-Embedding-8B")
+    # task_description = "Given the source sentence here"
+    # prompt = f"Instruct: Given a source sentence in English, select the most similar corresponding translation in Chinese.\Translation:"
+    # # We recommend enabling flash_attention_2 for better acceleration and memory saving,
+    # # together with setting `padding_side` to "left":
+    # # model = SentenceTransformer(
+    # #     "Qwen/Qwen3-Embedding-8B",
+    # #     model_kwargs={"attn_implementation": "flash_attention_2", "device_map": "auto"},
+    # #     tokenizer_kwargs={"padding_side": "left"},
+    # # )
+
+    # # The queries and documents to embed
+    # queries = [
+    #     "Dr. Tony Moll discovered the Extremely Drug Resistant Tuberculosis (XDR-TB) in the South African region KwaZulu-Natal.",
+    # ]
+    # documents = [
+    #     "Dr. Tony Moll在南非KwaZulu-Natal地区发现了一种非常难治疗的结核病类型——Extremely Drug Resistant Tuberculosis（XDR-TB）。这种病菌对大多数常规抗生素治疗无效，需要使用特定的抗结核药物进行治疗。",
+    #     "Dr. Tony Moll在南非KwaZulu-Natal地区发现了一种非常难治疗的结核病类型——Extremely Drug Resistant Tuberculosis（XDR-TB）。"
+    # ]
+
+    # # Encode the queries and documents. Note that queries benefit from using a prompt
+    # # Here we use the prompt called "query" stored under `model.prompts`, but you can
+    # # also pass your own prompt via the `prompt` argument
+    # query_embeddings = model.encode(queries, prompt=prompt)
+    # document_embeddings = model.encode(documents)
+
+    # # Compute the (cosine) similarity between the query and document embeddings
+    # similarity = model.similarity(query_embeddings, document_embeddings)
+    # print(similarity)
+    
+    # model = AutoModelForCausalLM.from_pretrained("/mnt/gemini/data1/yifengliu/model/Qwen3-4B")
+    # for name, param in model.named_parameters():
+    #     # if "q_proj" in name or "k_proj" in name or "v_proj" in name or "o_proj" in name:
+    #     parts = name.split(".")
+    #     print(name, param.shape, param.requires_grad)
+    
+    
+    
     # score = get_spBLEU(hyps, refs)
     # tgt_list = ["ara, bel, ben, deu, fin, glg, eng-hin"]
-    # os.environ["CUDA_VISIBLE_DEVICES"] = "7"
     # xcomet_path = "/mnt/gemini/data1/yifengliu/model/models--Unbabel--XCOMET-XL/snapshots/6a123c5e8e6dccab25e5fcffa3c8b417abadb462/checkpoints/model.ckpt"
     # path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Qwen2.5-3B-Instruct/eng-tur.txt"
     # with open(path, 'r') as f:

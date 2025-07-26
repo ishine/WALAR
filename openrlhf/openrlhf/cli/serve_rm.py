@@ -1,3 +1,4 @@
+import dataclasses
 import argparse
 import os
 import sys
@@ -5,8 +6,7 @@ import re
 
 sys.path.insert(0, "/mnt/gemini/data1/yifengliu/qe-lr/code")
 import models
-from typing import Any, List, Tuple, Union
-
+from typing import Any, List, Tuple, Union, Optional
 
 import torch
 import transformers
@@ -36,6 +36,7 @@ lang_dict = {
   "my": "Burmese",
   "ca": "Catalan",
   "ceb": "Cebuano",
+  "zh": "Chinese",
   "zho": "Chinese",
   "hr": "Croatian",
   "cs": "Czech",
@@ -125,6 +126,84 @@ lang_dict = {
   "zu": "Zulu",
 }
 
+@dataclasses.dataclass
+class Arguments:
+  model_name: str = dataclasses.field(
+        default="metricX",
+        metadata={
+            "help": "The name of the model to use. Supported models: 'metricX', etc."
+        }
+    )
+
+  value_head_prefix: str = dataclasses.field(
+      default="score",
+      metadata={"help": "Prefix for the value head"}
+  )
+
+  max_len: int = dataclasses.field(
+      default=2048,
+      metadata={"help": "The maximum sequence length for the model input"}
+  )
+
+  port: int = dataclasses.field(
+      default=5000,
+      metadata={"help": "Port number for the server"}
+  )
+
+  host: str = dataclasses.field(
+      default="0.0.0.0",
+      metadata={"help": "IP address for the server"}
+  )
+
+  base_model: str = dataclasses.field(
+      default="Qwen2.5-3B-Instruct",
+      metadata={"help": "Base model name or path"}
+  )
+
+  lang_detect: bool = dataclasses.field(
+      default=False,
+      metadata={"help": "Enable language detection"}
+  )
+
+  rule: bool = dataclasses.field(
+      default=False,
+      metadata={"help": "Rule to use \\n as a reward or not"}
+  )
+  
+  truncate: bool = dataclasses.field(
+    default=False,
+    metadata={"help": "Truncate the reward or not"}
+  )
+
+  load_in_4bit: bool = dataclasses.field(
+      default=False,
+      metadata={"help": "Load model in 4-bit precision"}
+  )
+
+  bf16: bool = dataclasses.field(
+      default=False,
+      metadata={"help": "Enable bfloat16 (bf16) precision"}
+  )
+
+  disable_fast_tokenizer: bool = dataclasses.field(
+      default=False,
+      metadata={"help": "Disable the use of fast tokenizer"}
+  )
+
+  packing_samples: bool = dataclasses.field(
+      default=False,
+      metadata={"help": "Enable packing of input samples"}
+  )
+
+  batch_size: Optional[int] = dataclasses.field(
+      default=None,
+      metadata={"help": "Batch size for prediction or inference"}
+  )
+
+  use_ms: bool = dataclasses.field(
+      default=False,
+      metadata={"help": "Enable ModelScope usage"}
+  )
 
 def get_dataset(
     ds: List[dict], model_name: str, tokenizer, max_input_length: int, device, is_qe: bool
@@ -364,34 +443,19 @@ class RewardModelProxy:
           scores = [min(score, detect_reward) for score, detect_reward in zip(scores, detect_rewards)]
           logger.info(lang_info[0][:20])
           extra_logs['lang_penalty_percent'] = cnt / len(tgts)
+          
+        if self.args.truncate:
+          truncate_bound = -3
+          extra_logs['truncate_percent'] = sum(score >= truncate_bound for score in scores) / len(scores)
+          scores = [score if score < truncate_bound else truncate_bound for score in scores]
         return scores, extra_logs
 
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    # Reward Model
-    parser.add_argument('--model_name', type=str, default="metricX")
-    parser.add_argument("--value_head_prefix", type=str, default="score")
-    parser.add_argument("--max_len", type=int, default="2048")
 
-    parser.add_argument("--port", type=int, default=5000, help="Port number for the server")
-    parser.add_argument("--host", type=str, default="0.0.0.0", help="IP for the server")
-
-    parser.add_argument('--base_model', type=str, default="Qwen2.5-3B-Instruct", help="Base model name or path")
-    parser.add_argument("--lang_detect", action="store_true", default=False, help="Enable language detection")
-    parser.add_argument("--rule", action="store_true", default=False, help="Rule to use \\n as a reward or not")
-    # Performance
-    parser.add_argument("--load_in_4bit", action="store_true", default=False)
-    parser.add_argument("--bf16", action="store_true", default=False, help="Enable bfloat16")
-    parser.add_argument("--disable_fast_tokenizer", action="store_true", default=False)
-    parser.add_argument("--packing_samples", action="store_true", default=False)
-    parser.add_argument("--batch_size", type=int, default=None)
-
-    # ModelScope parameters
-    parser.add_argument("--use_ms", action="store_true", default=False)
-
-    args = parser.parse_args()
+    parser = transformers.HfArgumentParser(Arguments)
+    (args,) = parser.parse_args_into_dataclasses()
 
     if args.use_ms:
         from modelscope.utils.hf_util import patch_hub

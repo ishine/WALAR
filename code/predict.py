@@ -279,7 +279,27 @@ def main() -> None:
     model.to(device)
   model.eval()
   ds, name = preprocess_dataset(args.input_file)
-
+  # ds = [
+  #   {
+  #     "source": "Dr. Ehud Ur, professor of medicine at Dalhousie University in Halifax, Nova Scotia and chair of the clinical and scientific division of the Canadian Diabetes Association cautioned that the research is still in its early days.",
+  #     "hypothesis": "加拿大糖尿病协会临床与科研分会主席、达尔豪斯大学哈利法克斯分校医学院教授埃胡德·厄尔博士指出，目前这项研究仍处于初步阶段，尚需进一步深入探讨。",
+  #     "reference": "埃胡德·乌尔博士（新斯科舍省哈利法克斯市达尔豪西大学医学教授，加拿大糖尿病协会临床与科学部门教授）提醒，这项研究仍处在早期阶段。",
+  #   }
+  # ]
+  ds = [
+      {
+          "source": "Dr. Tony Moll discovered the Extremely Drug Resistant Tuberculosis (XDR-TB) in the South African region KwaZulu-Natal.",
+          "hypothesis": "Dr. Tony Moll在南非KwaZulu-Natal地区发现了一种非常难治疗的结核病类型——Extremely Drug Resistant Tuberculosis（XDR-TB）。这种病菌对大多数常规抗生素治疗无效，需要使用特定的抗结核药物进行治疗。",
+          "reference": "托尼·莫尔博士在南非夸祖鲁-纳塔尔省发现了这种广泛耐药结核病 (XDR-TB)。",
+      }
+  ]
+  # ds = [
+  #   {
+  #     "source": "Because the dinosaur feathers do not have a well-developed shaft, called a rachis, but do have other features of feathers — barbs and barbules — the researchers inferred the rachis was likely a later evolutionary development that these other features.",
+  #     "hypothesis": "由于恐龙羽毛缺乏典型的羽毛轴（rachis），即羽毛中贯穿整个结构的中轴部分，但仍然具备羽毛的基本特征，如羽片和羽丝，研究人员据此推断，羽毛轴这一结构可能是后来才逐渐演化出来的，而羽片和羽丝等其他特征则可能在更早的时候就已经存在了。",
+  #     "reference": "恐龙的羽毛并没有发育良好的主干——这称为“羽轴”，但还是有羽毛的其他特征，比如羽枝和羽小枝，研究人员推断羽轴的进化可能比这些其他特征晚。",
+  #   }
+  # ]
   ds = datasets.Dataset.from_list(ds)
   ds, data_collator = get_dataset(
       ds,
@@ -293,15 +313,15 @@ def main() -> None:
   # print(predictions[0])
   dirname = args.output_dir
   dirname = os.path.join(dirname, args.model_name + "-" + args.model_size + "-" + args.dtype)
-  # import code; code.interact(local=locals())
-  if dirname:
-    os.makedirs(dirname, exist_ok=True)
+  import code; code.interact(local=locals())
+  # if dirname:
+  #   os.makedirs(dirname, exist_ok=True)
 
-  output_file = os.path.join(
-      dirname,
-      f"{args.src}-{args.tgt}.jsonl",
-  )
-  write_to_file(output_file, ds, predictions, args.model_name)
+  # output_file = os.path.join(
+  #     dirname,
+  #     f"{args.src}-{args.tgt}.jsonl",
+  # )
+  # write_to_file(output_file, ds, predictions, args.model_name)
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-export CUDA_VISIBLE_DEVICES=6,7
+export CUDA_VISIBLE_DEVICES=0,1
 ray start --head --node-ip-address 0.0.0.0 --num-gpus 2
 
 eval "$(/mnt/gemini/data1/yifengliu/miniconda3/bin/conda shell.bash hook)"
@@ -20,7 +20,7 @@ src="en"
 tgt="zh"
 version="2.5"
 size="3B-Instruct"
-reward_name="Detect-Qwen3-32B-AWQ-DA"
+reward_name="Freeze-Rule-Detect"
 
 # remote_rm_url
 # remote_rm_url2
@@ -40,8 +40,8 @@ ray job submit --address="http://127.0.0.1:8265" \
     --colocate_actor_ref \
     --ref_reward_offload \
     --pretrain /mnt/gemini/data1/yifengliu/model/Qwen${version}-${size} \
-    --remote_rm_url http://localhost:6000/get_reward \
-    --remote_comet_url http://localhost:4000/get_reward \
+    --remote_rm_url http://localhost:2000/get_reward \
+    --remote_comet_url http://localhost:3000/get_reward \
     --micro_train_batch_size 32 \
     --train_batch_size 128 \
     --micro_rollout_batch_size 32 \
@@ -73,7 +73,7 @@ ray job submit --address="http://127.0.0.1:8265" \
     --flash_attn \
     --gradient_checkpointing \
     --temperature 1 \
-    --save_steps 10 \
+    --save_steps 20 \
     --save_path /mnt/gemini/data1/yifengliu/checkpoints/final/${reward_name}-Qwen${version}-${size}-${src}-${tgt}-1M-bsz128 \
     --ckpt_path /mnt/gemini/data1/yifengliu/checkpoints/${reward_name}-Qwen${version}-${size}-${src}-${tgt}-1M-bsz128 \
     --load_checkpoint \

@@ -6,7 +6,7 @@ source /mnt/gemini/home/yifengliu/miniconda3/bin/activate qe-rl
 
 cd /mnt/gemini/data1/yifengliu/qe-lr/openrlhf
 
-base_model="Qwen2.5-3B-Instruct"
+base_model="Qwen3-4B"
 model_name="Qwen3-32B-AWQ"
 eval_type="da"
 

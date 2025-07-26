@@ -532,6 +532,7 @@ class PPOTrainer(BasePPOTrainer):
                 reward2_list = [25 * sample.info.get('reward2', 0) for sample in rollout_samples]
                 rule_penalty_percent = rollout_samples[0].info.get('rule_penalty_percent', 0)
                 lang_penalty_percent = rollout_samples[0].info.get('lang_penalty_percent', 0)
+                truncate_percent = rollout_samples[0].info.get('truncate_percent', 0)
                 pbar.update()
                 # breakpoint()
                 # dynamic filtering
@@ -585,6 +586,7 @@ class PPOTrainer(BasePPOTrainer):
                 status['reward2'] = sum(reward2_list) / len(reward2_list) if reward2_list else 0.0
                 status['rule_penalty_percent'] = rule_penalty_percent
                 status['lang_penalty_percent'] = lang_penalty_percent
+                status['truncate_percent'] = truncate_percent
                 if "kl" in status:
                     self.kl_ctl.update(status["kl"], args.rollout_batch_size * args.n_samples_per_prompt)
 

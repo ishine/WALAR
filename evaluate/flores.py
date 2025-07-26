@@ -12,7 +12,7 @@ from utils import lang_dict
 
 from datasets import load_dataset
 from tqdm import tqdm
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from vllm import LLM, SamplingParams
 from dataclasses import dataclass, field
 from typing import Optional
@@ -85,33 +85,53 @@ def load_flores_dataset(data_dir, lang_pair):
     # Filter for the specific language pair
     return src_dataset, tgt_dataset
 
-def predict(model, tokenizer, dataset, sampling_params, lang_pair):
+def predict(model, tokenizer, dataset, sampling_params, lang_pair, model_path):
     """Generate predictions using the model."""
     src_lang, tgt_lang = lang_pair.split("-")
     src_lang, tgt_lang = lang_dict[src_lang], lang_dict[tgt_lang]
     prompts = []
-    for src_text in tqdm(dataset, desc="Generating predictions"):
-        # <X> \n Translate from [SRC] to [TGT]: \n <Y>
-        prompt = f"{src_text}\nTranslate from {src_lang} to {tgt_lang}:\n"
-        message = [
-            {"role": "user", "content": prompt},
-        ]
-        new_prompt = tokenizer.apply_chat_template(message, tokenize=False, add_generation_prompt=True, enable_thinking=False)
-        prompts.append(new_prompt)
-    responses = model.generate(prompts, sampling_params=sampling_params)
-    responses = [response.outputs[0].text for response in responses]
-    
+    if "nllb" not in model_path:
+        for src_text in tqdm(dataset, desc="Generating predictions"):
+            # <X> \n Translate from [SRC] to [TGT]: \n <Y>
+            prompt = f"{src_text}\nTranslate from {src_lang} to {tgt_lang}:\n"
+            message = [
+                {"role": "user", "content": prompt},
+            ]
+            new_prompt = tokenizer.apply_chat_template(message, tokenize=False, add_generation_prompt=True, enable_thinking=False)
+            prompts.append(new_prompt)
+        responses = model.generate(prompts, sampling_params=sampling_params)
+        responses = [response.outputs[0].text for response in responses]
+    else:
+        batch_size = 32
+        responses = []
+        for idx in tqdm(range(0, len(dataset), batch_size), desc="Generating predictions"):
+            right_bound = min(idx + batch_size, len(dataset))
+            sources = dataset[idx:right_bound]
+            inputs = tokenizer(sources, return_tensors="pt", padding=True)
+            inputs.to("cuda:0")
+            translated_tokens = model.generate(
+                **inputs, forced_bos_token_id=tokenizer.convert_tokens_to_ids("zho_Hans"), min_length=50, max_length=512
+            )
+            output = tokenizer.batch_decode(translated_tokens, skip_special_tokens=True, model_max_length=512)
+            responses.extend(output)
     return responses
 
 def evaluate_model(model_path, data_dir, lang_pair, tensor_parallel_size=1, max_tokens=512):
     """Evaluate a model on FLORES-101 dataset using vLLM."""
     # Load model and tokenizer
-    model = LLM(
-        model=model_path,
-        tensor_parallel_size=tensor_parallel_size,
-        trust_remote_code=True,
-    )
-    tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+    if "nllb" not in model_path:
+        model = LLM(
+            model=model_path,
+            tensor_parallel_size=tensor_parallel_size,
+            trust_remote_code=True,
+        )
+        tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+    else:
+        tokenizer = AutoTokenizer.from_pretrained(
+            model_path, token=True, src_lang="eng_Latn"
+        )
+        model = AutoModelForSeq2SeqLM.from_pretrained(model_path, token=True)
+        model.to("cuda:0")
     
     # Load dataset
     src_dataset, tgt_dataset = load_flores_dataset(data_dir, lang_pair)
@@ -125,7 +145,7 @@ def evaluate_model(model_path, data_dir, lang_pair, tensor_parallel_size=1, max_
         seed=0,
     )
     
-    predictions = predict(model, tokenizer, src_dataset, sampling_params, lang_pair)
+    predictions = predict(model, tokenizer, src_dataset, sampling_params, lang_pair, model_path)
     
     
     return src_dataset, tgt_dataset, predictions

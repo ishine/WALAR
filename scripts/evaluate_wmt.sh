@@ -1,13 +1,13 @@
 #!/bin/bash
 export CUDA_VISIBLE_DEVICES=2,3
 year=24
-model_name="Qwen3-32B"
+model_name="Qwen3-32B-AWQ"
 model_size="xxl"  ### model_size can be discarded if your model_name is not XComet or metricX
 dtype="bf16"  ### dtype can be discarded if your model_name is metricX
 
 # Only useful for Qwen
 turns=1  
-eval_type="esa"
+eval_type="mqm"
 
 cd /mnt/gemini/data1/yifengliu/qe-lr/code
 
