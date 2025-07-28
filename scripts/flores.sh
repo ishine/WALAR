@@ -4,7 +4,7 @@ export CUDA_VISIBLE_DEVICES=7
 declare -A model_path
 
 model_path["Qwen"]="/mnt/gemini/data1/yifengliu/model/Qwen2.5-3B-Instruct"
-model_path["checkpoint"]="/mnt/gemini/data1/yifengliu/checkpoints/Reference2-Qwen3-4B-en-de-1M-bsz128/global_step40_hf"
+model_path["checkpoint"]="/mnt/gemini/data1/yifengliu/checkpoints/Rule-Detect-Truncate-Qwen2.5-3B-Instruct-en-zh-1M-bsz128/global_step780_hf"
 model_path["nllb"]="/mnt/gemini/data1/yifengliu/model/nllb-200-distilled-1.3B"
 # zho_simpl, zho_trad, swh, tam, asm
 MODEL_NAME="checkpoint"
@@ -41,12 +41,12 @@ target_language_list=(
     # "ind"
     # "msa"
     "zho_simpl"
-    "deu"
-    "spa"
-    "rus"
-    "jpn"
-    "ara"
-    "fin"
+    # "deu"
+    # "spa"
+    # "rus"
+    # "jpn"
+    # "ara"
+    # "fin"
 
     # "tur"
     # "asm"
