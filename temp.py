@@ -72,7 +72,8 @@ if __name__ == "__main__":
     #     print(lines[-1])
     #     print(f"{path}: {score['mean_score']}")
     #     with open(path, 'a') as f:
-    #         f.write(f"XCOMET Score: {score['mean_score']:.4f}\n")
+    #         f.write(f"XCOMET Score: {score['mean_s
+    # core']:.4f}\n")
     # Requires transformers>=4.51.0
 # Requires sentence-transformers>=2.7.0
 

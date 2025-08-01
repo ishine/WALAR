@@ -11,8 +11,9 @@ export CUDA_VISIBLE_DEVICES=2,3
 model_path["Qwen3-32B"]="/mnt/gemini/data1/yifengliu/model/Qwen3-32B"
 model_path["Qwen3-32B-AWQ"]="/mnt/gemini/data1/yifengliu/model/Qwen3-32B-AWQ"
 model_path["Qwen3-235B"]="/mnt/gemini/data1/yifengliu/model/Qwen3-235B-A22B-GPTQ-Int4"
+model_path["Qwen3-30B-A3B"]="/mnt/gemini/data1/yifengliu/model/Qwen3-30B-A3B-Instruct-2507"
 
-MODEL_NAME="Qwen3-32B-AWQ"
+MODEL_NAME="Qwen3-30B-A3B"
 data_name="IndicMT"
 MAX_TOKENS=2048
 EVAL_TYPE="da"
@@ -72,11 +73,11 @@ if [ $data_name == "afriMTE" ]; then
     done
 elif [ $data_name == "IndicMT" ]; then
     language_pairs_list=(
-        "en-zh"
-        # "eng-assamese"
-        # "eng-maithili"
-        # "eng-punjabi"
-        # "eng-kannada"
+        # "en-zh"
+        "eng-assamese"
+        "eng-maithili"
+        "eng-punjabi"
+        "eng-kannada"
     )
     for pair in "${language_pairs_list[@]}"; do
         src=$(echo $pair | cut -d'-' -f1)

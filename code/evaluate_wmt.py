@@ -218,6 +218,7 @@ def load_tokenizer_and_model(metric_name: str, model_size: str, model_dtype:str,
       "Qwen3-32B": "/mnt/gemini/data1/yifengliu/model/Qwen3-32B",
       "Qwen3-32B-AWQ": "/mnt/gemini/data1/yifengliu/model/Qwen3-32B-AWQ",
       "Qwen3-235B": "/mnt/gemini/data1/yifengliu/model/Qwen3-235B-A22B-GPTQ-Int4",
+      "Qwen3-30B-A3B": "/mnt/gemini/data1/yifengliu/model/Qwen3-30B-A3B-Instruct-2507",
     }
     if metric_name == 'Qwen3-235B':
       tensor_parallel_size = 4

@@ -132,7 +132,7 @@ def get_scores(eval_type: str, ds: List[Dict], sampling_params: SamplingParams, 
     # import code; code.interact(local=locals())
     scores = [[0 if sc is None else sc for sc in s]for s in scores]
     scores = [sum(s) / len(s) for s in scores]
-    import code; code.interact(local=locals())
+    # import code; code.interact(local=locals())
     return scores
 
 def get_langs(args):
@@ -152,45 +152,20 @@ def main():
     parser = transformers.HfArgumentParser(EvaluationArguments)
     args = parser.parse_args_into_dataclasses()[0]
     print(f"Evaluating model {args.model_name_or_path}...")
-    # ds, name = preprocess_dataset(args.input_file)
-    # ds = datasets.Dataset.from_list(ds)
+    ds, name = preprocess_dataset(args.input_file)
+    ds = datasets.Dataset.from_list(ds)
     # ds = [
     #     {
     #         "src_lang": "English",
     #         "tgt_lang": "Chinese",
-    #         "source": "\"We now have 4-month-old mice that are non-diabetic that used to be diabetic,\" he added.",
-    #         "hypothesis": "现在我们有四个月大的老鼠，这些老鼠曾经是糖尿病患者。\n\n中文翻译如下：\n\n现在我们有四个月大的老鼠，这些老鼠曾经是糖尿病患者。"
+    #         "source": "Dr. Tony Moll discovered the Extremely Drug Resistant Tuberculosis (XDR-TB) in the South African region KwaZulu-Natal.",
+    #         "hypothesis": "南非夸祖鲁-纳塔尔地区医学家托尼·莫尔博士首次发现了耐多药肺结核（XDR-TB）这种新型肺结核病。"
     #     }
     # ]
-    
-    # ds = [
-    #     {
-    #         "src_lang": "English",
-    #         "tgt_lang": "Chinese",
-    #         "source": "Dr. Ehud Ur, professor of medicine at Dalhousie University in Halifax, Nova Scotia and chair of the clinical and scientific division of the Canadian Diabetes Association cautioned that the research is still in its early days.",
-    #         "hypothesis": "Dr. Ehud Ur, Dalhousie University in Halifax, Nova Scotia's professor of medicine and the chair of the clinical and scientific division of the Canadian Diabetes Association, cautioned that the research is still in its early stages.。"
-    #     }
-    # ]
-    # ds = [
-    #     {
-    #         "src_lang": "English",
-    #         "tgt_lang": "Chinese",
-    #         "source": "One antibody cocktail, ZMapp, initially showed promise in the field, but formal studies indicated it had less benefit than sought in preventing death.",
-    #         "hypothesis": "最初，一种名为ZMapp的抗体混合物在临床试验中表现出一定的治疗潜力，但后续的正式研究结果表明，它在预防病毒性感染导致死亡方面的效果并不如预期那样显著。"
-    #     }
-    # ]
-    ds = [
-        {
-            "src_lang": "English",
-            "tgt_lang": "Chinese",
-            "source": "Dr. Tony Moll discovered the Extremely Drug Resistant Tuberculosis (XDR-TB) in the South African region KwaZulu-Natal.",
-            "hypothesis": "南非夸祖鲁-纳塔尔地区医学家托尼·莫尔博士首次发现了耐多药肺结核（XDR-TB）这种新型肺结核病。"
-        }
-    ]
     # ds structure: source, hypothesis, reference
     if args.model_name_or_path == "Qwen3-235B":
         sampling_params = SamplingParams(temperature=0.7, top_p=0.8, top_k=20, min_p=0, presence_penalty=1.5, max_tokens=args.max_tokens, n=args.turns)
-    elif args.model_name_or_path == "Qwen3-32B-AWQ":
+    elif args.model_name_or_path == "Qwen3-32B-AWQ" or args.model_name_or_path == "Qwen3-30B-A3B":
         sampling_params = SamplingParams(temperature=1, top_p=0.9, top_k=-1, min_p=0, max_tokens=args.max_tokens, n=args.turns)
     else:
         sampling_params = SamplingParams(temperature=0.7, top_p=0.8, top_k=20, min_p=0, max_tokens=args.max_tokens, n=args.turns)
@@ -200,17 +175,17 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path, trust_remote_code=True)
     src_lang, tgt_lang = get_langs(args)
     scores = get_scores(args.eval_type, ds, sampling_params, model, tokenizer, src_lang, tgt_lang)
-    # dirname = args.output_dir
-    # dirname = os.path.join(dirname)
+    dirname = args.output_dir
+    dirname = os.path.join(dirname)
     
-    # if dirname:
-    #     os.makedirs(dirname, exist_ok=True)
+    if dirname:
+        os.makedirs(dirname, exist_ok=True)
 
-    # output_file = os.path.join(
-    #     dirname,
-    #     f"{args.src}-{args.tgt}.jsonl",
-    # )
-    # write_to_file(output_file, ds, scores)
+    output_file = os.path.join(
+        dirname,
+        f"{args.src}-{args.tgt}.jsonl",
+    )
+    write_to_file(output_file, ds, scores)
     
 
 if __name__ == "__main__":
