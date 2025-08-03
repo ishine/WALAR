@@ -89,7 +89,7 @@ lang_dict = {
     "som": "Somali",
     "ckb": "Sorani Kurdish",
     "spa": "Spanish",
-    "swa": "Swahili",
+    "swh": "Swahili",
     "swe": "Swedish",
     "tgk": "Tajik",
     "tam": "Tamil",

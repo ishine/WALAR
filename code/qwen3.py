@@ -163,9 +163,9 @@ def main():
     #     }
     # ]
     # ds structure: source, hypothesis, reference
-    if args.model_name_or_path == "Qwen3-235B":
+    if args.model_name_or_path == "Qwen3-235B-AWQ":
         sampling_params = SamplingParams(temperature=0.7, top_p=0.8, top_k=20, min_p=0, presence_penalty=1.5, max_tokens=args.max_tokens, n=args.turns)
-    elif args.model_name_or_path == "Qwen3-32B-AWQ" or args.model_name_or_path == "Qwen3-30B-A3B":
+    elif args.model_name_or_path == "Qwen3-32B-AWQ" or args.model_name_or_path == "Qwen3-30B-A3B" or args.model_name_or_path == "Qwen3-235B-Instruct":
         sampling_params = SamplingParams(temperature=1, top_p=0.9, top_k=-1, min_p=0, max_tokens=args.max_tokens, n=args.turns)
     else:
         sampling_params = SamplingParams(temperature=0.7, top_p=0.8, top_k=20, min_p=0, max_tokens=args.max_tokens, n=args.turns)

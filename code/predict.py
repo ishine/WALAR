@@ -298,11 +298,23 @@ def main() -> None:
   #   "hypothesis": "周一，瑞典学院诺贝尔文学委员会常务秘书萨拉·丹尼尔斯在瑞典广播电台的一档节目中向公众宣布，委员会因无法直接联系到鲍勃·迪伦，通知他获得了 2016 年诺贝尔文学奖，已经放弃了与他联系的尝试。",
   #   # "reference": "他补充道：“我们现在有 4 个月大没有糖尿病的老鼠，但它们曾经得过该病。”",
   # }]
+  # ds = [
+  #   {
+  #     "source": "Because the dinosaur feathers do not have a well-developed shaft, called a rachis, but do have other features of feathers — barbs and barbules — the researchers inferred the rachis was likely a later evolutionary development that these other features.",
+  #     "hypothesis": "由于恐龙羽毛缺乏典型的羽毛轴（rachis），即羽毛中贯穿整个结构的中轴部分，但仍然具备羽毛的基本特征，如羽片和羽丝，研究人员据此推断，羽毛轴这一结构可能是后来才逐渐演化出来的，而羽片和羽丝等其他特征则可能在更早的时候就已经存在了。",
+  #     "reference": "恐龙的羽毛并没有发育良好的主干——这称为“羽轴”，但还是有羽毛的其他特征，比如羽枝和羽小枝，研究人员推断羽轴的进化可能比这些其他特征晚。",
+  #   }
+  # ]
+  # ds = [
+  #   {
+  #     "source": "\"We now have 4-month-old mice that are non-diabetic that used to be diabetic,\" he added.",
+  #     "hypothesis": "“Amma nuyi hantuuta ji’a afurii kan dhukkuba sukkaaraa hin qabne kan duraan qaban turan qabna,” itti dabalee.",
+  #   }
+  # ]
   ds = [
     {
-      "source": "Because the dinosaur feathers do not have a well-developed shaft, called a rachis, but do have other features of feathers — barbs and barbules — the researchers inferred the rachis was likely a later evolutionary development that these other features.",
-      "hypothesis": "由于恐龙羽毛缺乏典型的羽毛轴（rachis），即羽毛中贯穿整个结构的中轴部分，但仍然具备羽毛的基本特征，如羽片和羽丝，研究人员据此推断，羽毛轴这一结构可能是后来才逐渐演化出来的，而羽片和羽丝等其他特征则可能在更早的时候就已经存在了。",
-      "reference": "恐龙的羽毛并没有发育良好的主干——这称为“羽轴”，但还是有羽毛的其他特征，比如羽枝和羽小枝，研究人员推断羽轴的进化可能比这些其他特征晚。",
+      "source": "A scientific study last May found that the Little Calfpasture was too silty for healthy aquatic life, making it among the worst waterways in the state.",
+      "hypothesis": "一项5月的科研报告指出，Little Calfpasture泥沙过多，不适合水生生物生存，是该州最差的水体之一。",
     }
   ]
   ds = datasets.Dataset.from_list(ds)

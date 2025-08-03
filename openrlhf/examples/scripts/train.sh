@@ -20,7 +20,7 @@ src="en"
 tgt="zh"
 version="3"
 size="4B"
-reward_name="Word-Align-MetricX2"
+reward_name="Word-Align-MetricX-6"
 
 # remote_rm_url
 # remote_rm_url2

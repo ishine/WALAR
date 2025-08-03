@@ -3,11 +3,13 @@ import argparse
 import os
 import sys
 import re
+import jieba
 
 sys.path.insert(0, "/mnt/gemini/data1/yifengliu/qe-lr/code")
 import models
 from sentence_transformers import SentenceTransformer
 from typing import Any, List, Tuple, Union, Optional
+from tqdm import *
 
 import torch
 import transformers
@@ -317,8 +319,10 @@ def get_spBLEU(hyps, refs):
 
 def align_score(srcs, tgts, model, tokenizer):
   align_score_list = []
-  for src, tgt in zip(srcs, tgts):
-    sent_src, sent_tgt = src.strip().split(), tgt.strip().split()
+  # for src, tgt in zip(srcs, tgts):
+  for i in tqdm(range(len(srcs))):
+    sent_src, sent_tgt = srcs[i], tgts[i]
+    # sent_src, sent_tgt = src.strip().split(), tgt.strip().split()
     token_src, token_tgt = [tokenizer.tokenize(word) for word in sent_src], [tokenizer.tokenize(word) for word in sent_tgt]
     # print(token_src)
     # print(token_tgt)
@@ -532,16 +536,19 @@ class RewardModelProxy:
           # extra_logs['mean_align_score'] = sum(align_scores) / len(align_scores)
           print(srcs[0])
           print(tgts[0])
-          srcs = [self.align_tokenizer.tokenize(src) for src in srcs]
-          srcs = [" ".join(src) for src in srcs]
-          tgts = [self.align_tokenizer.tokenize(tgt) for tgt in tgts]
-          tgts = [" ".join(tgt) for tgt in tgts]
+          # srcs = [self.align_tokenizer.tokenize(src) for src in srcs]
+          # srcs = [" ".join(src) for src in srcs]
+          srcs = [src.strip().split() for src in srcs]
+          # tgts = [self.align_tokenizer.tokenize(tgt) for tgt in tgts]
+          tgts = [list(jieba.cut(tgt.strip())) for tgt in tgts]
+          tgts = [[t for t in tgt if len(t.strip()) > 0] for tgt in tgts]
+          # tgts = [" ".join(tgt) for tgt in tgts]
           align_score_list = align_score(srcs, tgts, self.align_model, self.align_tokenizer)
-          align_score_list = [score*10 for score in align_score_list]
+          align_score_list = [score*6 for score in align_score_list]
           print(align_score_list[:20])
-          scores = [4*score + align_score for score, align_score in zip(scores, align_score_list)]
+          scores = [score + align_score for score, align_score in zip(scores, align_score_list)]
           extra_logs['mean_align_score'] = sum(align_score_list) / len(align_score_list)
-          import code; code.interact(local=locals())
+          # import code; code.interact(local=locals())
         return scores, extra_logs
 
 

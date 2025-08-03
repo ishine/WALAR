@@ -1,14 +1,14 @@
 #!/bin/bash
-export CUDA_VISIBLE_DEVICES=4
+export CUDA_VISIBLE_DEVICES=4,5
 # Default values
 declare -A model_path
 num_gpus=$(echo "$CUDA_VISIBLE_DEVICES" | awk -F',' '{print NF}')
 
 model_path["Qwen"]="/mnt/gemini/data1/yifengliu/model/Qwen3-30B-A3B-Instruct-2507"
-model_path["checkpoint"]="/mnt/gemini/data1/yifengliu/checkpoints/Word-Align-MetricX-Qwen3-4B-en-zh-1M-bsz128/global_step60_hf"
+model_path["checkpoint"]="/mnt/gemini/data1/yifengliu/checkpoints/Word-Align-MetricX-12-Qwen3-4B-en-zh-1M-bsz128/global_step200_hf"
 model_path["nllb"]="/mnt/gemini/data1/yifengliu/model/nllb-200-distilled-1.3B"
 # zho_simpl, zho_trad, swh, tam, asm
-MODEL_NAME="checkpoint"
+MODEL_NAME="Qwen"
 MODEL_PATH=${model_path[$MODEL_NAME]}
 # LANG_PAIR="eng-asm"
 src="eng"
@@ -36,12 +36,13 @@ target_language_list=(
     # "tur"
     # "tam"
     # "fin"
-
+    # "orm"
+    "swh"
     # "tam"
     # "hin"
     # "ind"
     # "msa"
-    "zho_simpl"
+    # "zho_simpl"
     # "deu"
     # "spa"
     # "rus"

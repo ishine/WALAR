@@ -7,7 +7,7 @@ dtype="bf16"  ### dtype can be discarded if your model_name is metricX
 
 # Only useful for Qwen
 turns=1  
-eval_type="mqm"
+eval_type="da"
 
 cd /mnt/gemini/data1/yifengliu/qe-lr/code
 

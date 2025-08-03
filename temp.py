@@ -80,14 +80,19 @@ if __name__ == "__main__":
 
     # 26.0056
     dataset = []
-    with open("/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Rule-Detect-MetricX-Qwen2.5-3B-en-zh-1M-bsz128/global_step460_hf/eng-zho_simpl.txt", 'r') as f:
+    with open("/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Rule-Detect-MetricX-Qwen3-4B-en-zh-1M-bsz128/global_step270_hf/eng-zho_simpl.txt", 'r') as f:
         lines = f.readlines()
         for line in lines[:-2]:
             dataset.append(json.loads(line))
-    srcs = [data['src'] for data in dataset]
-    hyps = [data['pred'] for data in dataset]
-    refs = [data['ref'] for data in dataset]
-    
+    # srcs = [data['src'] for data in dataset]
+    # hyps = [data['pred'] for data in dataset]
+    # refs = [data['ref'] for data in dataset]
+    dataset = dataset[:100]
+    # dataset[0]['label']=True
+    # save_path = "/mnt/gemini/data1/yifengliu/qe-lr/est.jsonl"
+    # with open(save_path, 'w') as f:
+    #     for data in dataset:
+    #         f.write(json.dumps(data, ensure_ascii=False) + "\n")
     
     # score = get_spBLEU(hyps, refs)
     # tgt_list = ["ara, bel, ben, deu, fin, glg, eng-hin"]
