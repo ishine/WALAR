@@ -204,5 +204,6 @@ class Actor(nn.Module):
         for name, param in self.model.named_parameters():
             if 'layer' in name:
                 number = int(name.split(".")[2])
-                if number >= 8:
+                if 8 <= number <= 27:
                     param.requires_grad = False
+                

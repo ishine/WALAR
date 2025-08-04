@@ -203,7 +203,7 @@ def main():
     print(f"source: {sources[0]}")
     print(f"prediction: {predictions[0]}")
     print(f"reference: {references[0]}")
-    # import code; code.interact(local=locals())
+    import code; code.interact(local=locals())
 
     dirname = os.path.dirname(args.output_file) if args.output_file else None
     if dirname and not os.path.exists(dirname):

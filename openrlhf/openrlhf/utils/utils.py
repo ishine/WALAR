@@ -100,10 +100,19 @@ def make_back_translation_prompts(rollout_samples, tokenizer, model_path):
     new_prompt = []
     if 'Qwen3' in model_path:
         tgt_pattern = r"<\|im_start\|>assistant\n<think>(.*?)</think>\n\n(.*?)<\|im_end\|>"
-        tgts = [re.search(tgt_pattern, q, re.DOTALL).group(2).strip() for q in all_queries]
+        # tgts = [re.search(tgt_pattern, q, re.DOTALL).group(2).strip() for q in all_queries]
+        tgts = [
+            match.group(2).strip() if (match := re.search(tgt_pattern, q, re.DOTALL)) else ""
+            for q in all_queries
+        ]
     else:
         tgt_pattern = r"<\|im_start\|>assistant\n(.*?)<\|im_end\|>"
-        tgts = [re.search(tgt_pattern, q, re.DOTALL).group(1).strip() for q in all_queries]
+        tgts = []
+        tgts = [
+            match.group(1).strip() if (match := re.search(tgt_pattern, q, re.DOTALL)) else ""
+            for q in all_queries
+        ]
+        # tgts = [re.search(tgt_pattern, q, re.DOTALL).group(1).strip() for q in all_queries]
     for src_lang, tgt_lang, tgt in zip(src_langs, tgt_langs, tgts):
         sentence = f"{tgt}\nTranslate from {tgt_lang} to {src_lang}:"
         message = [{"role": "user", "content": sentence}]
@@ -134,17 +143,30 @@ def calculate_bleu_reward(rollout_samples, back_translate_samples, tokenizer, mo
     pattern = r"<\|im_start\|>user\n(.*?)Translate from (.*?) to (.*?):"
     refs = [re.search(pattern, q, re.DOTALL).group(1).strip() for q in all_queries]
     if 'Qwen3' in model_path:
-        tgt_pattern = r"<\|im_start\|>assistant\n<think>(.*?)</think>\n\n(.*?)<\|im_end\|>"
         # print(all_back_translations)
         hyps = []
         for q in all_back_translations:
             print(q)
-            hyp = re.search(tgt_pattern, q, re.DOTALL).group(2).strip()
-            hyps.append(hyp)
+            tgt_pattern = r"<\|im_start\|>assistant\n<think>(.*?)</think>\n\n(.*?)<\|im_end\|>"
+            match = re.search(tgt_pattern, q, re.DOTALL)
+            if match:
+                hyps.append(match.group(2).strip())
+            else:
+                hyps.append("")
+            # if "<|im_end|>" in q:
+                # tgt_pattern = r"<\|im_start\|>assistant\n<think>(.*?)</think>\n\n(.*?)<\|im_end\|>"
+            # else:
+                # tgt_pattern = r"<\|im_start\|>assistant\n<think>(.*?)</think>\n(.*?)"
+            # hyp = re.search(tgt_pattern, q, re.DOTALL).group(2).strip()
+            # hyps.append(hyp)
             
         # hyps = [re.search(tgt_pattern, q, re.DOTALL).group(2).strip() for q in all_back_translations]
     else:
         tgt_pattern = r"<\|im_start\|>assistant\n(.*?)<\|im_end\|>"
+        hyps = [
+            match.group(1).strip() if (match := re.search(tgt_pattern, q, re.DOTALL)) else ""
+            for q in all_back_translations
+        ]
         hyps = [re.search(tgt_pattern, q, re.DOTALL).group(1).strip() for q in all_back_translations]
     bleu_reward_list = []
     for tgt, label in zip(hyps, refs):

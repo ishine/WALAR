@@ -6,8 +6,8 @@ cd /mnt/gemini/data1/yifengliu/qe-lr/openrlhf
 
 base_model="Qwen3-4B"
 lang_detect=False
-rule=False
-truncate=False
+rule=True       # '\n' for metricX
+truncate=False  # reward truncate
 bleu=False
 align=False
 

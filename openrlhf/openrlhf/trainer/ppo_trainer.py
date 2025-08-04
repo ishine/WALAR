@@ -549,7 +549,7 @@ class PPOTrainer(BasePPOTrainer):
                     print([s.rewards for s in rollout_samples[:10]])
                     for rollout_sample, bleu_reward in zip(rollout_samples, bleu_reward_list):
                         rollout_sample.info['bleu_reward'] = torch.tensor(bleu_reward).unsqueeze(0)
-                        rollout_sample.rewards = rollout_sample.rewards*4 + bleu_reward
+                        rollout_sample.rewards = rollout_sample.rewards + bleu_reward / 8
                     print([s.rewards for s in rollout_samples[:10]])
                 else:
                     rollout_samples = self.samples_generator.generate_samples(
@@ -557,7 +557,9 @@ class PPOTrainer(BasePPOTrainer):
                     )
             
                 reward1_list = [sample.info.get('reward1', 0) for sample in rollout_samples]
-                reward2_list = [25 * sample.info.get('reward2', 0) for sample in rollout_samples]
+                if self.remote_reward_model2:
+                    reward2_list = [25 * sample.info.get('reward2', 0) for sample in rollout_samples]
+                total_reward_list = [sample.rewards for sample in rollout_samples]
                 bleu_reward_list = [sample.info.get('bleu_reward', -1) for sample in rollout_samples]
                 rule_penalty_percent = rollout_samples[0].info.get('rule_penalty_percent', -1)
                 lang_penalty_percent = rollout_samples[0].info.get('lang_penalty_percent', -1)
@@ -614,7 +616,9 @@ class PPOTrainer(BasePPOTrainer):
                 status = self.ppo_train(steps)
                 # breakpoint()
                 status['reward1'] = sum(reward1_list) / len(reward1_list) if reward1_list else 0.0
-                status['reward2'] = sum(reward2_list) / len(reward2_list) if reward2_list else 0.0
+                if self.remote_reward_model2:
+                    status['reward2'] = sum(reward2_list) / len(reward2_list) if reward2_list else 0.0
+                status['total_reward'] = sum(total_reward_list) / len(total_reward_list)
                 if rule_penalty_percent != -1:
                     status['rule_penalty_percent'] = rule_penalty_percent
                 if lang_penalty_percent != -1:

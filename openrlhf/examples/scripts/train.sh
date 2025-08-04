@@ -20,7 +20,7 @@ src="en"
 tgt="zh"
 version="3"
 size="4B"
-reward_name="Back-Translation"
+reward_name="Back-Translation-0.125"
 
 # remote_rm_url
 # remote_rm_url2

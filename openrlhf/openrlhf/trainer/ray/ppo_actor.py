@@ -331,7 +331,10 @@ class ActorPPOTrainer(ABC):
 
         for name, param in model.named_parameters():
             count += 1  # empty_cache at last param
-
+            prefix = f"model.layers.9"
+            if name == "model.layers.9.self_attn.q_proj.weight" or name == "model.layers.9.mlp.up_proj.weight":
+                print(param.requires_grad)
+                print(f"{name}: {param}")
             # broadcast
             if not self.use_cuda_ipc:
                 # For ZeRO-3, allgather sharded parameter and broadcast to all vllm engines by rank 0

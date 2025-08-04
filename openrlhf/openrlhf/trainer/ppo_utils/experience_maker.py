@@ -406,7 +406,7 @@ class SamplesGenerator:
             rwd1, rwd2 = None, None
             alpha = 25
             rewards_info = ray.get(remote_reward_model.get_rewards.remote(all_queries, all_prompts, all_labels))
-            print(rewards_info)
+            # print(rewards_info)
             rwd1 = rewards_info[0]['rewards']
             if remote_reward_model2 is not None:
                 new_rewards_info = {}

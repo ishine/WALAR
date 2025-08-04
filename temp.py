@@ -80,18 +80,24 @@ if __name__ == "__main__":
 
     # 26.0056
     dataset = []
-    with open("/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Rule-Detect-MetricX-Qwen3-4B-en-zh-1M-bsz128/global_step270_hf/eng-zho_simpl.txt", 'r') as f:
+    with open("/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Rule-Detect-MetricX-Qwen3-4B-en-zh-1M-bsz128/global_step270_hf/zho_simpl-eng.txt", 'r') as f:
         lines = f.readlines()
         for line in lines[:-2]:
             dataset.append(json.loads(line))
-    # srcs = [data['src'] for data in dataset]
-    # hyps = [data['pred'] for data in dataset]
-    # refs = [data['ref'] for data in dataset]
+    srcs = [data['src'] for data in dataset]
+    hyps = [data['pred'] for data in dataset]
+    refs = [data['ref'] for data in dataset]
     dataset = dataset[:100]
-    hyps = ["He added: “We now have four-month-old mice that were previously diabetic but are now non-diabetic.”"]
+    # hyps = ["He added: “We now have four-month-old mice that were previously diabetic but are now non-diabetic.”"]
     # hyps = ["\"We now have 4-month-old mice that are non-diabetic that used to be diabetic,\" he added."]
-    refs = ["\"We now have 4-month-old mice that are non-diabetic that used to be diabetic,\" he added."]
-    bleu = get_spBLEU(hyps, refs)
+    # refs = ["\"We now have 4-month-old mice that are non-diabetic that used to be diabetic,\" he added."]
+    # bleu = get_spBLEU(hyps, refs)
+    
+    # model = AutoModelForCausalLM.from_pretrained('/mnt/gemini/data1/yifengliu/model/Qwen3-4B')
+    # a = ""
+    # b = ""
+    # score = get_spBLEU([a], [b])
+    
     # dataset[0]['label']=True
     # save_path = "/mnt/gemini/data1/yifengliu/qe-lr/est.jsonl"
     # with open(save_path, 'w') as f:
