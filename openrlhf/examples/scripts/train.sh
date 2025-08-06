@@ -1,4 +1,4 @@
-export CUDA_VISIBLE_DEVICES=6,7
+export CUDA_VISIBLE_DEVICES=2,3
 ray start --head --node-ip-address 0.0.0.0 --num-gpus 2
 
 eval "$(/mnt/gemini/data1/yifengliu/miniconda3/bin/conda shell.bash hook)"
@@ -20,7 +20,7 @@ src="en"
 tgt="zh"
 version="3"
 size="4B"
-reward_name="Back-Translation-0.125"
+reward_name="Back-Translation-bleu-Interleaved"
 
 # remote_rm_url
 # remote_rm_url2
@@ -67,7 +67,7 @@ ray job submit --address="http://127.0.0.1:8265" \
     --eval_steps 10 \
     --eval_n_samples_per_prompt 1\
     --input_key input_key \
-    --back_translate \
+    --interleave \
     --apply_chat_template \
     --normalize_reward \
     --adam_offload \

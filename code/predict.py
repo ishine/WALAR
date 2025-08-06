@@ -256,7 +256,7 @@ def get_predictions(
     predictions = model_output.scores
   else:
     raise ValueError("Unsupported model name or path: {}".format(model_name))
-  import code; code.interact(local=locals())
+  # import code; code.interact(local=locals())
   return predictions
 
            
@@ -311,10 +311,16 @@ def main() -> None:
   #     "hypothesis": "“Amma nuyi hantuuta ji’a afurii kan dhukkuba sukkaaraa hin qabne kan duraan qaban turan qabna,” itti dabalee.",
   #   }
   # ]
+  # ds = [
+  #   {
+  #     "source": "A scientific study last May found that the Little Calfpasture was too silty for healthy aquatic life, making it among the worst waterways in the state.",
+  #     "hypothesis": "一项5月的科研报告指出，Little Calfpasture泥沙过多，不适合水生生物生存，是该州最差的水体之一。",
+  #   }
+  # ]
   ds = [
     {
-      "source": "A scientific study last May found that the Little Calfpasture was too silty for healthy aquatic life, making it among the worst waterways in the state.",
-      "hypothesis": "一项5月的科研报告指出，Little Calfpasture泥沙过多，不适合水生生物生存，是该州最差的水体之一。",
+      "source": "Ring also settled a lawsuit with competing security company, the ADT Corporation.", 
+      "hypothesis":"Ring还与竞争对手ADT公司达成和解。", 
     }
   ]
   ds = datasets.Dataset.from_list(ds)

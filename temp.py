@@ -63,9 +63,9 @@ if __name__ == "__main__":
     #         lines = f.readlines()
     #         for line in lines[:-2]:
     #             dataset.append(json.loads(line.strip()))
-    #     srcs = [data['src'] for data in dataset]
-    #     hyps = [data['pred'] for data in dataset]
-    #     refs = [data['ref'] for data in dataset]
+        # srcs = [data['src'] for data in dataset]
+        # hyps = [data['pred'] for data in dataset]
+        # refs = [data['ref'] for data in dataset]
     #     xcomet_path = "/mnt/gemini/data1/yifengliu/model/models--Unbabel--XCOMET-XL/snapshots/6a123c5e8e6dccab25e5fcffa3c8b417abadb462/checkpoints/model.ckpt"
     #     score = calculate_comet_score(srcs, refs, hyps, model_path=xcomet_path)
     #     print(lines[-2])
@@ -80,14 +80,15 @@ if __name__ == "__main__":
 
     # 26.0056
     dataset = []
-    with open("/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Rule-Detect-MetricX-Qwen3-4B-en-zh-1M-bsz128/global_step270_hf/zho_simpl-eng.txt", 'r') as f:
+    path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Rule-Detect-MetricX-Qwen3-4B-en-zh-1M-bsz128/global_step270_hf/eng-zho_simpl.txt"
+    with open(path, 'r') as f:
         lines = f.readlines()
         for line in lines[:-2]:
             dataset.append(json.loads(line))
     srcs = [data['src'] for data in dataset]
     hyps = [data['pred'] for data in dataset]
     refs = [data['ref'] for data in dataset]
-    dataset = dataset[:100]
+    # dataset = dataset[-29:]
     # hyps = ["He added: “We now have four-month-old mice that were previously diabetic but are now non-diabetic.”"]
     # hyps = ["\"We now have 4-month-old mice that are non-diabetic that used to be diabetic,\" he added."]
     # refs = ["\"We now have 4-month-old mice that are non-diabetic that used to be diabetic,\" he added."]

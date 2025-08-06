@@ -1,20 +1,21 @@
 #!/bin/bash
-export CUDA_VISIBLE_DEVICES=4
+export CUDA_VISIBLE_DEVICES=5
 # Default values
 declare -A model_path
 num_gpus=$(echo "$CUDA_VISIBLE_DEVICES" | awk -F',' '{print NF}')
 
 model_path["Qwen"]="/mnt/gemini/data1/yifengliu/model/Qwen3-4B"
-model_path["checkpoint"]="/mnt/gemini/data1/yifengliu/checkpoints/Rule-Detect-MetricX-Qwen3-4B-en-zh-1M-bsz128/global_step270_hf"
+model_path["checkpoint"]="/mnt/gemini/data1/yifengliu/checkpoints/Back-Translation-0.0625-Qwen3-4B-en-zh-1M-bsz128/global_step120_hf"
 model_path["nllb"]="/mnt/gemini/data1/yifengliu/model/nllb-200-distilled-1.3B"
 # zho_simpl, zho_trad, swh, tam, asm
 MODEL_NAME="checkpoint"
 MODEL_PATH=${model_path[$MODEL_NAME]}
 # LANG_PAIR="eng-asm"
-src="zho_simpl"
-# src="eng"
+# src="zho_simpl"
+src="eng"
+# src="deu"
 target_language_list=(
-    "eng"
+    # "eng"
     # "ltz"
     # "mkd"
     # "pol"
@@ -44,9 +45,9 @@ target_language_list=(
     # "hin"
     # "ind"
     # "msa"
-    # "zho_simpl"
-    # "deu"
-    # "spa"
+    "zho_simpl"
+    "deu"
+    "spa"
     # "rus"
     # "jpn"
     # "ara"

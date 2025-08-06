@@ -158,6 +158,7 @@ def train(args):
         src=args.src,
         tgt=args.tgt,
         back_translate=args.back_translate,
+        interleave=args.interleave,
         # generate kwargs
         eval_dir=args.eval_dir,
         do_sample=True,
@@ -436,6 +437,9 @@ if __name__ == "__main__":
     parser.add_argument("--input_template", type=str, default=None)
     parser.add_argument(
         "--back_translate", action="store_true", default=False, help="Use back translation"
+    )
+    parser.add_argument(
+        "--interleave", action="store_true", default=False, help="Use back translation"
     )
     parser.add_argument(
         "--apply_chat_template", action="store_true", default=False, help="Use HF tokenizer chat template"

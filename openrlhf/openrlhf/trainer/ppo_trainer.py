@@ -37,6 +37,7 @@ class BasePPOTrainer(ABC):
         src: str = "eng",
         tgt: str = "zho_simpl",
         back_translate: bool = False,
+        interleave: bool = False,
         **generate_kwargs,
     ) -> None:
         super().__init__()
@@ -58,6 +59,7 @@ class BasePPOTrainer(ABC):
         self.src = src
         self.tgt = tgt  
         self.back_translate = back_translate
+        self.interleave = interleave
 
         self.prompt_max_len = prompt_max_len
         self.generate_kwargs = generate_kwargs
@@ -425,6 +427,7 @@ class PPOTrainer(BasePPOTrainer):
         src: str = "eng",
         tgt: str = "zho_simpl",
         back_translate: bool = False,
+        interleave: bool = False,
         **generate_kwargs,
     ) -> None:
         super().__init__(
@@ -442,6 +445,7 @@ class PPOTrainer(BasePPOTrainer):
             src,
             tgt,
             back_translate,
+            interleave,
             **generate_kwargs,
         )
 
@@ -533,10 +537,14 @@ class PPOTrainer(BasePPOTrainer):
                 print(f"labels: {labels[0]}")
                 print(f"rand_prompts: {rand_prompts[0]}")
                 remote_reward_model = self.remote_reward_model
-                if self.back_translate:
-                    print(self.generate_kwargs)
+                if self.back_translate or (self.interleave and steps % 2 == 0):
+                    # print(self.generate_kwargs)
+                    print("Back translating.....")
+                    # rollout_samples = self.samples_generator.generate_samples(
+                    #     rand_prompts, labels, remote_reward_model=remote_reward_model, remote_reward_model2=self.remote_reward_model2, **self.generate_kwargs
+                    # )
                     rollout_samples = self.samples_generator.generate_samples(
-                        rand_prompts, labels, remote_reward_model=remote_reward_model, remote_reward_model2=self.remote_reward_model2, **self.generate_kwargs
+                        rand_prompts, labels, remote_reward_model=None, remote_reward_model2=None, **self.generate_kwargs
                     )
                     back_translate_prompts = make_back_translation_prompts(rollout_samples, self.tokenizer, self.pretrain)
                     print(self.tokenizer.batch_decode(rollout_samples[0].sequences[0]))
@@ -549,9 +557,12 @@ class PPOTrainer(BasePPOTrainer):
                     print([s.rewards for s in rollout_samples[:10]])
                     for rollout_sample, bleu_reward in zip(rollout_samples, bleu_reward_list):
                         rollout_sample.info['bleu_reward'] = torch.tensor(bleu_reward).unsqueeze(0)
-                        rollout_sample.rewards = rollout_sample.rewards + bleu_reward / 8
+                        rollout_sample.rewards = torch.tensor(bleu_reward / 4).unsqueeze(0)
+                        rollout_sample.info['reward'] = torch.tensor(bleu_reward / 4).unsqueeze(0)
+                        rollout_sample.info['score'] = torch.tensor(bleu_reward / 4).unsqueeze(0)
                     print([s.rewards for s in rollout_samples[:10]])
                 else:
+                    print("Normal sampling.......")
                     rollout_samples = self.samples_generator.generate_samples(
                         rand_prompts, labels, remote_reward_model=remote_reward_model, remote_reward_model2=self.remote_reward_model2, **self.generate_kwargs
                     )

@@ -6,6 +6,7 @@ import jieba
 import matplotlib.pyplot as plt
 from transformers import AutoTokenizer, AutoModel
 from tqdm import *
+from collections import defaultdict
 from FlagEmbedding import BGEM3FlagModel
 
 def load_flores(path):
@@ -21,14 +22,31 @@ def my_load_dataset(path):
       dataset.append(json.loads(line.strip()))
   return dataset
 
+class color:
+   PURPLE = '\033[95m'
+   CYAN = '\033[96m'
+   DARKCYAN = '\033[36m'
+   BLUE = '\033[94m'
+   GREEN = '\033[92m'
+   YELLOW = '\033[93m'
+   RED = '\033[91m'
+   BOLD = '\033[1m'
+   UNDERLINE = '\033[4m'
+   END = '\033[0m'
+
 def print_alignments(src, tgt, alignments):
   for alignment_pair in alignments:
     src_idx, trg_idx = alignment_pair
-    print(f"{src[src_idx]} --> {tgt[trg_idx]}")
+    print(f'{color.BOLD}{color.BLUE}{src[src_idx]}{color.END}==={color.BOLD}{color.RED}{tgt[trg_idx]}{color.END}')
 
 def align_score(srcs, tgts, model, tokenizer):
+  def print_alignments(src, tgt, alignments):
+    for alignment_pair in alignments:
+      src_idx, trg_idx = alignment_pair
+      print(f'{color.BOLD}{color.BLUE}{src[src_idx]}{color.END}==={color.BOLD}{color.RED}{tgt[trg_idx]}{color.END}')
   align_score_list = []
   # for src, tgt in zip(srcs, tgts):
+  f1_list = []
   for idx in tqdm(range(len(srcs))):
     sent_src, sent_tgt = srcs[idx], tgts[idx]
     # sent_src, sent_tgt = src.strip().split(), tgt.strip().split()
@@ -45,7 +63,7 @@ def align_score(srcs, tgts, model, tokenizer):
       sub2word_map_tgt += [i for x in word_list]
 
     # alignment
-    align_layer = 8
+    align_layer = 24
     threshold = 1e-3
     model.eval()
     # import code; code.interact(local=locals())
@@ -64,17 +82,44 @@ def align_score(srcs, tgts, model, tokenizer):
     align_words = set()
     for i, j in align_subwords:
       align_words.add( (sub2word_map_src[i], sub2word_map_tgt[j]) )
-    align_percent = len(align_words) / len(token_tgt)
-    align_score_list.append(align_percent if align_percent <= 1 else 1)
-  return align_score_list
+    # align_percent = len(align_words) / len(token_tgt)
+    src_words = set({t[0]: t for t in sorted(align_words)}.values())
+    tgt_words = set({t[1]: t for t in sorted(align_words)}.values())
+    precision = min(len(tgt_words) / len(token_tgt), 1)
+    recall = min(len(src_words) / len(token_src), 1)
+    f1 = 2 * precision * recall / (precision + recall)
+    # f1 = [2*precision*recall / (precision + recall) for precision, recall in zip(precisions, recalls)]
+    # align_score_list.append(align_percent if align_percent <= 1 else 1)
+    # if idx == 1008:
+    print_alignments(sent_src, sent_tgt, align_words)
+    import code; code.interact(local=locals())
+    f1_list.append(f1)
+  return f1_list
+  # return align_score_list
 
-model_path = 'bert-base-multilingual-cased'
-# model_path = "/mnt/gemini/data1/yifengliu/model/bge-m3"
-model = transformers.BertModel.from_pretrained(model_path)
-tokenizer = transformers.BertTokenizer.from_pretrained(model_path)
+# model_path = 'bert-base-multilingual-cased'
+# # model_path = "/mnt/gemini/data1/yifengliu/model/models--facebook--xlm-roberta-xxl/snapshots/03e0fb540c3c9afd4bdda0072e7cb82d2eafd060"
+model_path = "/mnt/gemini/data1/yifengliu/model/bge-m3"
+# model = transformers.BertModel.from_pretrained(model_path)
+# tokenizer = transformers.BertTokenizer.from_pretrained(model_path)
+
+# from fastHan import FastHan
+# model=FastHan()
+import hanlp
+import hanlp_restful
+from hanlp_restful import HanLPClient
+HanLP1 = hanlp.load(hanlp.pretrained.mtl.UD_ONTONOTES_TOK_POS_LEM_FEA_NER_SRL_DEP_SDP_CON_XLMR_BASE)
+HanLP2 = hanlp.load(hanlp.pretrained.tok.COARSE_ELECTRA_SMALL_ZH)
+# HanLP = HanLPClient('https://www.hanlp.com/api', auth=None, language='mul')
+# result = HanLP(['In 2021, HanLPv2.1 delivers state-of-the-art multilingual NLP techniques to production environments.',
+#              '2021年、HanLPv2.1は次世代の最先端多言語NLP技術を本番環境に導入します。',
+#              '2021年 HanLPv2.1为生产环境带来次世代最先进的多语种NLP技术。'])
+# print(result)
+
 # model = BGEM3FlagModel(model_path)
-# model = AutoModel.from_pretrained(model_path)
-# tokenizer = AutoTokenizer.from_pretrained(model_path)
+model = AutoModel.from_pretrained(model_path)
+tokenizer = AutoTokenizer.from_pretrained(model_path)
+# import code; code.interact(local=locals())
 # tokenizer = 
 # import code; code.interact(local=locals())
 # src = "Because the dinosaur feathers do not have a well-developed shaft, called a rachis, but do have other features of feathers — barbs and barbules — the researchers inferred the rachis was likely a later evolutionary development that these other features."
@@ -86,15 +131,17 @@ tgt_lang = "zho_simpl"
 src_path = f"/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest/{src_lang}.devtest"
 tgt_path = f"/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest/{tgt_lang}.devtest"
 src_dataset, tgt_dataset = load_flores(src_path), load_flores(tgt_path)
-# dataset = my_load_dataset("/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Rule-Detect-MetricX-Qwen2.5-0.5B-en-zh-1M-bsz128/global_step780_hf/eng-zho_simpl.txt")
-src_dataset = src_dataset[:100]
-tgt_dataset = tgt_dataset[:100]
-# src_dataset = [data['src'] for data in dataset]
-# tgt_dataset = [data['pred'] for data in dataset]
-src_dataset = [src.strip().split() for src in src_dataset]
-tgt_dataset = [list(jieba.cut(tgt.strip())) for tgt in tgt_dataset]
-tgt_dataset = [[t for t in tgt if len(t.strip()) > 0 and "：" not in t and "，" not in t and "。" not in t and "“" not in t and "”" not in t and "(" not in t and ")" not in t] for tgt in tgt_dataset]
+src_dataset = ["Duvall, who is married with two adult children, did not leave a big impression on Miller, to whom the story was related."]
+# tgt_dataset = ["杜瓦尔已婚，有两个成年子女，但未给米勒留下深刻印象。"]
+tgt_dataset = ["杜瓦尔已婚，有两个已经成年的孩子，他并没有给故事的讲述者米勒留下太大印象。"]
+
+src_dataset = HanLP1(src_dataset)['tok']
+src_dataset = [[c for c in src if c not in [",", "\"", "."]]for src in src_dataset]
 # import code; code.interact(local=locals())
+tgt_dataset = HanLP2(tgt_dataset)
+# import code; code.interact(local=locals())
+tgt_dataset = [[c for c in tgt if c not in ["：", "。", "，", "“", "”", "（", "）", "·"]]for tgt in tgt_dataset]
+import code; code.interact(local=locals())
 # for src, tgt in zip(src_dataset, tgt_dataset):
 align_score_list = align_score(src_dataset, tgt_dataset, model, tokenizer)
 # tokenizer = AutoTokenizer.from_pretrained("/mnt/gemini/data1/yifengliu/model/bge-m3")
