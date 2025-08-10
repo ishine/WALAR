@@ -167,7 +167,7 @@ def calculate_bleu_reward(rollout_samples, back_translate_samples, tokenizer, mo
             match.group(1).strip() if (match := re.search(tgt_pattern, q, re.DOTALL)) else ""
             for q in all_back_translations
         ]
-        hyps = [re.search(tgt_pattern, q, re.DOTALL).group(1).strip() for q in all_back_translations]
+        # hyps = [re.search(tgt_pattern, q, re.DOTALL).group(1).strip() for q in all_back_translations]
     bleu_reward_list = []
     for tgt, label in zip(hyps, refs):
         bleu_score = get_spBLEU([tgt], [label])

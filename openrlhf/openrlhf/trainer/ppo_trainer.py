@@ -243,6 +243,7 @@ class BasePPOTrainer(ABC):
             "fr": "fra",
             "bn": "bng",
             "fi": "fin",
+            "sr": "srp",
         }
         lang_dict = {
             'eng': "English",
@@ -253,6 +254,7 @@ class BasePPOTrainer(ABC):
             "fra": "French",
             "bng": "Bengali",
             "fin": "Finnish",
+            "srp": "Serbian",
         }
         src_lang = two2three[self.src]
         val_lang_list = [two2three[self.tgt]]
@@ -540,12 +542,12 @@ class PPOTrainer(BasePPOTrainer):
                 if self.back_translate or (self.interleave and steps % 2 == 0):
                     # print(self.generate_kwargs)
                     print("Back translating.....")
-                    # rollout_samples = self.samples_generator.generate_samples(
-                    #     rand_prompts, labels, remote_reward_model=remote_reward_model, remote_reward_model2=self.remote_reward_model2, **self.generate_kwargs
-                    # )
                     rollout_samples = self.samples_generator.generate_samples(
-                        rand_prompts, labels, remote_reward_model=None, remote_reward_model2=None, **self.generate_kwargs
+                        rand_prompts, labels, remote_reward_model=remote_reward_model, remote_reward_model2=self.remote_reward_model2, **self.generate_kwargs
                     )
+                    # rollout_samples = self.samples_generator.generate_samples(
+                    #     rand_prompts, labels, remote_reward_model=None, remote_reward_model2=None, **self.generate_kwargs
+                    # )
                     back_translate_prompts = make_back_translation_prompts(rollout_samples, self.tokenizer, self.pretrain)
                     print(self.tokenizer.batch_decode(rollout_samples[0].sequences[0]))
                     print(back_translate_prompts[0])
@@ -557,9 +559,9 @@ class PPOTrainer(BasePPOTrainer):
                     print([s.rewards for s in rollout_samples[:10]])
                     for rollout_sample, bleu_reward in zip(rollout_samples, bleu_reward_list):
                         rollout_sample.info['bleu_reward'] = torch.tensor(bleu_reward).unsqueeze(0)
-                        rollout_sample.rewards = torch.tensor(bleu_reward / 4).unsqueeze(0)
-                        rollout_sample.info['reward'] = torch.tensor(bleu_reward / 4).unsqueeze(0)
-                        rollout_sample.info['score'] = torch.tensor(bleu_reward / 4).unsqueeze(0)
+                        rollout_sample.rewards = rollout_sample.rewards + bleu_reward / 4 if rollout_samples.rewards != -25 else -25
+                        # rollout_sample.info['reward'] = torch.tensor(bleu_reward / 4).unsqueeze(0)
+                        # rollout_sample.info['score'] = torch.tensor(bleu_reward / 4).unsqueeze(0)
                     print([s.rewards for s in rollout_samples[:10]])
                 else:
                     print("Normal sampling.......")

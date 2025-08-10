@@ -4,14 +4,14 @@ source /mnt/gemini/data1/yifengliu/miniconda3/bin/activate qe-rl
 
 cd /mnt/gemini/data1/yifengliu/qe-lr/openrlhf
 
-base_model="Qwen3-4B"
-lang_detect=False
+base_model="Qwen2.5-3B-Instruct"
+lang_detect=True
 rule=False       # '\n' for metricX
 truncate=False  # reward truncate
 bleu=False
 align=False
 
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=5
 python -m openrlhf.cli.serve_rm \
     --model_name  metricX\
     --base_model $base_model \
@@ -24,7 +24,7 @@ python -m openrlhf.cli.serve_rm \
     --align $align \
     --batch_size 8 &
 
-echo "MetricX serves successfully!"
+# echo "MetricX serves successfully!"
 
 # export CUDA_VISIBLE_DEVICES=5
 # python -m openrlhf.cli.serve_rm \
@@ -50,7 +50,7 @@ echo "MetricX serves successfully!"
 # echo "COMET22 serves successfully!"
 
 # 8000
-export CUDA_VISIBLE_DEVICES=1
+export CUDA_VISIBLE_DEVICES=4
 python -m openrlhf.cli.serve_rm \
     --model_name XComet\
     --base_model $base_model \

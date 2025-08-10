@@ -38,7 +38,7 @@ import datasets
 
 from transformers import AutoTokenizer
 from typing import Optional, List, Dict
-from utils import preprocess_dataset, mm_dict, lang_dict
+from utils import preprocess_dataset, mm_dict, lang_dict, RewardModel
 from mqm_utils import TEMPLATE_GEMBA_MQM, apply_template, parse_mqm_answer, TEMPLATE_GEMBA_ESA_ERROR_SPANS, TEMPLATE_GEMBA_ESA_RANKING, validate_number
 from mqm_utils import TEMPLATE_DA, extract_boxed_number
 
@@ -231,6 +231,13 @@ def load_tokenizer_and_model(metric_name: str, model_size: str, model_dtype:str,
     model_path = path_dict.get(metric_name, None)
     model = LLM(model=model_path, tensor_parallel_size=tensor_parallel_size, task="generate", enforce_eager=True)
     tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+  elif 'Seed' in metric_name:
+    path_dict = {
+      "Seed-X-RM-7B": "/mnt/gemini/data1/yifengliu/model/Seed-X-RM-7B",
+    }
+    model_path = path_dict.get(metric_name, None)
+    model = RewardModel(model_path)
+    tokenizer = None
   else:
     raise ValueError(f"Unsupported metric name: {metric_name}")
   # model.to(device)
@@ -361,6 +368,14 @@ def get_predictions(
     sampling_params = get_sampling_params(metric_name, args)
     src_lang, tgt_lang = get_langs(src, tgt)
     predictions = get_scores(args.eval_type, ds, sampling_params, model, tokenizer, src_lang, tgt_lang)
+  elif 'Seed' in metric_name:
+    src, tgt = lp.split('-')[0], lp.split('-')[1]
+    src_lang, tgt_lang = get_langs(src, tgt)
+    prompt = [f"Translate the following {src_lang} sentence into {tgt_lang}:\n{src} <{tgt}>" for src in srcs]
+    candidate = hyps
+    print(f"prompt: {prompt[:2]}")
+    print(f"candidate: {candidate[:2]}")
+    predictions = model.score(prompt, candidate, 8) 
     # ds = datasets.Dataset.from_list(ds)
   return predictions
 
@@ -502,7 +517,7 @@ def main() -> None:
   # lps = ["en-de", "en-es", "ja-zh"]
   # lps = ["en-es"]
   # lps = ["ja-zh"]
-  lps = ["en-de"]
+  lps = ["en-de", "en-es", "ja-zh"]
   
   for lp in lps:
     evs = evs_dict[(f'wmt{args.wmt_year}', lp)]

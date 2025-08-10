@@ -1,7 +1,7 @@
 #!/bin/bash
-export CUDA_VISIBLE_DEVICES=2,3
+export CUDA_VISIBLE_DEVICES=4
 year=24
-model_name="Qwen3-32B-AWQ"
+model_name="Seed-X-RM-7B"
 model_size="xxl"  ### model_size can be discarded if your model_name is not XComet or metricX
 dtype="bf16"  ### dtype can be discarded if your model_name is metricX
 

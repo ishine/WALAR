@@ -34,12 +34,12 @@ def extract_boxed_number(answer):
     return None
 
 if __name__ == '__main__':
-    os.environ['CUDA_VISIBLE_DEVICES'] = '4,5'
+    os.environ['CUDA_VISIBLE_DEVICES'] = '0,1,2,3'
     # model_path = "/mnt/gemini/data1/yifengliu/model/Qwen3-4B"
-    model_path = "/mnt/gemini/data1/yifengliu/model/Qwen3-30B-A3B-Instruct-2507"
-    sample = SamplingParams(n=4, temperature=0.6, top_k=-1, top_p=1, max_tokens=32768)
+    model_path = "/mnt/gemini/data1/yifengliu/model/Qwen3-235B-A22B-Instruct-2507-FP8"
+    sample = SamplingParams(n=1, temperature=0.6, top_k=-1, top_p=1, max_tokens=32768)
     src, tgt = "en", "zh"
-    model = LLM(model=model_path, max_model_len=32768, tensor_parallel_size=2, trust_remote_code=True)
+    model = LLM(model=model_path, max_model_len=32768, tensor_parallel_size=4, trust_remote_code=True)
     tokenizer = AutoTokenizer.from_pretrained(model_path)
 #     system_prompt = "You are a professional translation evaluator."
 #     user_prompt = """Your task is to assess whether a translation segment successfully conveys the semantic content of the original sentence according to the following criteria:
@@ -69,11 +69,14 @@ if __name__ == '__main__':
     src_dataset, tgt_dataset = load_flores(src_path), load_flores(tgt_path)
     # src = "Workplace harmony is crucial, emphasizing group effort rather than praising individual accomplishments."
     # template = f"{src}\nTranslate from English to Chinese:\n"
+    src_dataset = ["Danius said, \"Right now we are doing nothing. I have called and sent emails to his closest collaborator and received very friendly replies. For now, that is certainly enough.\""]
+    tgt_dataset = ["丹尼斯说：“目前我们暂时不采取行动。我已经联系并发邮件给他的主要合作者，对方回复非常友好。目前来说，这已经足够。”"]
     prompts = []
     for src, tgt in zip(src_dataset, tgt_dataset):
         source_seg = src.strip()
         target_seg = tgt.strip()
-        template = f"Identify if there is any overtranslation in the following {source_lang} to {target_lang} translation. Please first explain the reason then give your answer with Yes or No in \\boxed{{}}. English soure: \"{source_seg}\" Chinese translation: \"{target_seg}\". If there is no overtranslation, answer \"No\". If there is overtranslation, answer \"Yes\" and explain why in detail."
+        # template = f"Identify if there is any overtranslation in the following {source_lang} to {target_lang} translation. Please first explain the reason then give your answer with Yes or No in \\boxed{{}}. English soure: \"{source_seg}\" Chinese translation: \"{target_seg}\". If there is no overtranslation, answer \"No\". If there is overtranslation, answer \"Yes\" and explain why in detail."
+        template = f"Score the following translation from {source_lang} to {target_lang} on a continuous scale from 0 to 100, where a score of zero means \"no meaning preserved\" and score of one hundred means \"perfect meaning and grammar\". Please first give your explanation, and finally give your score in \\boxed{{}}.\n\n{source_lang} source: \"{source_seg}\"\n{target_lang} translation: \"{target_seg}\"\n"
         message = [
             {"role": "user", "content": template},
         ]

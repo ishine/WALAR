@@ -6,6 +6,7 @@ import argparse
 import datasets
 import openai
 import os
+import matplotlib.pyplot as plt
 from utils import preprocess_dataset, mm_dict, lang_dict
 from mqm_utils import TEMPLATE_GEMBA_MQM, apply_template, parse_mqm_answer, TEMPLATE_GEMBA_ESA_ERROR_SPANS, TEMPLATE_GEMBA_ESA_RANKING, validate_number
 from mqm_utils import TEMPLATE_DA, extract_boxed_number
@@ -71,6 +72,25 @@ def write_to_file(output_file, ds, predictions):
       example["prediction"] = float(pred) if pred is not None else pred
       out.write(json.dumps(example) + "\n")
 
+def load_flores_dataset(data_dir, lang_pair):
+    """Load FLORES-101 dataset for a specific language pair."""
+    # dataset = load_dataset("facebook/flores", "all")
+    def my_load_dataset(data_pair, lang):
+        dataset = []
+        path = os.path.join(data_pair, f"{lang}.devtest")
+        with open(path, 'r') as f:
+            lines = f.readlines()
+            for line in lines:
+                dataset.append(line.strip())
+        return dataset
+    src_lang, tgt_lang = lang_pair.split("-")
+    
+    # Get test split
+    src_dataset, tgt_dataset = my_load_dataset(data_dir, src_lang), my_load_dataset(data_dir, tgt_lang)
+    
+    # Filter for the specific language pair
+    return src_dataset, tgt_dataset
+
 def get_scores(eval_type: str, ds: List[Dict], sampling_params: SamplingParams, model: LLM, tokenizer: AutoTokenizer=None, src_lang="English", tgt_lang="Chinese"):
     # source_lang, source_seg, target_lang, target_seg
     prompts = []
@@ -132,7 +152,7 @@ def get_scores(eval_type: str, ds: List[Dict], sampling_params: SamplingParams, 
     # import code; code.interact(local=locals())
     scores = [[0 if sc is None else sc for sc in s]for s in scores]
     scores = [sum(s) / len(s) for s in scores]
-    # import code; code.interact(local=locals())
+    import code; code.interact(local=locals())
     return scores
 
 def get_langs(args):
@@ -152,8 +172,16 @@ def main():
     parser = transformers.HfArgumentParser(EvaluationArguments)
     args = parser.parse_args_into_dataclasses()[0]
     print(f"Evaluating model {args.model_name_or_path}...")
-    ds, name = preprocess_dataset(args.input_file)
-    ds = datasets.Dataset.from_list(ds)
+    # ds, name = preprocess_dataset(args.input_file)
+    # ds = datasets.Dataset.from_list(ds)
+    dir_path = "/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest"
+    src_dataset, tgt_dataset = load_flores_dataset(dir_path, f"eng-uzb")
+    ds = [{
+        "src_lang": "English",
+        "tgt_lang": "Serbian",
+        "source": src,
+        "hypothesis": tgt
+    } for src, tgt in zip(src_dataset, tgt_dataset)]
     # ds = [
     #     {
     #         "src_lang": "English",
@@ -187,6 +215,15 @@ def main():
     )
     write_to_file(output_file, ds, scores)
     
+    plt.hist(scores, bins=[i for i in range(101)], edgecolor='black')
+
+    plt.xlabel('Value Range')
+    plt.ylabel('Count')
+    plt.title('Score Distribution')
+    plt.grid(True, linestyle='--', alpha=0.5)
+    # plt.show()
+    plt.savefig(f"/mnt/gemini/data1/yifengliu/qe-lr/output/eng-uzb.png")
+    print(f"Align Score: {scores}")
 
 if __name__ == "__main__":
     main()

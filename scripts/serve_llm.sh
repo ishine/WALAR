@@ -10,13 +10,13 @@ base_model="Qwen3-4B"
 model_name="Qwen3-30B-A3B"
 eval_type="da"
 
-export CUDA_VISIBLE_DEVICES=0,1
+export CUDA_VISIBLE_DEVICES=5,6
 num_gpus=$(echo $CUDA_VISIBLE_DEVICES | awk -F ',' '{print NF}')
 
 python -m openrlhf.cli.serve_llm \
     --model_name  ${model_name}\
     --base_model $base_model \
-    --port 6000 \
+    --port 5555 \
     --eval_type ${eval_type} \
     --max_len 2048 \
     --turns 1\

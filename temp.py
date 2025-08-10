@@ -80,7 +80,8 @@ if __name__ == "__main__":
 
     # 26.0056
     dataset = []
-    path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Rule-Detect-MetricX-Qwen3-4B-en-zh-1M-bsz128/global_step270_hf/eng-zho_simpl.txt"
+    # path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/New-Align-25-Qwen3-4B-en-zh-1M-bsz128/global_step120_hf/eng-zho_simpl.txt"
+    path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Detect-Back-Translation-MetricX-Bleu-Qwen3-4B-en-sr-1M-bsz128/global_step40_hf/eng-srp.txt"
     with open(path, 'r') as f:
         lines = f.readlines()
         for line in lines[:-2]:

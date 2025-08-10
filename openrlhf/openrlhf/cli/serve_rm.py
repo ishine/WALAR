@@ -4,6 +4,9 @@ import os
 import sys
 import re
 import jieba
+import hanlp
+import hanlp_restful
+from hanlp_restful import HanLPClient
 
 sys.path.insert(0, "/mnt/gemini/data1/yifengliu/qe-lr/code")
 import models
@@ -354,8 +357,12 @@ def align_score(srcs, tgts, model, tokenizer):
     align_words = set()
     for i, j in align_subwords:
       align_words.add( (sub2word_map_src[i], sub2word_map_tgt[j]) )
-    align_percent = len(align_words) / len(token_tgt)
-    align_score_list.append(align_percent)
+    src_words = set({t[0]: t for t in sorted(align_words)}.values())
+    tgt_words = set({t[1]: t for t in sorted(align_words)}.values())
+    precision = min(len(tgt_words) / len(token_tgt), 1)
+    recall = min(len(src_words) / len(token_src), 1)
+    f1 = 2 * precision * recall / (precision + recall)
+    align_score_list.append(f1)
   return align_score_list
 
 class RewardModelProxy:
@@ -369,17 +376,19 @@ class RewardModelProxy:
           # self.align_model = SentenceTransformer(model_path)
           self.align_model = transformers.BertModel.from_pretrained('bert-base-multilingual-cased')
           self.align_tokenizer = transformers.BertTokenizer.from_pretrained('bert-base-multilingual-cased')
+          self.han1 = hanlp.load("/mnt/taurus/home/yifengliu/.hanlp/mtl/ud_ontonotes_tok_pos_lem_fea_ner_srl_dep_sdp_con_xlm_base_20220608_003435", devices=1)
+          self.han2 = hanlp.load("/mnt/taurus/home/yifengliu/.hanlp/tok/coarse_electra_small_20220616_012050", devices=1)
         if 'metricX' in args.model_name:
             self.model_name = args.model_name
             self.tokenizer = transformers.AutoTokenizer.from_pretrained("google/mt5-xl", cache_dir="/mnt/gemini/data1/yifengliu/model")
             self.model = models.MT5ForRegression.from_pretrained(
-                "google/metricx-24-hybrid-xxl-v2p6-bfloat16", torch_dtype="auto", device_map="auto", cache_dir="/mnt/gemini/data1/yifengliu/model"
+                "google/metricx-24-hybrid-xxl-v2p6-bfloat16", torch_dtype="auto", device_map={'':0}, cache_dir="/mnt/gemini/data1/yifengliu/model"
             )
             self.max_length = args.max_len
             self.batch_size = args.batch_size
             self.training_args = transformers.TrainingArguments(
                 output_dir="/mnt/gemini/data1/yifengliu/qe-lr/output/openrlhf",
-                per_device_eval_batch_size=self.batch_size//torch.cuda.device_count(),
+                per_device_eval_batch_size=self.batch_size,
                 dataloader_pin_memory=False,
             )
             self.trainer = transformers.Trainer(
@@ -526,25 +535,14 @@ class RewardModelProxy:
           print(f"scores: {scores}")
           extra_logs['mean_bleu_score'] = sum(bleu_score_list) / len(bleu_score_list)
         if self.args.align:
-          # align_scores = []
-          # for tgt, label in zip(tgts, labels):
-          #   src_embedding = self.align_model.encode(tgt)
-          #   tgt_embedding = self.align_model.encode(label)
-          #   similarity = src_embedding @ tgt_embedding.T
-          #   align_scores.append(float(similarity))
-          # scores = [score + 100*align_score for score, align_score in zip(scores, align_scores)]
-          # extra_logs['mean_align_score'] = sum(align_scores) / len(align_scores)
           print(srcs[0])
           print(tgts[0])
-          # srcs = [self.align_tokenizer.tokenize(src) for src in srcs]
-          # srcs = [" ".join(src) for src in srcs]
-          srcs = [src.strip().split() for src in srcs]
-          # tgts = [self.align_tokenizer.tokenize(tgt) for tgt in tgts]
-          tgts = [list(jieba.cut(tgt.strip())) for tgt in tgts]
-          tgts = [[t for t in tgt if len(t.strip()) > 0] for tgt in tgts]
-          # tgts = [" ".join(tgt) for tgt in tgts]
+          srcs = self.han1(srcs)['tok']
+          srcs = [[c for c in src if c not in [",", "\"", ".", '—', "(", ")", "/", "\\", "'"]]for src in srcs]
+          tgts = self.han2(tgts)
+          tgts = [[c for c in tgt if c not in ["：", "。", "，", "“", "”", "（", "）", "·", "-", "/", "\\", "、"]]for tgt in tgts]
           align_score_list = align_score(srcs, tgts, self.align_model, self.align_tokenizer)
-          align_score_list = [score*6 for score in align_score_list]
+          align_score_list = [score*25 for score in align_score_list]
           print(align_score_list[:20])
           scores = [score + align_score for score, align_score in zip(scores, align_score_list)]
           extra_logs['mean_align_score'] = sum(align_score_list) / len(align_score_list)

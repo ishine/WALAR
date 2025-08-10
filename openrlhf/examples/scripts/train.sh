@@ -1,9 +1,9 @@
-export CUDA_VISIBLE_DEVICES=2,3
+export CUDA_VISIBLE_DEVICES=6,7
 ray start --head --node-ip-address 0.0.0.0 --num-gpus 2
 
-eval "$(/mnt/gemini/data1/yifengliu/miniconda3/bin/conda shell.bash hook)"
+eval "$(/mnt/gemini/home/yifengliu/miniconda3/bin/conda shell.bash hook)"
 which python
-source /mnt/gemini/data1/yifengliu/miniconda3/bin/activate qe-rl
+source /mnt/gemini/home/yifengliu/miniconda3/bin/activate qe-rl
 # export RAY_RUNTIME_ENV_TEMPORARY_REFERENCE_EXPIRATION_S=1200
 
 cd /mnt/gemini/data1/yifengliu/qe-lr/openrlhf
@@ -18,9 +18,9 @@ wandb_token=5bebcc325992863eb55622d9ad2e7c85c95a1f15
 
 src="en"
 tgt="zh"
-version="3"
-size="4B"
-reward_name="Back-Translation-bleu-Interleaved"
+version="2.5"
+size="3B-Instruct"
+reward_name="Detect-Back-Translation-MetricX-Bleu"
 
 # remote_rm_url
 # remote_rm_url2
@@ -42,7 +42,7 @@ ray job submit --address="http://127.0.0.1:8265" \
     --pretrain /mnt/gemini/data1/yifengliu/model/Qwen${version}-${size} \
     --remote_rm_url http://localhost:2000/get_reward \
     --remote_comet_url http://localhost:4444/get_reward \
-    --micro_train_batch_size 32 \
+    --micro_train_batch_size 64 \
     --train_batch_size 128 \
     --micro_rollout_batch_size 32 \
     --rollout_batch_size 128 \
@@ -67,14 +67,14 @@ ray job submit --address="http://127.0.0.1:8265" \
     --eval_steps 10 \
     --eval_n_samples_per_prompt 1\
     --input_key input_key \
-    --interleave \
+    --back_translate \
     --apply_chat_template \
     --normalize_reward \
     --adam_offload \
     --flash_attn \
     --gradient_checkpointing \
     --temperature 1 \
-    --save_steps 20 \
+    --save_steps 10 \
     --save_path /mnt/gemini/data1/yifengliu/checkpoints/final/${reward_name}-Qwen${version}-${size}-${src}-${tgt}-1M-bsz128 \
     --ckpt_path /mnt/gemini/data1/yifengliu/checkpoints/${reward_name}-Qwen${version}-${size}-${src}-${tgt}-1M-bsz128 \
     --load_checkpoint \

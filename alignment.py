@@ -35,13 +35,13 @@ class color:
    END = '\033[0m'
 
 def print_alignments(src, tgt, alignments):
-  for alignment_pair in alignments:
+  for alignment_pair in sorted(alignments):
     src_idx, trg_idx = alignment_pair
     print(f'{color.BOLD}{color.BLUE}{src[src_idx]}{color.END}==={color.BOLD}{color.RED}{tgt[trg_idx]}{color.END}')
 
 def align_score(srcs, tgts, model, tokenizer):
   def print_alignments(src, tgt, alignments):
-    for alignment_pair in alignments:
+    for alignment_pair in sorted(alignments):
       src_idx, trg_idx = alignment_pair
       print(f'{color.BOLD}{color.BLUE}{src[src_idx]}{color.END}==={color.BOLD}{color.RED}{tgt[trg_idx]}{color.END}')
   align_score_list = []
@@ -63,7 +63,7 @@ def align_score(srcs, tgts, model, tokenizer):
       sub2word_map_tgt += [i for x in word_list]
 
     # alignment
-    align_layer = 24
+    align_layer = 8
     threshold = 1e-3
     model.eval()
     # import code; code.interact(local=locals())
@@ -91,37 +91,32 @@ def align_score(srcs, tgts, model, tokenizer):
     # f1 = [2*precision*recall / (precision + recall) for precision, recall in zip(precisions, recalls)]
     # align_score_list.append(align_percent if align_percent <= 1 else 1)
     # if idx == 1008:
-    print_alignments(sent_src, sent_tgt, align_words)
-    import code; code.interact(local=locals())
+    # print_alignments(sent_src, sent_tgt, src_words)
+    # print_alignments(sent_tgt, sent_src, {(b, a) for (a, b) in tgt_words})
+    # print_alignments(sent_src, sent_tgt, align_words)
+    # import code; code.interact(local=locals())
     f1_list.append(f1)
   return f1_list
   # return align_score_list
 
-# model_path = 'bert-base-multilingual-cased'
-# # model_path = "/mnt/gemini/data1/yifengliu/model/models--facebook--xlm-roberta-xxl/snapshots/03e0fb540c3c9afd4bdda0072e7cb82d2eafd060"
-model_path = "/mnt/gemini/data1/yifengliu/model/bge-m3"
-# model = transformers.BertModel.from_pretrained(model_path)
-# tokenizer = transformers.BertTokenizer.from_pretrained(model_path)
+model_path = 'bert-base-multilingual-cased'
+# model_path = "/mnt/gemini/data1/yifengliu/model/bge-m3"
+model = transformers.BertModel.from_pretrained(model_path)
+tokenizer = transformers.BertTokenizer.from_pretrained(model_path)
+# model = AutoModel.from_pretrained(model_path)
+# tokenizer = AutoTokenizer.from_pretrained(model_path)
 
-# from fastHan import FastHan
-# model=FastHan()
 import hanlp
 import hanlp_restful
 from hanlp_restful import HanLPClient
 HanLP1 = hanlp.load(hanlp.pretrained.mtl.UD_ONTONOTES_TOK_POS_LEM_FEA_NER_SRL_DEP_SDP_CON_XLMR_BASE)
+# HanLP1 = hanlp.load(hanlp.pretrained.tok.UD_TOK_MMINILMV2L12)
 HanLP2 = hanlp.load(hanlp.pretrained.tok.COARSE_ELECTRA_SMALL_ZH)
-# HanLP = HanLPClient('https://www.hanlp.com/api', auth=None, language='mul')
-# result = HanLP(['In 2021, HanLPv2.1 delivers state-of-the-art multilingual NLP techniques to production environments.',
-#              '2021年、HanLPv2.1は次世代の最先端多言語NLP技術を本番環境に導入します。',
-#              '2021年 HanLPv2.1为生产环境带来次世代最先进的多语种NLP技术。'])
-# print(result)
 
-# model = BGEM3FlagModel(model_path)
-model = AutoModel.from_pretrained(model_path)
-tokenizer = AutoTokenizer.from_pretrained(model_path)
-# import code; code.interact(local=locals())
-# tokenizer = 
-# import code; code.interact(local=locals())
+
+# model = AutoModel.from_pretrained(model_path)
+# tokenizer = AutoTokenizer.from_pretrained(model_path)
+
 # src = "Because the dinosaur feathers do not have a well-developed shaft, called a rachis, but do have other features of feathers — barbs and barbules — the researchers inferred the rachis was likely a later evolutionary development that these other features."
 # tgt = "由于恐龙羽毛缺乏典型的羽毛轴（rachis），即羽毛中贯穿整个结构的中轴部分，但仍然具备羽毛的基本特征，如羽片和羽丝，研究人员据此推断，羽毛轴这一结构可能是后来才逐渐演化出来的，而羽片和羽丝等其他特征则可能在更早的时候就已经存在了。"
 # tgt = "恐龙的羽毛并没有发育良好的主干——这称为“羽轴”，但还是有羽毛的其他特征，比如羽枝和羽小枝，研究人员推断羽轴的进化可能比这些其他特征晚。"
@@ -131,50 +126,32 @@ tgt_lang = "zho_simpl"
 src_path = f"/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest/{src_lang}.devtest"
 tgt_path = f"/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest/{tgt_lang}.devtest"
 src_dataset, tgt_dataset = load_flores(src_path), load_flores(tgt_path)
-src_dataset = ["Duvall, who is married with two adult children, did not leave a big impression on Miller, to whom the story was related."]
+# src_dataset, tgt_dataset = src_dataset[13:23], tgt_dataset[13:23]
+# src_dataset, tgt_dataset = src_dataset[-2:], tgt_dataset[-2:]
+
+# src_dataset = ["Duvall, who is married with two adult children, did not leave a big impression on Miller, to whom the story was related."]
 # tgt_dataset = ["杜瓦尔已婚，有两个成年子女，但未给米勒留下深刻印象。"]
-tgt_dataset = ["杜瓦尔已婚，有两个已经成年的孩子，他并没有给故事的讲述者米勒留下太大印象。"]
+# tgt_dataset = ["杜瓦尔已婚，有两个已经成年的孩子，他并没有给故事的讲述者米勒留下太大印象。"]
+# src_dataset = ["Because the dinosaur feathers do not have a well-developed shaft, called a rachis, but do have other features of feathers — barbs and barbules — the researchers inferred the rachis was likely a later evolutionary development that these other features."]
+# tgt_dataset = ["由于恐龙羽毛缺乏典型的羽毛轴（rachis），即羽毛中贯穿整个结构的中轴部分，但仍然具备羽毛的基本特征，如羽片和羽丝，研究人员据此推断，羽毛轴这一结构可能是后来才逐渐演化出来的，而羽片和羽丝等其他特征则可能在更早的时候就已经存在了。"]
+# tgt_dataset = ["恐龙的羽毛并没有发育良好的主干——这称为“羽轴”，但还是有羽毛的其他特征，比如羽枝和羽小枝，研究人员推断羽轴的进化可能比这些其他特征晚。"]
+src_dataset = ["Officials for the city of Amsterdam and the Anne Frank Museum state that the tree is infected with a fungus and poses a public health hazard as they argue that it was in imminent danger of falling over."
+               ]
+tgt_dataset = ["阿姆斯特丹市政府及安妮·弗兰克博物馆的工作人员表示，这棵橡树已被真菌感染，存在安全隐患，随时可能倒下，对公众安全构成威胁。因此，他们主张应尽快采取措施处理这棵树。"
+               ]
 
 src_dataset = HanLP1(src_dataset)['tok']
-src_dataset = [[c for c in src if c not in [",", "\"", "."]]for src in src_dataset]
+# import code; code.interact(local=locals())
+src_dataset = [[c for c in src if c not in [",", "\"", ".", '—', "(", ")", "/", "\\", "'"]]for src in src_dataset]
 # import code; code.interact(local=locals())
 tgt_dataset = HanLP2(tgt_dataset)
 # import code; code.interact(local=locals())
-tgt_dataset = [[c for c in tgt if c not in ["：", "。", "，", "“", "”", "（", "）", "·"]]for tgt in tgt_dataset]
-import code; code.interact(local=locals())
+tgt_dataset = [[c for c in tgt if c not in ["：", "。", "，", "“", "”", "（", "）", "·", "-", "/", "\\", "、"]]for tgt in tgt_dataset]
+# import code; code.interact(local=locals())
 # for src, tgt in zip(src_dataset, tgt_dataset):
 align_score_list = align_score(src_dataset, tgt_dataset, model, tokenizer)
 # tokenizer = AutoTokenizer.from_pretrained("/mnt/gemini/data1/yifengliu/model/bge-m3")
 # model = AutoModel.from_pretrained("/mnt/gemini/data1/yifengliu/model/bge-m3")
-
-
-# src_dataset = [src.strip() for src in src_dataset]
-# tgt_dataset = [" ".join(list(jieba.cut(tgt.strip()))) for tgt in tgt_dataset]
-# align_score_list = align_score(src_dataset, tgt_dataset, model, tokenizer)
-
-
-# from FlagEmbedding import BGEM3FlagModel
-
-# model = BGEM3FlagModel('/mnt/gemini/data1/yifengliu/model/bge-m3',  use_fp16=True) 
-
-# sentences_1 = ["Siminoff said sales boosted after his 2013 appearance in a Shark Tank episode where the show panel declined funding the startup."]
-# sentences_2 = ["Siminoof akka jedhutti erga inni 2013 kutaa fiilmii Taankii Shaark iddoo itti beeksisni agarsiisichaa deggersa jalqabsiisuu kuffise’en booda gurgurtaan baayyee dabale jedhe.", 
-#                "西米诺夫说，2013 年他在《创智赢家》节目中露面后，公司的销售额大增，当时节目组拒绝向这家初创公司投资。",
-#                "Siminoff alisema mauzo yaliongezeka baada ya yeye kuonekana katika kipindi cha Shark Tank mnamo 2013 ambapo paneli ya onyesho hilo ilikataa kufadhili biashara hiyo mpya.",
-#                ]
-
-# sentences_1 = ["USA Gymnastics supports an independent investigation that may shine light on how abuse of the proportion described so courageously by the survivors of Larry Nassar could have gone undetected for so long and embraces any necessary and appropriate changes."]
-# sentences_2 = ["Jiimnaastikiin USA qorannoo of danda’ee deggera sunis yaanni sabboonummaan kan Leerii Naasaar lubbun isa hafeen kan kenname hammam badaa akka kan sirriitti mul’isa, kunimmo kan yeroo dheeraaf hin beekamin turee, osoo hin haammatamin turefi jijjiirran sirriin kan hin kennamneefidha.",
-#                "根据美国体操协会支持的一项独立调查，我们也许能够得知，幸存者勇敢曝光的、拉里·纳萨尔的大规模性侵行为，为什么在这么长时间内都没有被发现。此外，协会还表示会做出必要和适当的整改。",
-#                "USA Gymnastics inaunga mkono uchunguzi huru ambao labda utafafanua jinsi unyanyasaji wa kiwango kama vile ulivyoelezewa kwa ujasiri sana na manusura wa Larry Nassar ungekosa kugunduliwakwa muda mrefu hivyo na inakumbatia mabadiliko muhimu na ya kufaa."]
-
-
-# sentence_pairs = [[i,j] for i in sentences_1 for j in sentences_2]
-
-# print(model.compute_score(sentence_pairs, 
-#                           max_passage_length=128, # a smaller max length leads to a lower latency
-#                           weights_for_different_modes=[0.4, 0.2, 0.4])) # weights_for_different_modes(w) is used to do weighted sum: w[0]*dense_score + w[1]*sparse_score + w[2]*colbert_score
-
 
 
 # from simalign import SentenceAligner
@@ -230,7 +207,7 @@ plt.hist(align_score_list, bins=[i/10 for i in range(11)], edgecolor='black')
 
 plt.xlabel('Value Range')
 plt.ylabel('Count')
-plt.title('Histogram with 0.1 bins')
+plt.title('F1 Score Distribution')
 plt.grid(True, linestyle='--', alpha=0.5)
 # plt.show()
 plt.savefig(f"{tgt_lang}.png")
