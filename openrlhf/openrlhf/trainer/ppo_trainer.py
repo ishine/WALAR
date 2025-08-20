@@ -14,7 +14,7 @@ from openrlhf.trainer.ppo_utils.experience_maker import RemoteExperienceMaker
 from openrlhf.trainer.ray.launcher import RayActorGroup
 from openrlhf.utils.deepspeed import DeepspeedStrategy
 from openrlhf.utils.logging_utils import init_logger
-from openrlhf.utils.utils import get_tokenizer, remove_pad_token, zero_pad_sequences
+from openrlhf.utils.utils import get_tokenizer, remove_pad_token, zero_pad_sequences, lang_dict
 from openrlhf.utils.utils import make_back_translation_prompts, get_spBLEU, load_flores_dataset, calculate_bleu_reward
 
 logger = init_logger(__name__)
@@ -236,25 +236,19 @@ class BasePPOTrainer(ABC):
         import sacrebleu
         two2three = {
             "en": "eng",
+            "el": "ell",
             "de": "deu",
             "zh": "zho_simpl",
+            "lb": "ltz",
             "sw": "swh",
             "ta": "tam",
             "fr": "fra",
             "bn": "bng",
             "fi": "fin",
             "sr": "srp",
-        }
-        lang_dict = {
-            'eng': "English",
-            "deu": "German",
-            "zho_simpl": "Chinese",
-            'swh': "Swahili",
-            "tam": "Tamil",
-            "fra": "French",
-            "bng": "Bengali",
-            "fin": "Finnish",
-            "srp": "Serbian",
+            "ja": "jpn",
+            "pl": "pol",
+            "cs": "ces",
         }
         src_lang = two2three[self.src]
         val_lang_list = [two2three[self.tgt]]
@@ -559,7 +553,7 @@ class PPOTrainer(BasePPOTrainer):
                     print([s.rewards for s in rollout_samples[:10]])
                     for rollout_sample, bleu_reward in zip(rollout_samples, bleu_reward_list):
                         rollout_sample.info['bleu_reward'] = torch.tensor(bleu_reward).unsqueeze(0)
-                        rollout_sample.rewards = rollout_sample.rewards + bleu_reward / 4 if rollout_samples.rewards != -25 else -25
+                        rollout_sample.rewards = rollout_sample.rewards + bleu_reward / 4 if (rollout_sample.rewards[0][0] != -25) else torch.tensor([[-25.]])
                         # rollout_sample.info['reward'] = torch.tensor(bleu_reward / 4).unsqueeze(0)
                         # rollout_sample.info['score'] = torch.tensor(bleu_reward / 4).unsqueeze(0)
                     print([s.rewards for s in rollout_samples[:10]])

@@ -4,6 +4,8 @@ import pandas as pd
 import re
 import os
 import sacrebleu
+import fasttext
+from bleurt import score
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from sentence_transformers import SentenceTransformer
 from comet import load_from_checkpoint, download_model
@@ -80,21 +82,26 @@ if __name__ == "__main__":
 
     # 26.0056
     dataset = []
-    # path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/New-Align-25-Qwen3-4B-en-zh-1M-bsz128/global_step120_hf/eng-zho_simpl.txt"
-    path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Detect-Back-Translation-MetricX-Bleu-Qwen3-4B-en-sr-1M-bsz128/global_step40_hf/eng-srp.txt"
+    # path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Qwen2.5-3B-Instruct-En-Zh-1M/global_step160_hf/eng-zho_simpl.txt"
+    path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Rule-Detect-MetricX-Qwen2.5-3B-en-ru-1M-bsz128/global_step400_hf/eng-rus.txt"
     with open(path, 'r') as f:
         lines = f.readlines()
-        for line in lines[:-2]:
+        # import code; code.interact(local=locals())
+        for line in lines[:-3]:
             dataset.append(json.loads(line))
     srcs = [data['src'] for data in dataset]
     hyps = [data['pred'] for data in dataset]
     refs = [data['ref'] for data in dataset]
-    # dataset = dataset[-29:]
-    # hyps = ["He added: “We now have four-month-old mice that were previously diabetic but are now non-diabetic.”"]
-    # hyps = ["\"We now have 4-month-old mice that are non-diabetic that used to be diabetic,\" he added."]
-    # refs = ["\"We now have 4-month-old mice that are non-diabetic that used to be diabetic,\" he added."]
-    # bleu = get_spBLEU(hyps, refs)
     
+    # lang_detect_model = fasttext.load_model("/mnt/gemini/data1/yifengliu/model/lid.176.bin")
+    # tgts = ["Danius说，“现在我们正在做 nothing。我已经打电话并发送电子邮件给他的最亲近的合作者，并收到了非常友好的回复。目前来说，这已经足够了。”",
+    #         "达尼厄斯说道：“目前我们保持按兵不动。我给他关系最好的合作者打过电话并发送了电子邮件，而且收到了对方非常友好的回复。就目前而言，这足够了。”",
+    #         "Weitere Nominierungen gibt es zum Beispiel für den besten Film, die Regie, die Kameraführung, das Kostümbild, den Schnitt, die Original-Filmmusik, das Produktionsdesign, den Tonschnitt, die Tonmischung und das Original-Drehbuch.",
+    #         "Die anderen Nominierungen umfassen Best Picture, Director, Cinematography, Costume Design, Film-editing, Original Score, Production Design, Sound Editing, Sound Mixing und Original Screenplay.",
+    #         "加拿大糖尿病协会（Canadian Diabetes Association）临床与科学分会主席、达尔豪斯大学（Dalhousie University）哈利法克斯（Halifax, Nova Scotia）医学院教授埃胡德·乌（Ehud Ur）警告说，这项研究仍处于早期阶段。",
+    #         "埃胡德·乌尔博士（新斯科舍省哈利法克斯市达尔豪西大学医学教授，加拿大糖尿病协会临床与科学部门教授）提醒，这项研究仍处在早期阶段。",
+    #         "周一，瑞典学院诺贝尔文学委员会常务秘书萨拉·丹尼尔斯在瑞典广播电台的一档节目中向公众宣布，委员会因无法直接联系到鲍勃·迪伦，通知他获得了 2016 年诺贝尔文学奖，已经放弃了与他联系的尝试。"]
+    # result = lang_detect_model.predict(tgts)
     # model = AutoModelForCausalLM.from_pretrained('/mnt/gemini/data1/yifengliu/model/Qwen3-4B')
     # a = ""
     # b = ""

@@ -21,6 +21,8 @@ import uvicorn
 import fasttext
 import sacrebleu
 import itertools
+from transformers import AutoTokenizer, AutoModel
+from simalign import SentenceAligner
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from transformers import DataCollatorWithPadding
@@ -222,6 +224,16 @@ class Arguments:
       default=False,
       metadata={"help": "Enable ModelScope usage"}
   )
+  
+  src: str = dataclasses.field(
+      default="en",
+      metadata={"help": "Source language for translation"}
+  )
+  
+  tgt: str = dataclasses.field(
+      default="zh",
+      metadata={"help": "Target language for translation"}
+  )
 
 def get_dataset(
     ds: List[dict], model_name: str, tokenizer, max_input_length: int, device, is_qe: bool
@@ -319,6 +331,24 @@ def get_spBLEU(hyps, refs):
     result = sacrebleu.corpus_bleu(hyps, [refs], tokenize="spm", force=True).score
     return result
 
+def simple_align(srcs, tgts, aligner):
+  align_score_list = []
+  for i in tqdm(range(len(srcs))):
+    src_sentence = srcs[i]
+    trg_sentence = tgts[i]
+
+    # The output is a dictionary with different matching methods.
+    # Each method has a list of pairs indicating the indexes of aligned words (The alignments are zero-indexed).
+    alignments = aligner.get_word_aligns(src_sentence, trg_sentence)
+    # import code; code.interact(local=locals())
+    src_words = set({t[0]: t for t in sorted(alignments['mwmf'])}.values())
+    tgt_words = set({t[1]: t for t in sorted(alignments['mwmf'])}.values())
+
+    precision = min(len(tgt_words) / len(trg_sentence), 1)
+    recall = min(len(src_words) / len(src_sentence), 1)
+    f1 = 2 * precision * recall / (precision + recall)
+    align_score_list.append(f1)
+  return align_score_list
 
 def align_score(srcs, tgts, model, tokenizer):
   align_score_list = []
@@ -365,6 +395,7 @@ def align_score(srcs, tgts, model, tokenizer):
     align_score_list.append(f1)
   return align_score_list
 
+
 class RewardModelProxy:
     def __init__(self, args):
         self.args = args
@@ -372,12 +403,17 @@ class RewardModelProxy:
         if args.lang_detect:
           self.lang_detect_model = fasttext.load_model("/mnt/gemini/data1/yifengliu/model/lid.176.bin")
         if args.align:
-          model_path = "/mnt/gemini/data1/yifengliu/model/LaBSE"
+          # another potential model: bert-base-multilingual-cased
+          model_path = "/mnt/gemini/data1/yifengliu/model/bge-m3"
           # self.align_model = SentenceTransformer(model_path)
-          self.align_model = transformers.BertModel.from_pretrained('bert-base-multilingual-cased')
-          self.align_tokenizer = transformers.BertTokenizer.from_pretrained('bert-base-multilingual-cased')
-          self.han1 = hanlp.load("/mnt/taurus/home/yifengliu/.hanlp/mtl/ud_ontonotes_tok_pos_lem_fea_ner_srl_dep_sdp_con_xlm_base_20220608_003435", devices=1)
-          self.han2 = hanlp.load("/mnt/taurus/home/yifengliu/.hanlp/tok/coarse_electra_small_20220616_012050", devices=1)
+          # self.align_model = transformers.BertModel.from_pretrained('bert-base-multilingual-cased')
+          # self.align_tokenizer = transformers.BertTokenizer.from_pretrained('bert-base-multilingual-cased')
+          # self.align_model = AutoModel.from_pretrained(model_path)
+          # self.align_tokenizer = AutoTokenizer.from_pretrained(model_path)
+          self.aligner = SentenceAligner(model="bge-m3", token_type="bpe", matching_methods="m", device="cuda:0")
+          if self.args.tgt == "zh":
+            self.han1 = hanlp.load("/mnt/taurus/home/yifengliu/.hanlp/mtl/ud_ontonotes_tok_pos_lem_fea_ner_srl_dep_sdp_con_xlm_base_20220608_003435", devices=1)
+            self.han2 = hanlp.load("/mnt/taurus/home/yifengliu/.hanlp/tok/coarse_electra_small_20220616_012050", devices=1)
         if 'metricX' in args.model_name:
             self.model_name = args.model_name
             self.tokenizer = transformers.AutoTokenizer.from_pretrained("google/mt5-xl", cache_dir="/mnt/gemini/data1/yifengliu/model")
@@ -455,6 +491,8 @@ class RewardModelProxy:
                 dataset = get_dataset(ds, self.model_name, self.tokenizer, self.max_length, self.model.device, is_qe=True)
               # import code; code.interact(local=locals())
               # print(dataset)
+              print(self.model.device)
+              print(dataset['input_ids'][0].device)
               predictions, _, _ = self.trainer.predict(test_dataset=dataset)
               scores.extend(-predictions)
         elif 'Comet' in self.model_name:
@@ -537,11 +575,16 @@ class RewardModelProxy:
         if self.args.align:
           print(srcs[0])
           print(tgts[0])
-          srcs = self.han1(srcs)['tok']
-          srcs = [[c for c in src if c not in [",", "\"", ".", '—', "(", ")", "/", "\\", "'"]]for src in srcs]
-          tgts = self.han2(tgts)
-          tgts = [[c for c in tgt if c not in ["：", "。", "，", "“", "”", "（", "）", "·", "-", "/", "\\", "、"]]for tgt in tgts]
-          align_score_list = align_score(srcs, tgts, self.align_model, self.align_tokenizer)
+          if self.args.tgt == "zh":
+            srcs = self.han1(srcs)['tok']
+            srcs = [[c for c in src if c not in [",", "\"", ".", '—', "(", ")", "/", "\\", "'"]]for src in srcs]
+            tgts = self.han2(tgts)
+            tgts = [[c for c in tgt if c not in ["：", "。", "，", "“", "”", "（", "）", "·", "-", "/", "\\", "、"]]for tgt in tgts]
+          else:
+            srcs = [src.split() for src in srcs]
+            tgts = [tgt.split() for tgt in tgts]
+          # align_score_list = align_score(srcs, tgts, self.align_model, self.align_tokenizer)
+          align_score_list = simple_align(srcs, tgts, self.aligner)
           align_score_list = [score*25 for score in align_score_list]
           print(align_score_list[:20])
           scores = [score + align_score for score, align_score in zip(scores, align_score_list)]

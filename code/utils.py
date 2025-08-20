@@ -231,7 +231,11 @@ def my_load_dataset(path):
   dataset = []
   with open(path, 'r') as f:
     for line in f:
-      dataset.append(json.loads(line))
+      try:
+        dataset.append(json.loads(line))
+      # in case we're processing flores dataset
+      except:
+        break
   return dataset
 
 
@@ -301,6 +305,13 @@ def preprocess_dataset(path):
       data['source'] = data.pop('src')
       data['hypothesis'] = data.pop('hypothesis')
       data['reference'] = data.pop('reference')
+  elif 'flores' in path:
+    name = "flores"
+    ds = my_load_dataset(path)
+    for data in ds:
+      data['source'] = data.pop('src')
+      data['hypothesis'] = data.pop('pred')
+      data['reference'] = data.pop('ref')
   else:
     raise ValueError(f"Unsupported dataset: {path}")
   return ds, name

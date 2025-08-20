@@ -2,7 +2,7 @@
 # Default values
 
 declare -A model_path
-export CUDA_VISIBLE_DEVICES=6,7
+export CUDA_VISIBLE_DEVICES=0,1
 
 # eval "$(/mnt/gemini/home/yifengliu/miniconda3/bin/conda shell.bash hook)"
 # which python

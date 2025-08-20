@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from transformers import AutoTokenizer, AutoModel
 from tqdm import *
 from collections import defaultdict
+from simalign import SentenceAligner
 from FlagEmbedding import BGEM3FlagModel
 
 def load_flores(path):
@@ -63,7 +64,7 @@ def align_score(srcs, tgts, model, tokenizer):
       sub2word_map_tgt += [i for x in word_list]
 
     # alignment
-    align_layer = 8
+    align_layer = 24
     threshold = 1e-3
     model.eval()
     # import code; code.interact(local=locals())
@@ -93,63 +94,84 @@ def align_score(srcs, tgts, model, tokenizer):
     # if idx == 1008:
     # print_alignments(sent_src, sent_tgt, src_words)
     # print_alignments(sent_tgt, sent_src, {(b, a) for (a, b) in tgt_words})
-    # print_alignments(sent_src, sent_tgt, align_words)
+    print_alignments(sent_src, sent_tgt, align_words)
     # import code; code.interact(local=locals())
     f1_list.append(f1)
   return f1_list
   # return align_score_list
 
-model_path = 'bert-base-multilingual-cased'
-# model_path = "/mnt/gemini/data1/yifengliu/model/bge-m3"
-model = transformers.BertModel.from_pretrained(model_path)
-tokenizer = transformers.BertTokenizer.from_pretrained(model_path)
-# model = AutoModel.from_pretrained(model_path)
-# tokenizer = AutoTokenizer.from_pretrained(model_path)
+# model_path = 'bert-base-multilingual-cased'
+model_path = "/mnt/gemini/data1/yifengliu/model/bge-m3"
+# model = transformers.BertModel.from_pretrained(model_path)
+# tokenizer = transformers.BertTokenizer.from_pretrained(model_path)
+model = AutoModel.from_pretrained(model_path)
+tokenizer = AutoTokenizer.from_pretrained(model_path)
 
 import hanlp
 import hanlp_restful
 from hanlp_restful import HanLPClient
-HanLP1 = hanlp.load(hanlp.pretrained.mtl.UD_ONTONOTES_TOK_POS_LEM_FEA_NER_SRL_DEP_SDP_CON_XLMR_BASE)
+# HanLP1 = hanlp.load(hanlp.pretrained.mtl.UD_ONTONOTES_TOK_POS_LEM_FEA_NER_SRL_DEP_SDP_CON_XLMR_BASE)
 # HanLP1 = hanlp.load(hanlp.pretrained.tok.UD_TOK_MMINILMV2L12)
-HanLP2 = hanlp.load(hanlp.pretrained.tok.COARSE_ELECTRA_SMALL_ZH)
+# HanLP2 = hanlp.load(hanlp.pretrained.tok.COARSE_ELECTRA_SMALL_ZH)
 
-
-# model = AutoModel.from_pretrained(model_path)
-# tokenizer = AutoTokenizer.from_pretrained(model_path)
 
 # src = "Because the dinosaur feathers do not have a well-developed shaft, called a rachis, but do have other features of feathers — barbs and barbules — the researchers inferred the rachis was likely a later evolutionary development that these other features."
 # tgt = "由于恐龙羽毛缺乏典型的羽毛轴（rachis），即羽毛中贯穿整个结构的中轴部分，但仍然具备羽毛的基本特征，如羽片和羽丝，研究人员据此推断，羽毛轴这一结构可能是后来才逐渐演化出来的，而羽片和羽丝等其他特征则可能在更早的时候就已经存在了。"
 # tgt = "恐龙的羽毛并没有发育良好的主干——这称为“羽轴”，但还是有羽毛的其他特征，比如羽枝和羽小枝，研究人员推断羽轴的进化可能比这些其他特征晚。"
 
 src_lang = "eng"
-tgt_lang = "zho_simpl"
+tgt_lang = "ltz"
 src_path = f"/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest/{src_lang}.devtest"
 tgt_path = f"/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest/{tgt_lang}.devtest"
 src_dataset, tgt_dataset = load_flores(src_path), load_flores(tgt_path)
-# src_dataset, tgt_dataset = src_dataset[13:23], tgt_dataset[13:23]
-# src_dataset, tgt_dataset = src_dataset[-2:], tgt_dataset[-2:]
 
-# src_dataset = ["Duvall, who is married with two adult children, did not leave a big impression on Miller, to whom the story was related."]
-# tgt_dataset = ["杜瓦尔已婚，有两个成年子女，但未给米勒留下深刻印象。"]
-# tgt_dataset = ["杜瓦尔已婚，有两个已经成年的孩子，他并没有给故事的讲述者米勒留下太大印象。"]
-# src_dataset = ["Because the dinosaur feathers do not have a well-developed shaft, called a rachis, but do have other features of feathers — barbs and barbules — the researchers inferred the rachis was likely a later evolutionary development that these other features."]
-# tgt_dataset = ["由于恐龙羽毛缺乏典型的羽毛轴（rachis），即羽毛中贯穿整个结构的中轴部分，但仍然具备羽毛的基本特征，如羽片和羽丝，研究人员据此推断，羽毛轴这一结构可能是后来才逐渐演化出来的，而羽片和羽丝等其他特征则可能在更早的时候就已经存在了。"]
-# tgt_dataset = ["恐龙的羽毛并没有发育良好的主干——这称为“羽轴”，但还是有羽毛的其他特征，比如羽枝和羽小枝，研究人员推断羽轴的进化可能比这些其他特征晚。"]
-src_dataset = ["Officials for the city of Amsterdam and the Anne Frank Museum state that the tree is infected with a fungus and poses a public health hazard as they argue that it was in imminent danger of falling over."
-               ]
-tgt_dataset = ["阿姆斯特丹市政府及安妮·弗兰克博物馆的工作人员表示，这棵橡树已被真菌感染，存在安全隐患，随时可能倒下，对公众安全构成威胁。因此，他们主张应尽快采取措施处理这棵树。"
-               ]
+# import code; code.interact(local=locals())
 
-src_dataset = HanLP1(src_dataset)['tok']
-# import code; code.interact(local=locals())
-src_dataset = [[c for c in src if c not in [",", "\"", ".", '—', "(", ")", "/", "\\", "'"]]for src in src_dataset]
-# import code; code.interact(local=locals())
-tgt_dataset = HanLP2(tgt_dataset)
-# import code; code.interact(local=locals())
-tgt_dataset = [[c for c in tgt if c not in ["：", "。", "，", "“", "”", "（", "）", "·", "-", "/", "\\", "、"]]for tgt in tgt_dataset]
-# import code; code.interact(local=locals())
-# for src, tgt in zip(src_dataset, tgt_dataset):
+
+# src_dataset = HanLP1(src_dataset)['tok']
+# src_dataset = [[c for c in src if c not in [",", "\"", ".", '—', "(", ")", "/", "\\", "'"]]for src in src_dataset]
+# tgt_dataset = HanLP2(tgt_dataset)
+# tgt_dataset = [[c for c in tgt if c not in ["：", "。", "，", "“", "”", "（", "）", "·", "-", "/", "\\", "、"]]for tgt in tgt_dataset]
+src_dataset = ["Dr. Ehud Ur, professor of medicine at Dalhousie University in Halifax, Nova Scotia and chair of the clinical and scientific division of the Canadian Diabetes Association cautioned that the research is still in its early days."]
+tgt_dataset = ["Den Dr. Ehud Earl, President vun der Clinical and Research Division vun der Canadian Diabetes Association a Professer op der Fakultéit fir Medizin vun der Dalhousie University zu Halifax, huet drop higewisen, datt dës Fuerschung nach an hire Virstadien ass a weider grëndlech Diskussioun brauch."]
+tgt_dataset = ["Den Dr. Ehud Earle, President vun der klinescher Fuerschung bei der Canadian Diabetes Association a Professer op der Dalhousie University School of Medicine zu Halifax, huet bemierkt, datt d'Fuerschung nach ëmmer am Ufank ass."]
+# tgt_dataset = ["Dr. Ehud Earl, Vorsitzender der Abteilung für Klinik und Forschung der Canadian Diabetes Association und Professor an der medizinischen Fakultät der Dalhousie University in Halifax, wies darauf hin, dass sich diese Forschung noch in der Anfangsphase befinde und einer weiteren eingehenden Diskussion bedürfe."]
+src_dataset = [src.split() for src in src_dataset]
+tgt_dataset = [tgt.split() for tgt in tgt_dataset]
+# src_dataset, tgt_dataset = src_dataset[-1:], tgt_dataset[-1:]  # for test
 align_score_list = align_score(src_dataset, tgt_dataset, model, tokenizer)
+import code; code.interact(local=locals())
+myaligner = SentenceAligner(model="bge-m3", token_type="bpe", matching_methods="mai")
+
+# The source and target sentences should be tokenized to words.
+# trg_sentence = "Pracovníci musejí získat schválení nadřízených ohledně každého svého rozhodnutí a očekává se od nich, že instrukce svých nadřízených uposlechnou bez otázek."
+# src_sentence = "Workers must often get their superiors' approval for any decisions they make, and are expected to obey their superiors' instructions without question."
+align_score_list = []
+for src_sentence, trg_sentence in zip(src_dataset, tgt_dataset):
+  # src_sentence = src.split()
+  # trg_sentence = tgt.split()
+
+  # The output is a dictionary with different matching methods.
+  # Each method has a list of pairs indicating the indexes of aligned words (The alignments are zero-indexed).
+  alignments = myaligner.get_word_aligns(src_sentence, trg_sentence)
+  # import code; code.interact(local=locals())
+  src_words = set({t[0]: t for t in sorted(alignments['mwmf'])}.values())
+  tgt_words = set({t[1]: t for t in sorted(alignments['mwmf'])}.values())
+
+  precision = min(len(tgt_words) / len(trg_sentence), 1)
+  recall = min(len(src_words) / len(src_sentence), 1)
+  f1 = 2 * precision * recall / (precision + recall)
+  align_score_list.append(f1)
+  print(f1)
+# for matching_method in alignments:
+#     print(matching_method, ":", alignments[matching_method])
+
+# Expected output:
+# mwmf (Match): [(0, 0), (1, 1), (2, 2), (3, 3), (4, 4)]
+# inter (ArgMax): [(0, 0), (1, 1), (2, 2), (3, 3), (4, 4)]
+# itermax (IterMax): [(0, 0), (1, 1), (2, 2), (3, 3), (4, 4)]
+
+
 # tokenizer = AutoTokenizer.from_pretrained("/mnt/gemini/data1/yifengliu/model/bge-m3")
 # model = AutoModel.from_pretrained("/mnt/gemini/data1/yifengliu/model/bge-m3")
 
@@ -210,7 +232,7 @@ plt.ylabel('Count')
 plt.title('F1 Score Distribution')
 plt.grid(True, linestyle='--', alpha=0.5)
 # plt.show()
-plt.savefig(f"{tgt_lang}.png")
+plt.savefig(f"/mnt/gemini/data1/yifengliu/qe-lr/output/{tgt_lang}2.png")
 print(f"Align Score: {align_score_list}")
 
 import code; code.interact(local=locals())

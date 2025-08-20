@@ -1,11 +1,12 @@
 #!/bin/bash
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=2
 declare -A model_path
 num_gpus=$(echo "$CUDA_VISIBLE_DEVICES" | awk -F',' '{print NF}')
 
 model_path["Qwen"]="/mnt/gemini/data1/yifengliu/model/Qwen3-30B-A3B-Instruct-2507"
-model_path["checkpoint"]="/mnt/gemini/data1/yifengliu/checkpoints/Detect-Back-Translation-MetricX-Bleu-Qwen2.5-3B-Instruct-en-zh-1M-bsz128/global_step70_hf"
+model_path["checkpoint"]="/mnt/gemini/data1/yifengliu/checkpoints/Rule-Detect-MetricX-Qwen3-4B-en-lb-1M-bsz128/global_step160_hf"
 model_path["nllb"]="/mnt/gemini/data1/yifengliu/model/nllb-200-distilled-1.3B"
+# Back-Translation-0.125-Qwen3-4B-en-zh-1M-bsz128/global_step380_hf
 # /mnt/gemini/data1/yifengliu/checkpoints/Back-Translation-0.06-Qwen3-4B-en-zh-1M-bsz128/global_step120_hf
 # zho_simpl, zho_trad, swh, tam, asm
 MODEL_NAME="checkpoint"
@@ -16,7 +17,13 @@ src="eng"
 # src="deu"
 target_language_list=(
     # "eng"
-    "zho_simpl"
+    # "rus"
+    # "ell"
+    # "pol"
+    "ltz"
+    # "ces"
+    # "jpn"
+    # "zho_simpl"
     # "srp"
     # "afr"
     # "dan"
@@ -129,13 +136,14 @@ target_language_list=(
     # "hin"
     # "ind"
     # "msa"
-    # "zho_simpl"
+    "zho_simpl"
     # "deu"
-    # "spa"
-    # "rus"
-    # "jpn"
-    # "ara"
-    # "fin"
+    "spa"
+    "rus"
+    "jpn"
+    "tam"
+    "ara"
+    "fin"
 
     # "tur"
     # "asm"

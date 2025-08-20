@@ -14,13 +14,16 @@ export HF_DATASETS_CACHE=/mnt/gemini/data2/yifengliu/.cache/huggingface/datasets
 export HF_HUB_CACHE=/mnt/gemini/data2/yifengliu/.cache/huggingface/hub
 export DS_SKIP_CUDA_CHECK=1
 export RAY_DEBUG_POST_MORTEM=1
-wandb_token=5bebcc325992863eb55622d9ad2e7c85c95a1f15
+
+# wandb_token=5bebcc325992863eb55622d9ad2e7c85c95a1f15
+# cmu key
+wandb_token=e00b93c51b52fed0712d2130a4df508e9a41e95c
 
 src="en"
-tgt="zh"
-version="2.5"
-size="3B-Instruct"
-reward_name="Detect-Back-Translation-MetricX-Bleu"
+tgt="lb"
+version="3"
+size="4B"
+reward_name="Sim-Align-Rule-Detect-MetricX"
 
 # remote_rm_url
 # remote_rm_url2
@@ -41,8 +44,8 @@ ray job submit --address="http://127.0.0.1:8265" \
     --ref_reward_offload \
     --pretrain /mnt/gemini/data1/yifengliu/model/Qwen${version}-${size} \
     --remote_rm_url http://localhost:2000/get_reward \
-    --remote_comet_url http://localhost:4444/get_reward \
-    --micro_train_batch_size 64 \
+    --remote_comet_url http://localhost:5555/get_reward \
+    --micro_train_batch_size 32 \
     --train_batch_size 128 \
     --micro_rollout_batch_size 32 \
     --rollout_batch_size 128 \
@@ -67,14 +70,13 @@ ray job submit --address="http://127.0.0.1:8265" \
     --eval_steps 10 \
     --eval_n_samples_per_prompt 1\
     --input_key input_key \
-    --back_translate \
     --apply_chat_template \
     --normalize_reward \
     --adam_offload \
     --flash_attn \
     --gradient_checkpointing \
     --temperature 1 \
-    --save_steps 10 \
+    --save_steps 20 \
     --save_path /mnt/gemini/data1/yifengliu/checkpoints/final/${reward_name}-Qwen${version}-${size}-${src}-${tgt}-1M-bsz128 \
     --ckpt_path /mnt/gemini/data1/yifengliu/checkpoints/${reward_name}-Qwen${version}-${size}-${src}-${tgt}-1M-bsz128 \
     --load_checkpoint \

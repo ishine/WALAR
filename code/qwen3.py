@@ -174,22 +174,22 @@ def main():
     print(f"Evaluating model {args.model_name_or_path}...")
     # ds, name = preprocess_dataset(args.input_file)
     # ds = datasets.Dataset.from_list(ds)
-    dir_path = "/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest"
-    src_dataset, tgt_dataset = load_flores_dataset(dir_path, f"eng-uzb")
-    ds = [{
-        "src_lang": "English",
-        "tgt_lang": "Serbian",
-        "source": src,
-        "hypothesis": tgt
-    } for src, tgt in zip(src_dataset, tgt_dataset)]
-    # ds = [
-    #     {
-    #         "src_lang": "English",
-    #         "tgt_lang": "Chinese",
-    #         "source": "Dr. Tony Moll discovered the Extremely Drug Resistant Tuberculosis (XDR-TB) in the South African region KwaZulu-Natal.",
-    #         "hypothesis": "南非夸祖鲁-纳塔尔地区医学家托尼·莫尔博士首次发现了耐多药肺结核（XDR-TB）这种新型肺结核病。"
-    #     }
-    # ]
+    # dir_path = "/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest"
+    # src_dataset, tgt_dataset = load_flores_dataset(dir_path, f"eng-uzb")
+    # ds = [{
+    #     "src_lang": "English",
+    #     "tgt_lang": "Serbian",
+    #     "source": src,
+    #     "hypothesis": tgt
+    # } for src, tgt in zip(src_dataset, tgt_dataset)]
+    ds = [
+        {
+            "src_lang": "English",
+            "tgt_lang": "German",
+            "source": 'The other nominations include Best Picture, Director, Cinematography, Costume Design, Film-editing, Original Score, Production Design, Sound Editing, Sound Mixing and Original Screenplay.',
+            "hypothesis": 'Die anderen Nominierungen umfassen Best Picture, Director, Cinematography, Costume Design, Film-editing, Original Score, Production Design, Sound Editing, Sound Mixing und Original Screenplay.'
+        }
+    ]
     # ds structure: source, hypothesis, reference
     if args.model_name_or_path == "Qwen3-235B-AWQ":
         sampling_params = SamplingParams(temperature=0.7, top_p=0.8, top_k=20, min_p=0, presence_penalty=1.5, max_tokens=args.max_tokens, n=args.turns)
@@ -215,15 +215,15 @@ def main():
     )
     write_to_file(output_file, ds, scores)
     
-    plt.hist(scores, bins=[i for i in range(101)], edgecolor='black')
+    # plt.hist(scores, bins=[i for i in range(101)], edgecolor='black')
 
-    plt.xlabel('Value Range')
-    plt.ylabel('Count')
-    plt.title('Score Distribution')
-    plt.grid(True, linestyle='--', alpha=0.5)
-    # plt.show()
-    plt.savefig(f"/mnt/gemini/data1/yifengliu/qe-lr/output/eng-uzb.png")
-    print(f"Align Score: {scores}")
+    # plt.xlabel('Value Range')
+    # plt.ylabel('Count')
+    # plt.title('Score Distribution')
+    # plt.grid(True, linestyle='--', alpha=0.5)
+    # # plt.show()
+    # plt.savefig(f"/mnt/gemini/data1/yifengliu/qe-lr/output/eng-uzb.png")
+    # print(f"Align Score: {scores}")
 
 if __name__ == "__main__":
     main()

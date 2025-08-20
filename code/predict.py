@@ -259,6 +259,10 @@ def get_predictions(
   # import code; code.interact(local=locals())
   return predictions
 
+def load_flores(path):
+  with open(path, 'r') as f:
+    lines = f.readlines()
+  return lines
            
 def main() -> None:
   parser = transformers.HfArgumentParser(Arguments)
@@ -279,24 +283,55 @@ def main() -> None:
     model.to(device)
   model.eval()
   ds, name = preprocess_dataset(args.input_file)
-  # ds = [{
-  #   "source": "On Monday, Sara Danius, permanent secretary of the Nobel Committee for Literature at the Swedish Academy, publicly announced during a radio program on Sveriges Radio in Sweden the committee, unable to reach Bob Dylan directly about winning the 2016 Nobel Prize in Literature, had abandoned its efforts to reach him.",
-  #   "hypothesis": "周一，瑞典学院诺贝尔文学委员会常务秘书萨拉·丹尼尔斯在瑞典广播电台的一档节目中向公众宣布，委员会因无法直接联系到鲍勃·迪伦，通知他获得了 2016 年诺贝尔文学奖，已经放弃了与他联系的尝试。",
-  #   # "reference": "他补充道：“我们现在有 4 个月大没有糖尿病的老鼠，但它们曾经得过该病。”",
-  # }]
   # ds = [
   #   {
-  #     "source": "Because the dinosaur feathers do not have a well-developed shaft, called a rachis, but do have other features of feathers — barbs and barbules — the researchers inferred the rachis was likely a later evolutionary development that these other features.",
-  #     "hypothesis": "由于恐龙羽毛缺乏典型的羽毛轴（rachis），即羽毛中贯穿整个结构的中轴部分，但仍然具备羽毛的基本特征，如羽片和羽丝，研究人员据此推断，羽毛轴这一结构可能是后来才逐渐演化出来的，而羽片和羽丝等其他特征则可能在更早的时候就已经存在了。",
-  #     "reference": "恐龙的羽毛并没有发育良好的主干——这称为“羽轴”，但还是有羽毛的其他特征，比如羽枝和羽小枝，研究人员推断羽轴的进化可能比这些其他特征晚。",
+  #     "source": "Dr. Ehud Ur, professor of medicine at Dalhousie University in Halifax, Nova Scotia and chair of the clinical and scientific division of the Canadian Diabetes Association cautioned that the research is still in its early days.", 
+  #     "hypothesis": "Dr. Ehud Ur，Dalhousie University 在 Halifax，Nova Scotia 的医学教授，以及 Canadian Diabetes Association 的临床和科学分部主席，提醒说这项研究仍处于早期阶段。"
+  #   }
+  # ]
+  # ds = [
+  #   {
+  #     "source": "On Monday, Sara Danius, permanent secretary of the Nobel Committee for Literature at the Swedish Academy, publicly announced during a radio program on Sveriges Radio in Sweden the committee, unable to reach Bob Dylan directly about winning the 2016 Nobel Prize in Literature, had abandoned its efforts to reach him.",
+  #     "hypothesis": "周一，萨拉·丹努斯（Sara Danius），瑞典学院（Swedish Academy）文学奖委员会的常任秘书，在瑞典广播电台（Sveriges Radio）的一次广播节目中公开宣布，由于无法直接联系到鲍勃·迪伦（Bob Dylan）关于获得2016年诺贝尔文学奖一事，委员会已放弃了尝试联系他的努力。",
+  #   }
+  # ]
+  # ds = [
+  #   {
+  #     "source": "Danius said, \"Right now we are doing nothing. I have called and sent emails to his closest collaborator and received very friendly replies. For now, that is certainly enough.\"",
+  #     "hypothesis": "Danius说，“现在我们正在做 nothing。我已经打电话并发送电子邮件给他的最亲近的合作者，并收到了非常友好的回复。目前来说，这已经足够了。”"
+  #   }
+  # ]
+  # ds = [
+  #   {
+  #     "source": "Dr. Ehud Ur, professor of medicine at Dalhousie University in Halifax, Nova Scotia and chair of the clinical and scientific division of the Canadian Diabetes Association cautioned that the research is still in its early days.",
+  #     "hypothesis": "加拿大糖尿病协会（Canadian Diabetes Association, Kanadischen Diabetesverbands）临床与科学分会主席、达尔豪斯大学（Dalhousie University）哈利法克斯（Halifax, Nova Scotia）医学院教授埃胡德·乌（Ehud Ur）警告说，这项研究仍处于早期阶段。"
+  #   }
+  # ]
+  # ds = [
+  #   {
+  #     "source": 'Current senator and Argentine First Lady Cristina Fernandez de Kirchner announced her presidential candidacy yesterday evening in La Plata, a city 50 kilometers (31 miles) away from Buenos Aires.',
+  #     "hypothesis": "现任参议员及阿根廷第一夫人克ristina Fernández de Kirchner于昨晚在拉普拉塔（La Plata），这座距离布宜诺斯艾利斯（Buenos Aires）约50公里（31英里）的城市宣布参选总统"
+  #   }
+  # ]
+  # ds = [
+  #   {
+  #     "source": "The other nominations include Best Picture, Director, Cinematography, Costume Design, Film-editing, Original Score, Production Design, Sound Editing, Sound Mixing and Original Screenplay.",
+  #     "hypothesis": 'Die anderen Nominierungen umfassen Best Picture, Director, Cinematography, Costume Design, Film-editing, Original Score, Production Design, Sound Editing, Sound Mixing und Original Screenplay.'
   #   }
   # ]
   ds = [
     {
-      "source": "Ring also settled a lawsuit with competing security company, the ADT Corporation.", 
-      "hypothesis":"Ring还与竞争对手ADT公司达成和解。", 
+      "source": "On Monday, Sara Danius, permanent secretary of the Nobel Committee for Literature at the Swedish Academy, publicly announced during a radio program on Sveriges Radio in Sweden the committee, unable to reach Bob Dylan directly about winning the 2016 Nobel Prize in Literature, had abandoned its efforts to reach him.",
+      "hypothesis": "周一，瑞典学院文学奖委员会永久秘书萨拉·丹努斯在瑞典广播电台的一档节目中宣布，由于无法直接联系到鲍勃·迪伦，委员会放弃了尝试联系他的努力。"
     }
   ]
+  # src_path = f"/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest/eng.devtest"
+  # tgt_path = f"/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest/pol.devtest"
+  # src_dataset, tgt_dataset = load_flores(src_path), load_flores(tgt_path)
+  # ds = [{
+  #   "source": src,
+  #   "hypothesis": tgt,
+  # } for src, tgt in zip(src_dataset, tgt_dataset)]
   ds = datasets.Dataset.from_list(ds)
   ds, data_collator = get_dataset(
       ds,
@@ -310,16 +345,22 @@ def main() -> None:
   # print(predictions[0])
   dirname = args.output_dir
   dirname = os.path.join(dirname, args.model_name + "-" + args.model_size + "-" + args.dtype)
-  import code; code.interact(local=locals())
-  # if dirname:
-  #   os.makedirs(dirname, exist_ok=True)
-
-  # output_file = os.path.join(
-  #     dirname,
-  #     f"{args.src}-{args.tgt}.jsonl",
-  # )
-  # write_to_file(output_file, ds, predictions, args.model_name)
-
+  # import code; code.interact(local=locals())
+  if name != "flores":
+    if dirname:
+      os.makedirs(dirname, exist_ok=True)
+    output_file = os.path.join(
+        dirname,
+        f"{args.src}-{args.tgt}.jsonl",
+    )
+    write_to_file(output_file, ds, predictions, args.model_name)
+  else:
+    with open(args.input_file, 'a') as f:
+      mean_score = sum(predictions) / len(predictions)
+      if args.model_name == "metricX":
+        f.write(f"MetricX Score: {mean_score:.4f}\n")
+      if args.model_name == "XComet":
+        f.write(f"XComet Score: {mean_score:.4f}\n")
 
 if __name__ == "__main__":
   main()
