@@ -350,50 +350,105 @@ def simple_align(srcs, tgts, aligner):
     align_score_list.append(f1)
   return align_score_list
 
-def align_score(srcs, tgts, model, tokenizer):
-  align_score_list = []
-  # for src, tgt in zip(srcs, tgts):
-  for i in tqdm(range(len(srcs))):
-    sent_src, sent_tgt = srcs[i], tgts[i]
-    # sent_src, sent_tgt = src.strip().split(), tgt.strip().split()
-    token_src, token_tgt = [tokenizer.tokenize(word) for word in sent_src], [tokenizer.tokenize(word) for word in sent_tgt]
-    # print(token_src)
-    # print(token_tgt)
-    wid_src, wid_tgt = [tokenizer.convert_tokens_to_ids(x) for x in token_src], [tokenizer.convert_tokens_to_ids(x) for x in token_tgt]
-    ids_src, ids_tgt = tokenizer.prepare_for_model(list(itertools.chain(*wid_src)), return_tensors='pt', model_max_length=tokenizer.model_max_length, truncation=True)['input_ids'], tokenizer.prepare_for_model(list(itertools.chain(*wid_tgt)), return_tensors='pt', truncation=True, model_max_length=tokenizer.model_max_length)['input_ids']
-    sub2word_map_src = []
-    for i, word_list in enumerate(token_src):
-      sub2word_map_src += [i for x in word_list]
-    sub2word_map_tgt = []
-    for i, word_list in enumerate(token_tgt):
-      sub2word_map_tgt += [i for x in word_list]
-
-    # alignment
-    align_layer = 8
+def align_score(srcs, tgts, model, tokenizer, batch_size=16):
+    align_score_list = []
+    align_layer = 24
     threshold = 1e-3
+
+    # Precompute all tokenizations and mappings
+    tokenized_data = []
+        
+    for i in tqdm(range(len(srcs))):
+      sent_src, sent_tgt = srcs[i], tgts[i]
+      # sent_src, sent_tgt = src.strip().split(), tgt.strip().split()
+      token_src, token_tgt = [tokenizer.tokenize(word) for word in sent_src], [tokenizer.tokenize(word) for word in sent_tgt]
+      # print(token_src)
+      # print(token_tgt)
+      wid_src, wid_tgt = [tokenizer.convert_tokens_to_ids(x) for x in token_src], [tokenizer.convert_tokens_to_ids(x) for x in token_tgt]
+      ids_src, ids_tgt = tokenizer.prepare_for_model(list(itertools.chain(*wid_src)), return_tensors='pt', model_max_length=tokenizer.model_max_length, truncation=True)['input_ids'], tokenizer.prepare_for_model(list(itertools.chain(*wid_tgt)), return_tensors='pt', truncation=True, model_max_length=tokenizer.model_max_length)['input_ids']
+      sub2word_map_src = []
+      for i, word_list in enumerate(token_src):
+        sub2word_map_src += [i for x in word_list]
+      sub2word_map_tgt = []
+      for i, word_list in enumerate(token_tgt):
+        sub2word_map_tgt += [i for x in word_list]
+      tokenized_data.append({
+        'input_ids_src': ids_src.squeeze().tolist(),
+        'input_ids_tgt': ids_tgt.squeeze().tolist(),
+        'sub2word_src': sub2word_map_src,
+        'sub2word_tgt': sub2word_map_tgt,
+        'src_len': len(sent_src),
+        'tgt_len': len(sent_tgt)
+      })
+    
+    # Process in batches
     model.eval()
     with torch.no_grad():
-      out_src = model(ids_src.unsqueeze(0), output_hidden_states=True)[2][align_layer][0, 1:-1]
-      out_tgt = model(ids_tgt.unsqueeze(0), output_hidden_states=True)[2][align_layer][0, 1:-1]
-
-      dot_prod = torch.matmul(out_src, out_tgt.transpose(-1, -2))
-
-      softmax_srctgt = torch.nn.Softmax(dim=-1)(dot_prod)
-      softmax_tgtsrc = torch.nn.Softmax(dim=-2)(dot_prod)
-
-      softmax_inter = (softmax_srctgt > threshold)*(softmax_tgtsrc > threshold)
-
-    align_subwords = torch.nonzero(softmax_inter, as_tuple=False)
-    align_words = set()
-    for i, j in align_subwords:
-      align_words.add( (sub2word_map_src[i], sub2word_map_tgt[j]) )
-    src_words = set({t[0]: t for t in sorted(align_words)}.values())
-    tgt_words = set({t[1]: t for t in sorted(align_words)}.values())
-    precision = min(len(tgt_words) / len(token_tgt), 1)
-    recall = min(len(src_words) / len(token_src), 1)
-    f1 = 2 * precision * recall / (precision + recall)
-    align_score_list.append(f1)
-  return align_score_list
+        for i in tqdm(range(0, len(tokenized_data), batch_size)):
+            batch = tokenized_data[i:i+batch_size]
+            
+            # Prepare batch inputs
+            src_batch = [item['input_ids_src'] for item in batch]
+            tgt_batch = [item['input_ids_tgt'] for item in batch]
+            
+            # Pad batches
+            src_tensors = torch.nn.utils.rnn.pad_sequence(
+                [torch.tensor(ids) for ids in src_batch],
+                batch_first=True,
+                padding_value=tokenizer.pad_token_id
+            )
+            tgt_tensors = torch.nn.utils.rnn.pad_sequence(
+                [torch.tensor(ids) for ids in tgt_batch],
+                batch_first=True,
+                padding_value=tokenizer.pad_token_id
+            )
+            src_mask = (src_tensors != tokenizer.pad_token_id).long()
+            tgt_mask = (tgt_tensors != tokenizer.pad_token_id).long()
+            # import code; code.interact(local=locals())
+            # Get model outputs
+            out_src = model(src_tensors, attention_mask=src_mask, output_hidden_states=True)[2][align_layer]
+            out_tgt = model(tgt_tensors, attention_mask=tgt_mask, output_hidden_states=True)[2][align_layer]
+            # import code; code.interact(local=locals())
+            # Process each sentence in the batch
+            for j, item in enumerate(batch):
+                # Remove padding and special tokens
+                src_len = sum([1 for x in src_batch[j] if x != tokenizer.pad_token_id])
+                tgt_len = sum([1 for x in tgt_batch[j] if x != tokenizer.pad_token_id])
+                valid_src = out_src[j, 1:src_len-1]  # Remove [CLS] and [SEP]
+                valid_tgt = out_tgt[j, 1:tgt_len-1]
+                
+                # Calculate alignment
+                dot_prod = torch.matmul(valid_src, valid_tgt.transpose(-1, -2))
+                softmax_srctgt = torch.nn.Softmax(dim=-1)(dot_prod)
+                softmax_tgtsrc = torch.nn.Softmax(dim=-2)(dot_prod)
+                softmax_inter = (softmax_srctgt > threshold) * (softmax_tgtsrc > threshold)
+                
+                # Convert to word alignment
+                align_subwords = torch.nonzero(softmax_inter, as_tuple=False)
+                align_words = set()
+                for i_sub, j_sub in align_subwords:
+                    align_words.add((
+                        item['sub2word_src'][i_sub],
+                        item['sub2word_tgt'][j_sub]
+                    ))
+                
+                # Calculate scores
+                src_words = {t[0] for t in align_words}
+                tgt_words = {t[1] for t in align_words}
+                n_src = len(src_words)
+                n_tgt = len(tgt_words)
+                
+                precision = n_tgt / item['tgt_len'] if n_tgt > 0 else 0
+                recall = n_src / item['src_len'] if n_src > 0 else 0
+                
+                if precision + recall > 0:
+                    f1 = 2 * precision * recall / (precision + recall)
+                else:
+                    f1 = 0.0
+                # import code; code.interact(local=locals())
+                align_score_list.append(f1)
+    
+    return align_score_list
 
 
 class RewardModelProxy:
@@ -408,9 +463,9 @@ class RewardModelProxy:
           # self.align_model = SentenceTransformer(model_path)
           # self.align_model = transformers.BertModel.from_pretrained('bert-base-multilingual-cased')
           # self.align_tokenizer = transformers.BertTokenizer.from_pretrained('bert-base-multilingual-cased')
-          # self.align_model = AutoModel.from_pretrained(model_path)
-          # self.align_tokenizer = AutoTokenizer.from_pretrained(model_path)
-          self.aligner = SentenceAligner(model="bge-m3", token_type="bpe", matching_methods="m", device="cuda:0")
+          self.align_model = AutoModel.from_pretrained(model_path)
+          self.align_tokenizer = AutoTokenizer.from_pretrained(model_path)
+          # self.aligner = SentenceAligner(model="bge-m3", token_type="bpe", matching_methods="m", device="cuda:0")
           if self.args.tgt == "zh":
             self.han1 = hanlp.load("/mnt/taurus/home/yifengliu/.hanlp/mtl/ud_ontonotes_tok_pos_lem_fea_ner_srl_dep_sdp_con_xlm_base_20220608_003435", devices=1)
             self.han2 = hanlp.load("/mnt/taurus/home/yifengliu/.hanlp/tok/coarse_electra_small_20220616_012050", devices=1)
@@ -535,27 +590,6 @@ class RewardModelProxy:
               new_scores.append(score)
           scores = new_scores
           extra_logs['rule_penalty_percent'] = cnt / len(tgts)
-        
-        if self.args.lang_detect:
-          pattern = r"Translate from English to ([^\n<]+):"
-          target_languages = [re.search(pattern, query).group(1).strip() for query in queries if re.search(pattern, query)]
-          tgts = [tgt.replace("\n", "") for tgt in tgts]
-          lang_info = self.lang_detect_model.predict(tgts)
-          min_reward = -25 if 'metricX' in self.model_name else 0
-          detect_rewards = []
-          cnt = 0
-          for language, tgt in zip(lang_info[0], target_languages):
-            lang_code = language[0].replace("__label__", "")
-            pred_lang = lang_dict.get(lang_code, "")
-            print(language, tgt, pred_lang, pred_lang == tgt)
-            if pred_lang == tgt:
-              detect_rewards.append(float('inf'))
-            else:
-              cnt += 1
-              detect_rewards.append(min_reward)
-          scores = [min(score, detect_reward) for score, detect_reward in zip(scores, detect_rewards)]
-          logger.info(lang_info[0][:20])
-          extra_logs['lang_penalty_percent'] = cnt / len(tgts)
           
         if self.args.truncate:
           truncate_bound = -3
@@ -576,19 +610,39 @@ class RewardModelProxy:
           print(srcs[0])
           print(tgts[0])
           if self.args.tgt == "zh":
-            srcs = self.han1(srcs)['tok']
-            srcs = [[c for c in src if c not in [",", "\"", ".", '—', "(", ")", "/", "\\", "'"]]for src in srcs]
-            tgts = self.han2(tgts)
-            tgts = [[c for c in tgt if c not in ["：", "。", "，", "“", "”", "（", "）", "·", "-", "/", "\\", "、"]]for tgt in tgts]
+            src_sentences = self.han1(srcs)['tok']
+            src_sentences = [[c for c in src if c not in [",", "\"", ".", '—', "(", ")", "/", "\\", "'"]]for src in srcs]
+            tgt_sentences = self.han2(tgts)
+            tgt_sentences = [[c for c in tgt if c not in ["：", "。", "，", "“", "”", "（", "）", "·", "-", "/", "\\", "、"]]for tgt in tgts]
           else:
-            srcs = [src.split() for src in srcs]
-            tgts = [tgt.split() for tgt in tgts]
-          # align_score_list = align_score(srcs, tgts, self.align_model, self.align_tokenizer)
-          align_score_list = simple_align(srcs, tgts, self.aligner)
+            src_sentences = [src.split() for src in srcs]
+            tgt_sentences = [tgt.split() for tgt in tgts]
+          align_score_list = align_score(src_sentences, tgt_sentences, self.align_model, self.align_tokenizer)
+          # align_score_list = simple_align(srcs, tgts, self.aligner)
           align_score_list = [score*25 for score in align_score_list]
           print(align_score_list[:20])
           scores = [score + align_score for score, align_score in zip(scores, align_score_list)]
           extra_logs['mean_align_score'] = sum(align_score_list) / len(align_score_list)
+        if self.args.lang_detect:
+          pattern = r"Translate from English to ([^\n<]+):"
+          target_languages = [re.search(pattern, query).group(1).strip() for query in queries if re.search(pattern, query)]
+          tgts = [tgt.replace("\n", "") for tgt in tgts]
+          lang_info = self.lang_detect_model.predict(tgts)
+          min_reward = -25 if 'metricX' in self.model_name else 0
+          detect_rewards = []
+          cnt = 0
+          for language, tgt in zip(lang_info[0], target_languages):
+            lang_code = language[0].replace("__label__", "")
+            pred_lang = lang_dict.get(lang_code, "")
+            print(language, tgt, pred_lang, pred_lang == tgt)
+            if pred_lang == tgt:
+              detect_rewards.append(float('inf'))
+            else:
+              cnt += 1
+              detect_rewards.append(min_reward)
+          scores = [min(score, detect_reward) for score, detect_reward in zip(scores, detect_rewards)]
+          logger.info(lang_info[0][:20])
+          extra_logs['lang_penalty_percent'] = cnt / len(tgts)
           # import code; code.interact(local=locals())
         return scores, extra_logs
 

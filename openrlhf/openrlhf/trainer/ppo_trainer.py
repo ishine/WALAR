@@ -235,17 +235,20 @@ class BasePPOTrainer(ABC):
         """
         import sacrebleu
         two2three = {
+            "az": "azj",
             "en": "eng",
             "el": "ell",
             "de": "deu",
+            "hy": "hye",
             "zh": "zho_simpl",
             "lb": "ltz",
             "sw": "swh",
             "ta": "tam",
             "fr": "fra",
-            "bn": "bng",
+            "bn": "ben",
             "fi": "fin",
             "sr": "srp",
+            "sl": "slv",
             "ja": "jpn",
             "pl": "pol",
             "cs": "ces",

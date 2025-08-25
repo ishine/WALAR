@@ -83,7 +83,7 @@ if __name__ == "__main__":
     # 26.0056
     dataset = []
     # path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Qwen2.5-3B-Instruct-En-Zh-1M/global_step160_hf/eng-zho_simpl.txt"
-    path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Rule-Detect-MetricX-Qwen2.5-3B-en-ru-1M-bsz128/global_step400_hf/eng-rus.txt"
+    path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Rule-Detect-MetricX-Qwen3-4B-en-az-1M-bsz128/global_step260_hf/eng-hye.txt"
     with open(path, 'r') as f:
         lines = f.readlines()
         # import code; code.interact(local=locals())

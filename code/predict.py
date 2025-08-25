@@ -291,6 +291,19 @@ def main() -> None:
   # ]
   # ds = [
   #   {
+  #     "source": "On Monday, scientists from the Stanford University School of Medicine announced the invention of a new diagnostic tool that can sort cells by type: a tiny printable chip that can be manufactured using standard inkjet printers for possibly about one U.S. cent each.",
+  #     "hypothesis": "On Monday, scientists from the Stanford University School of Medicine announced the development of a new diagnostic tool. This tool can identify cells based on their type. It is a tiny, printable chip that can be produced using standard inkjet printers. The cost of this tool is approximately one U.S. cent each."
+  #   }
+  # ]
+  # -2.88
+  # ds = [
+  #   {
+  #     "source": "\"We now have 4-month-old mice that are non-diabetic that used to be diabetic,\" he added.",
+  #     "hypothesis": "我们目前有4个月大的小鼠，这些小鼠都是非糖尿病状态，而以前的糖尿病小鼠则都患有糖尿病。他进一步解释说：“这些小鼠在实验过程中没有受到任何药物或营养物质的干扰，它们的生理状态和代谢过程都保持正常。这表明这些小鼠的健康状况非常良好，没有受到任何有害因素的影响。我们可以通过这些小鼠来研究糖尿病的病因、治疗方案以及预防措施等，为人类的健康研究提供宝贵的资料。”\n中文翻译：\n我们目前有4个月大的小鼠，这些小鼠都是非糖尿病状态，而以前的糖尿病小鼠则都患有糖尿病。他进一步解释说：“这些小鼠在实验过程中没有受到任何药物或营养物质的干扰，它们的生理状态和代谢过程都保持正常。这表明这些小鼠的健康状况非常良好，没有受到任何有害因素的影响。我们可以通过这些小鼠来研究糖尿病的病因、治疗方案以及预防措施等，为人类的健康研究提供宝贵的资料。”"
+  #   }
+  # ]
+  # ds = [
+  #   {
   #     "source": "On Monday, Sara Danius, permanent secretary of the Nobel Committee for Literature at the Swedish Academy, publicly announced during a radio program on Sveriges Radio in Sweden the committee, unable to reach Bob Dylan directly about winning the 2016 Nobel Prize in Literature, had abandoned its efforts to reach him.",
   #     "hypothesis": "周一，萨拉·丹努斯（Sara Danius），瑞典学院（Swedish Academy）文学奖委员会的常任秘书，在瑞典广播电台（Sveriges Radio）的一次广播节目中公开宣布，由于无法直接联系到鲍勃·迪伦（Bob Dylan）关于获得2016年诺贝尔文学奖一事，委员会已放弃了尝试联系他的努力。",
   #   }
@@ -319,14 +332,26 @@ def main() -> None:
   #     "hypothesis": 'Die anderen Nominierungen umfassen Best Picture, Director, Cinematography, Costume Design, Film-editing, Original Score, Production Design, Sound Editing, Sound Mixing und Original Screenplay.'
   #   }
   # ]
+  # ds = [
+  #   {
+  #     "source": "On Monday, Sara Danius, permanent secretary of the Nobel Committee for Literature at the Swedish Academy, publicly announced during a radio program on Sveriges Radio in Sweden the committee, unable to reach Bob Dylan directly about winning the 2016 Nobel Prize in Literature, had abandoned its efforts to reach him.",
+  #     "hypothesis": "周一，瑞典学院文学奖委员会永久秘书萨拉·丹努斯在瑞典广播电台的一档节目中宣布，由于无法直接联系到鲍勃·迪伦，委员会放弃了尝试联系他的努力。"
+  #   }
+  # ]
+  # ds = [
+  #   {
+  #     "source": "The other nominations include Best Picture, Director, Cinematography, Costume Design, Film-editing, Original Score, Production Design, Sound Editing, Sound Mixing and Original Screenplay. ",
+  #     "hypothesis": "Die anderen Nominierungen umfassen Best Picture, Director, Cinematography, Costume Design, Film-editing, Original Score, Production Design, Sound Editing, Sound Mixing und Original Screenplay.",
+  #   }
+  # ]
   ds = [
     {
-      "source": "On Monday, Sara Danius, permanent secretary of the Nobel Committee for Literature at the Swedish Academy, publicly announced during a radio program on Sveriges Radio in Sweden the committee, unable to reach Bob Dylan directly about winning the 2016 Nobel Prize in Literature, had abandoned its efforts to reach him.",
-      "hypothesis": "周一，瑞典学院文学奖委员会永久秘书萨拉·丹努斯在瑞典广播电台的一档节目中宣布，由于无法直接联系到鲍勃·迪伦，委员会放弃了尝试联系他的努力。"
+      "source": "\"We now have 4-month-old mice that are non-diabetic that used to be diabetic,\" he added.",
+      "hypothesis": "\"Նա ավելացրեց, որ հիմա կան 4-ամսյական մուշեր, որոնք չեն դիաբետիկ են, բայց առաջանում են դիաբետիկ համար\":\n(Այս հատվածը կարող է համապատասխանել համապատասխան հատվածի համար, սակայն այն պետք է համապատասխանել համապատասխան հատվածի համար և կարող է լինել ավելի հասկանալի կամ ավելի հարմար հատված։)",
     }
   ]
   # src_path = f"/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest/eng.devtest"
-  # tgt_path = f"/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest/pol.devtest"
+  # tgt_path = f"/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest/azj.devtest"
   # src_dataset, tgt_dataset = load_flores(src_path), load_flores(tgt_path)
   # ds = [{
   #   "source": src,
@@ -345,22 +370,22 @@ def main() -> None:
   # print(predictions[0])
   dirname = args.output_dir
   dirname = os.path.join(dirname, args.model_name + "-" + args.model_size + "-" + args.dtype)
-  # import code; code.interact(local=locals())
-  if name != "flores":
-    if dirname:
-      os.makedirs(dirname, exist_ok=True)
-    output_file = os.path.join(
-        dirname,
-        f"{args.src}-{args.tgt}.jsonl",
-    )
-    write_to_file(output_file, ds, predictions, args.model_name)
-  else:
-    with open(args.input_file, 'a') as f:
-      mean_score = sum(predictions) / len(predictions)
-      if args.model_name == "metricX":
-        f.write(f"MetricX Score: {mean_score:.4f}\n")
-      if args.model_name == "XComet":
-        f.write(f"XComet Score: {mean_score:.4f}\n")
+  import code; code.interact(local=locals())
+  # if name != "flores":
+  #   if dirname:
+  #     os.makedirs(dirname, exist_ok=True)
+  #   output_file = os.path.join(
+  #       dirname,
+  #       f"{args.src}-{args.tgt}.jsonl",
+  #   )
+  #   write_to_file(output_file, ds, predictions, args.model_name)
+  # else:
+  #   with open(args.input_file, 'a') as f:
+  #     mean_score = sum(predictions) / len(predictions)
+  #     if args.model_name == "metricX":
+  #       f.write(f"MetricX Score: {mean_score:.4f}\n")
+  #     if args.model_name == "XComet":
+  #       f.write(f"XComet Score: {mean_score:.4f}\n")
 
 if __name__ == "__main__":
   main()

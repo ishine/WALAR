@@ -1,6 +1,8 @@
 src="eng"
 tgt_list=(
-    "ces"
+    "hye"
+    # "azj"
+    # "ces"
     # "ara"
     # "tur"
     # "tam"
