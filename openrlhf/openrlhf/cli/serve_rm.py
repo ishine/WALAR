@@ -355,84 +355,121 @@ def align_score(srcs, tgts, model, tokenizer, batch_size=16):
     align_layer = 24
     threshold = 1e-3
 
-    # Precompute all tokenizations and mappings
-    tokenized_data = []
-        
-    for i in tqdm(range(len(srcs))):
-      sent_src, sent_tgt = srcs[i], tgts[i]
-      # sent_src, sent_tgt = src.strip().split(), tgt.strip().split()
-      token_src, token_tgt = [tokenizer.tokenize(word) for word in sent_src], [tokenizer.tokenize(word) for word in sent_tgt]
-      # print(token_src)
-      # print(token_tgt)
-      wid_src, wid_tgt = [tokenizer.convert_tokens_to_ids(x) for x in token_src], [tokenizer.convert_tokens_to_ids(x) for x in token_tgt]
-      ids_src, ids_tgt = tokenizer.prepare_for_model(list(itertools.chain(*wid_src)), return_tensors='pt', model_max_length=tokenizer.model_max_length, truncation=True)['input_ids'], tokenizer.prepare_for_model(list(itertools.chain(*wid_tgt)), return_tensors='pt', truncation=True, model_max_length=tokenizer.model_max_length)['input_ids']
-      sub2word_map_src = []
-      for i, word_list in enumerate(token_src):
-        sub2word_map_src += [i for x in word_list]
-      sub2word_map_tgt = []
-      for i, word_list in enumerate(token_tgt):
-        sub2word_map_tgt += [i for x in word_list]
-      tokenized_data.append({
-        'input_ids_src': ids_src.squeeze().tolist(),
-        'input_ids_tgt': ids_tgt.squeeze().tolist(),
-        'sub2word_src': sub2word_map_src,
-        'sub2word_tgt': sub2word_map_tgt,
-        'src_len': len(sent_src),
-        'tgt_len': len(sent_tgt)
-      })
+    # 将模型移动到GPU（如果可用）
+    device = model.device
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # model = model.to(device)
     
-    # Process in batches
+    # 预计算所有tokenizations和映射
+    tokenized_data = []
+    
+    # 预处理所有数据
+    for i in tqdm(range(len(srcs))):
+        sent_src, sent_tgt = srcs[i], tgts[i]
+        
+        # 同时处理源语言和目标语言
+        token_src = [tokenizer.tokenize(word) for word in sent_src]
+        token_tgt = [tokenizer.tokenize(word) for word in sent_tgt]
+        
+        # 转换为ID
+        wid_src = [tokenizer.convert_tokens_to_ids(x) for x in token_src]
+        wid_tgt = [tokenizer.convert_tokens_to_ids(x) for x in token_tgt]
+        
+        # 准备模型输入
+        ids_src = tokenizer.prepare_for_model(
+            list(itertools.chain(*wid_src)), 
+            return_tensors='pt', 
+            truncation=True,
+            max_length=tokenizer.model_max_length
+        )['input_ids']
+        
+        ids_tgt = tokenizer.prepare_for_model(
+            list(itertools.chain(*wid_tgt)), 
+            return_tensors='pt', 
+            truncation=True,
+            max_length=tokenizer.model_max_length
+        )['input_ids']
+        
+        # 创建子词到单词的映射
+        sub2word_map_src = []
+        for idx, word_list in enumerate(token_src):
+            sub2word_map_src.extend([idx] * len(word_list))
+            
+        sub2word_map_tgt = []
+        for idx, word_list in enumerate(token_tgt):
+            sub2word_map_tgt.extend([idx] * len(word_list))
+        
+        tokenized_data.append({
+            'input_ids_src': ids_src.squeeze(),
+            'input_ids_tgt': ids_tgt.squeeze(),
+            'sub2word_src': sub2word_map_src,
+            'sub2word_tgt': sub2word_map_tgt,
+            'src_len': len(sent_src),
+            'tgt_len': len(sent_tgt)
+        })
+    
+    # 批量处理
     model.eval()
     with torch.no_grad():
         for i in tqdm(range(0, len(tokenized_data), batch_size)):
             batch = tokenized_data[i:i+batch_size]
             
-            # Prepare batch inputs
+            # 准备批次输入
             src_batch = [item['input_ids_src'] for item in batch]
             tgt_batch = [item['input_ids_tgt'] for item in batch]
             
-            # Pad batches
+            # 获取实际长度（排除填充）
+            src_lengths = [len(ids) for ids in src_batch]
+            tgt_lengths = [len(ids) for ids in tgt_batch]
+            
+            # 填充批次并移动到设备
             src_tensors = torch.nn.utils.rnn.pad_sequence(
-                [torch.tensor(ids) for ids in src_batch],
-                batch_first=True,
-                padding_value=tokenizer.pad_token_id
-            )
+                src_batch, batch_first=True, padding_value=tokenizer.pad_token_id
+            ).to(device)
+            
             tgt_tensors = torch.nn.utils.rnn.pad_sequence(
-                [torch.tensor(ids) for ids in tgt_batch],
-                batch_first=True,
-                padding_value=tokenizer.pad_token_id
-            )
-            src_mask = (src_tensors != tokenizer.pad_token_id).long()
-            tgt_mask = (tgt_tensors != tokenizer.pad_token_id).long()
-            # import code; code.interact(local=locals())
-            # Get model outputs
+                tgt_batch, batch_first=True, padding_value=tokenizer.pad_token_id
+            ).to(device)
+            
+            # 创建注意力掩码
+            src_mask = (src_tensors != tokenizer.pad_token_id).to(device)
+            tgt_mask = (tgt_tensors != tokenizer.pad_token_id).to(device)
+            
+            # 获取模型输出
             out_src = model(src_tensors, attention_mask=src_mask, output_hidden_states=True)[2][align_layer]
             out_tgt = model(tgt_tensors, attention_mask=tgt_mask, output_hidden_states=True)[2][align_layer]
-            # import code; code.interact(local=locals())
-            # Process each sentence in the batch
-            for j, item in enumerate(batch):
-                # Remove padding and special tokens
-                src_len = sum([1 for x in src_batch[j] if x != tokenizer.pad_token_id])
-                tgt_len = sum([1 for x in tgt_batch[j] if x != tokenizer.pad_token_id])
-                valid_src = out_src[j, 1:src_len-1]  # Remove [CLS] and [SEP]
-                valid_tgt = out_tgt[j, 1:tgt_len-1]
+            
+            # 处理批次中的每个句子
+            for j in range(len(batch)):
+                item = batch[j]
                 
-                # Calculate alignment
+                # 移除特殊标记 ([CLS] 和 [SEP])
+                src_start, src_end = 1, src_lengths[j] - 1
+                tgt_start, tgt_end = 1, tgt_lengths[j] - 1
+                
+                valid_src = out_src[j, src_start:src_end]  # 移除 [CLS] 和 [SEP]
+                valid_tgt = out_tgt[j, tgt_start:tgt_end]
+                
+                # 计算对齐
                 dot_prod = torch.matmul(valid_src, valid_tgt.transpose(-1, -2))
-                softmax_srctgt = torch.nn.Softmax(dim=-1)(dot_prod)
-                softmax_tgtsrc = torch.nn.Softmax(dim=-2)(dot_prod)
-                softmax_inter = (softmax_srctgt > threshold) * (softmax_tgtsrc > threshold)
                 
-                # Convert to word alignment
+                # 使用更高效的softmax计算
+                softmax_srctgt = torch.softmax(dot_prod, dim=-1)
+                softmax_tgtsrc = torch.softmax(dot_prod, dim=-2)
+                
+                # 创建对齐掩码
+                softmax_inter = (softmax_srctgt > threshold) & (softmax_tgtsrc > threshold)
+                
+                # 转换为词对齐
                 align_subwords = torch.nonzero(softmax_inter, as_tuple=False)
-                align_words = set()
-                for i_sub, j_sub in align_subwords:
-                    align_words.add((
-                        item['sub2word_src'][i_sub],
-                        item['sub2word_tgt'][j_sub]
-                    ))
                 
-                # Calculate scores
+                # 使用集合推导式提高效率
+                align_words = {
+                    (item['sub2word_src'][i_sub.item()], item['sub2word_tgt'][j_sub.item()])
+                    for i_sub, j_sub in align_subwords
+                }
+                
+                # 计算分数
                 src_words = {t[0] for t in align_words}
                 tgt_words = {t[1] for t in align_words}
                 n_src = len(src_words)
@@ -445,7 +482,7 @@ def align_score(srcs, tgts, model, tokenizer, batch_size=16):
                     f1 = 2 * precision * recall / (precision + recall)
                 else:
                     f1 = 0.0
-                # import code; code.interact(local=locals())
+                
                 align_score_list.append(f1)
     
     return align_score_list
@@ -465,6 +502,7 @@ class RewardModelProxy:
           # self.align_tokenizer = transformers.BertTokenizer.from_pretrained('bert-base-multilingual-cased')
           self.align_model = AutoModel.from_pretrained(model_path)
           self.align_tokenizer = AutoTokenizer.from_pretrained(model_path)
+          self.align_model.to("cuda:0")
           # self.aligner = SentenceAligner(model="bge-m3", token_type="bpe", matching_methods="m", device="cuda:0")
           if self.args.tgt == "zh":
             self.han1 = hanlp.load("/mnt/taurus/home/yifengliu/.hanlp/mtl/ud_ontonotes_tok_pos_lem_fea_ner_srl_dep_sdp_con_xlm_base_20220608_003435", devices=1)
