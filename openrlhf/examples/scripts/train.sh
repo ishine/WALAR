@@ -19,12 +19,16 @@ export RAY_DEBUG_POST_MORTEM=1
 # cmu key
 wandb_token=e00b93c51b52fed0712d2130a4df508e9a41e95c
 
-src="en"
-tgt="mix-mid2"
+src="ar"
+tgt="cs"
 version="3"
 size="4B"
 reward_name="New-Align-Rule-Detect-MetricX"
-
+if [ "${#tgt}" -le 3]; then
+    evaluation_step=10
+else
+    evaluation_step=100000
+fi
 # remote_rm_url
 # remote_rm_url2
 # remote_comet_url
@@ -67,7 +71,7 @@ ray job submit --address="http://127.0.0.1:8265" \
     --tgt ${tgt} \
     --eval_dir "/mnt/gemini/data1/yifengliu/data/flores101_dataset/dev" \
     --eval_temperature 0.0 \
-    --eval_steps 10000 \
+    --eval_steps 10 \
     --eval_n_samples_per_prompt 1\
     --input_key input_key \
     --apply_chat_template \

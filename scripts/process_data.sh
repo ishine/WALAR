@@ -1,6 +1,7 @@
-src="eng"
+src="ar"
 tgt_list=(
-    "hye"
+    "cs"
+    # "hye"
     # "azj"
     # "ces"
     # "ara"
@@ -49,7 +50,7 @@ for tgt in "${tgt_list[@]}"; do
     python3 /mnt/gemini/data1/yifengliu/qe-lr/code/process_data.py \
         --src ${src} \
         --tgt ${tgt} \
-        --input_file "/mnt/gemini/data1/yifengliu/data/wmt24_news_crawl/en/en1m.jsonl"\
+        --input_file "/mnt/gemini/data1/yifengliu/data/wmt24_news_crawl/${src}/${src}1m.jsonl"\
         --tokenizer_path ${model_path} \
         --template_type ${template_type} \
         --output_file ${output_file_path} \

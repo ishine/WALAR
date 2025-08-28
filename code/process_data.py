@@ -1,6 +1,6 @@
 import os
 import argparse
-from utils import lang_dict
+from utils import lang_dict, mm_dict
 from datasets import Dataset, load_dataset
 from tqdm import tqdm
 import json
@@ -10,14 +10,27 @@ from transformers import AutoTokenizer
 
 # Language code to language name mapping table
 
+def get_langs(args):
+    src, tgt = args.src, args.tgt
+    src_lang, tgt_lang = mm_dict.get(src, ''), mm_dict.get(tgt, '')
+    if len(src_lang) == 0 or len(tgt_lang) == 0:
+        src_lang, tgt_lang = lang_dict.get(src, ''), lang_dict.get(tgt, '')
+    # The case for IndicMT
+    if tgt_lang == '':
+        tgt_lang = args.tgt.capitalize()
+        # raise ValueError(f"Unsupported language codes: {src}, {tgt}")
+    # print(f"Source language: {src_lang}, Target language: {tgt_lang}")
+    # import code; code.interact(local=locals())
+    return src_lang, tgt_lang
+
 
 def make_prompt(source, src, tgt, template_type='chat', tokenizer=None):
     if template_type == 'base':
-        return f"{source}\nTranslate from {lang_dict[src]} to {lang_dict[tgt]}:"
+        return f"{source}\nTranslate from {src} to {tgt}:"
     elif template_type == 'chat':
-        return f"You are a helpful assistant. Translate this text from {lang_dict[src]} to {lang_dict[tgt]}:\n{source}"
+        return f"You are a helpful assistant. Translate this text from {src} to {tgt}:\n{source}"
     elif template_type == 'rl':
-        return f"Translate this text from {lang_dict[src]} to {lang_dict[tgt]}:\n{source}"
+        return f"Translate this text from {src} to {tgt}:\n{source}"
     else:
         raise ValueError(f"Unknown template type: {template_type}")
 
@@ -60,6 +73,7 @@ def main():
     # Read training data
     print(args.input_file)
     data = my_load_dataset(args.input_file)
+    # data = data[:1]
     dataset = Dataset.from_list(data)
 
     def make_map_fn(split):
@@ -69,7 +83,8 @@ def main():
             source = example['src']
             lg = args.src + "-" + args.tgt
             # Generate prefix
-            prompt = make_prompt(source, args.src, args.tgt, template_type=args.template_type)
+            src_lang, tgt_lang = get_langs(args)
+            prompt = make_prompt(source, src_lang, tgt_lang, template_type=args.template_type)
             
             data = {
                 "data_source": data_source + "_" + lg,

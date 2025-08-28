@@ -344,12 +344,12 @@ def main() -> None:
   #     "hypothesis": "Die anderen Nominierungen umfassen Best Picture, Director, Cinematography, Costume Design, Film-editing, Original Score, Production Design, Sound Editing, Sound Mixing und Original Screenplay.",
   #   }
   # ]
-  ds = [
-    {
-      "source": "\"We now have 4-month-old mice that are non-diabetic that used to be diabetic,\" he added.",
-      "hypothesis": "\"Նա ավելացրեց, որ հիմա կան 4-ամսյական մուշեր, որոնք չեն դիաբետիկ են, բայց առաջանում են դիաբետիկ համար\":\n(Այս հատվածը կարող է համապատասխանել համապատասխան հատվածի համար, սակայն այն պետք է համապատասխանել համապատասխան հատվածի համար և կարող է լինել ավելի հասկանալի կամ ավելի հարմար հատված։)",
-    }
-  ]
+  # ds = [
+  #   {
+  #     "source": "The Three Kingdoms was one of the bloodiest eras in Ancient China’s history thousands of people died fighting to sit in the highest seat in the grand palace at Xi’an.",
+  #     "hypothesis": "Tri kraljestva bila je ena najkrvavijih epok in istorije stareg Kine, kjer je umrlo tisoce ljudi, bojeći za pravico sedeti na visokem mjestu v velikem palatu v Xi’anu.",
+  #   }
+  # ]
   # src_path = f"/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest/eng.devtest"
   # tgt_path = f"/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest/azj.devtest"
   # src_dataset, tgt_dataset = load_flores(src_path), load_flores(tgt_path)
@@ -370,22 +370,23 @@ def main() -> None:
   # print(predictions[0])
   dirname = args.output_dir
   dirname = os.path.join(dirname, args.model_name + "-" + args.model_size + "-" + args.dtype)
-  import code; code.interact(local=locals())
-  # if name != "flores":
-  #   if dirname:
-  #     os.makedirs(dirname, exist_ok=True)
-  #   output_file = os.path.join(
-  #       dirname,
-  #       f"{args.src}-{args.tgt}.jsonl",
-  #   )
-  #   write_to_file(output_file, ds, predictions, args.model_name)
-  # else:
-  #   with open(args.input_file, 'a') as f:
-  #     mean_score = sum(predictions) / len(predictions)
-  #     if args.model_name == "metricX":
-  #       f.write(f"MetricX Score: {mean_score:.4f}\n")
-  #     if args.model_name == "XComet":
-  #       f.write(f"XComet Score: {mean_score:.4f}\n")
+  # import code; code.interact(local=locals())
+  if name != "flores":
+    if dirname:
+      os.makedirs(dirname, exist_ok=True)
+    output_file = os.path.join(
+        dirname,
+        f"{args.src}-{args.tgt}.jsonl",
+    )
+    write_to_file(output_file, ds, predictions, args.model_name)
+  else:
+    with open(args.input_file, 'a') as f:
+      mean_score = sum(predictions) / len(predictions)
+      if args.model_name == "metricX":
+        f.write(f"MetricX Score: {mean_score:.4f}\n")
+      if args.model_name == "XComet":
+        f.write(f"XComet Score: {mean_score:.4f}\n")
+        print(f"{args.src}-{args.tgt}: XComet Score: {mean_score:.4f}")
 
 if __name__ == "__main__":
   main()

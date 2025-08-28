@@ -13,7 +13,7 @@ align=True
 
 # No need to care if align=False
 src=en
-tgt=mix-mid2
+tgt=ara
 
 export CUDA_VISIBLE_DEVICES=4
 python -m openrlhf.cli.serve_rm \

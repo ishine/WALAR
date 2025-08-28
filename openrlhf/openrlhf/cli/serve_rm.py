@@ -662,8 +662,8 @@ class RewardModelProxy:
           scores = [score + align_score for score, align_score in zip(scores, align_score_list)]
           extra_logs['mean_align_score'] = sum(align_score_list) / len(align_score_list)
         if self.args.lang_detect:
-          pattern = r"Translate from English to ([^\n<]+):"
-          target_languages = [re.search(pattern, query).group(1).strip() for query in queries if re.search(pattern, query)]
+          pattern = r"Translate from ([^\n<]+) to ([^\n<]+):"
+          target_languages = [re.search(pattern, query).group(2).strip() for query in queries if re.search(pattern, query)]
           tgts = [tgt.replace("\n", "") for tgt in tgts]
           lang_info = self.lang_detect_model.predict(tgts)
           min_reward = -25 if 'metricX' in self.model_name else 0

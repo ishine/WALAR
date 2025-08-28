@@ -651,7 +651,7 @@ from hanlp_restful import HanLPClient
 # tgt = "恐龙的羽毛并没有发育良好的主干——这称为“羽轴”，但还是有羽毛的其他特征，比如羽枝和羽小枝，研究人员推断羽轴的进化可能比这些其他特征晚。"
 
 src_lang = "eng"
-tgt_lang = "ltz"
+tgt_lang = "orm"
 src_path = f"/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest/{src_lang}.devtest"
 tgt_path = f"/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest/{tgt_lang}.devtest"
 src_dataset, tgt_dataset = load_flores(src_path), load_flores(tgt_path)
@@ -680,11 +680,25 @@ src_dataset, tgt_dataset = load_flores(src_path), load_flores(tgt_path)
 # src_dataset = ["On Monday, Sara Danius, permanent secretary of the Nobel Committee for Literature at the Swedish Academy, publicly announced during a radio program on Sveriges Radio in Sweden the committee, unable to reach Bob Dylan directly about winning the 2016 Nobel Prize in Literature, had abandoned its efforts to reach him."]
 # tgt_dataset = ["সোমবারে, সারা ডানিউস, স্বেডিশ একাডেমির লিটারেচার কমিটির প্রতিনিধি, স্বেডিশ রেডিও (Sveriges Radio) এর একটি রেডি প্রোগ্রামে ঘোষণা করেন যে কমিটি বোব ডালনকে ডাকার চেষ্টা করেছিল কিন্তু তাঁর সাথে যোগাযোগ করতে সক্ষম হতে পারেনি, তাই তাঁর সাথে যোগাযোগের চেষ্টা বন্ধ করে দেয়া হয়েছে। 2016 সালের লিটারেচার নোবেল পুরস্কারের জন্য এই কমিটি তাঁকে প্রাপ্ত হও য়ার বিষয়ে তাঁর সাথে যোগাযোগ করার চেষ্টা করেছিল কিন্তু সম্ভবত তা সম্পূর্ণ অসম্ভব হয়ে গেছে।"]
 # tgt_dataset = ['সোমবার, সুইডেনের সেভিরস রেডিওতে একটি অনুষ্ঠানের সময় সুইডিশ অ্যাকাডেমিতে সাহিত্যের নোবেল কমিটির স্থায়ী সচিব, সারা ডনিয়াস,  প্রকাশ্যে ঘোষণা করেছিলেন যে কমিটি, ২০১৬ সালে সাহিত্যে নোবেল পুরস্কার পাওয়ার বিষয়ে বব ডিলানের সঙ্গে সরাসরিযোগাযোগ করতে না পেরে, তাঁর কাছে পৌঁছানোর প্রচেষ্টা ত্যাগ করেছিল।']
-src_dataset = [src.split() for src in src_dataset]
-tgt_dataset = [tgt.split() for tgt in tgt_dataset]
+# src_dataset = ["\"We now have 4-month-old mice that are non-diabetic that used to be diabetic,\" he added."]
+# tgt_dataset = ["他补充道：“我们现在有 4 个月大没有糖尿病的老鼠，但它们曾经得过该病。”\n中文翻译：\n他补充道：“我们现在有 4 个月大没有糖尿病的老鼠，但它们曾经得过该病。”"]
+# src_dataset = [src.split() for src in src_dataset]
+# tgt_dataset = [tgt.split() for tgt in tgt_dataset]
+# model = BGEM3FlagModel("/mnt/gemini/data1/yifengliu/model/bge-m3", use_fp16=True)
+# sentences_1 = ["Dr. Ehud Ur，来自Dalhousie大学的医学教授，同时也是加拿大糖尿病协会的临床和科学委员会主席。他强调，目前的研究还处于初级阶段。尽管如此，他指出，尽管研究的范围有限，但其重要性不容忽视。糖尿病是一种复杂的疾病，其病因、发病机制以及治疗方案等都尚未完全阐明。因此，深入研究和探索糖尿病的病因和治疗策略对于提高糖尿病患者的生活质量、降低疾病负担以及促进全球糖尿病研究的发展都具有重要意义。Dr. Ur强调，尽管研究还处于初级阶段，但其对于推动糖尿病医学领域的进步具有不可替代的作用。他建议，未来的研究应更加深入地探索糖尿病的发病机制、治疗策略以及相关因素，以期能够更有效地控制糖尿病，提高糖尿病患者的生活质量。"]
+# sentences_2 = ["中文翻译：\nDr. Ehud Ur，来自Dalhousie大学的医学教授，同时也是加拿大糖尿病协会的临床和科学委员会主席。他强调，目前的研究还处于初级阶段。尽管如此，他指出，尽管研究的范围有限，但其重要性不容忽视。糖尿病是一种复杂的疾病，其病因、发病机制以及治疗方案等都尚未完全阐明。因此，深入研究和探索糖尿病的病因和治疗策略对于提高糖尿病患者的生活质量、降低疾病负担以及促进全球糖尿病研究的发展都具有重要意义。Dr. Ur强调，尽管研究还处于初级阶段，但其对于推动糖尿病医学领域的进步具有不可替代的作用。他建议，未来的研究应更加深入地探索糖尿病的发病机制、治疗策略以及相关因素，以期能够更有效地控制糖尿病，提高糖尿病患者的生活质量。"]
+
+# embeddings_1 = model.encode(sentences_1, 
+                            # batch_size=12, 
+                            # max_length=8192, # If you don't need such a long length, you can set a smaller value to speed up the encoding process.
+                            # )['dense_vecs']
+# embeddings_2 = model.encode(sentences_2)['dense_vecs']
+# similarity = embeddings_1 @ embeddings_2.T
+# print(similarity)
 # src_dataset, tgt_dataset = src_dataset[-1:], tgt_dataset[-1:]  # for test
 # align_score_list = align_score(src_dataset, tgt_dataset, model, tokenizer)
 align_score_list = align_score5(src_dataset, tgt_dataset, model, tokenizer, batch_size=16)
+
 # align_score_list = align_score4(src_dataset, tgt_dataset, model, tokenizer, batch_size=16)
 # align_score_list = align_score3(src_dataset, tgt_dataset, model, tokenizer, batch_size=1024)
 import code; code.interact(local=locals())

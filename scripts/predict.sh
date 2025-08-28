@@ -2,12 +2,12 @@
 cd /mnt/gemini/data1/yifengliu/qe-lr/code
 
 data_name="flores"
-model_name="metricX"
-model_size="xxl"  ### model_size can be discarded if your model_name is not XComet or metricX
+model_name="XComet"
+model_size="xl"  ### model_size can be discarded if your model_name is not XComet or metricX
 dtype="bf16"  ### dtype can be discarded if your model_name is not metricX
 batch_size=16 ### Should be divisible by the number of GPUs
 
-export CUDA_VISIBLE_DEVICES=3
+export CUDA_VISIBLE_DEVICES=2
 
 num_gpus=$(echo "$CUDA_VISIBLE_DEVICES" | awk -F',' '{print NF}')
 # en->indic
@@ -165,19 +165,42 @@ elif [ $data_name == "low-res" ]; then
   done
 elif [ $data_name == "flores" ]; then
   src="eng"
-  tgt="ell"
-  dirname="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Rule-Detect-MetricX-kl-Qwen3-4B-en-el-1M-bsz128/global_step360_hf"
-  python predict.py \
-    --model_name $model_name \
-    --model_size $model_size \
-    --dtype $dtype \
-    --max_input_length 1536 \
-    --batch_size ${batch_size} \
-    --input_file ${dirname}/${src}-${tgt}.txt \
-    --output_dir ${dirname} \
-    --src $src \
-    --tgt $tgt \
-    --qe
+  tgt_list=(
+    # "mkd"
+    # "pol"
+    # "srp"
+    # "slk"
+    "slv"
+    "ben"
+    "guj"
+    "hin"
+    "mar"
+    "pan"
+    "hye"
+    "ell"
+    "lav"
+    "lit"
+    "tgl"
+    "jav"
+    "ara"
+    "tur"
+    "tam"
+    "fin"
+  )
+  for tgt in "${tgt_list[@]}"; do
+    # tgt="slk"
+    dirname="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/New-Align-Rule-Detect-MetricX-Qwen3-4B-en-mix-mid2-1M-bsz128/global_step260_hf"
+    python predict.py \
+      --model_name $model_name \
+      --model_size $model_size \
+      --dtype $dtype \
+      --max_input_length 1536 \
+      --batch_size ${batch_size} \
+      --input_file ${dirname}/${src}-${tgt}.txt \
+      --output_dir ${dirname} \
+      --src $src \
+      --tgt $tgt
+  done
 else
   echo "Unsupported data name: $data_name"
 fi

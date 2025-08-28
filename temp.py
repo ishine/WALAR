@@ -41,17 +41,11 @@ def calculate_comet_score(src_texts, references, predictions, model_path="/mnt/g
 if __name__ == "__main__":
     # Example usage
     # dataset = []
-    # path = "/mnt/gemini/data1/yifengliu/data/wmt24_news_crawl/en/en1m.jsonl"
+    path = "/mnt/gemini/data1/yifengliu/data/wmt24_news_crawl/ja/ja1m.jsonl"
     # save_path = "/mnt/gemini/data1/yifengliu/data/wmt24_news_crawl/en/en1m.jsonl"
-    # dataset = load_dataset(path)
+    dataset = load_dataset(path)
     # new_dataset = []
-    # for data in dataset:
-    #     for dt in data:
-    #         dt['label_key'] = dt.pop('ref')
-    #         new_dataset.append(dt)
-    # with open(save_path, 'w') as f:
-    #     for data in new_dataset:
-    #         f.write(json.dumps(data) + "\n")
+
     # path = f"/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Rule-Detect-MetricX-Qwen2.5-0.5B-en-zh-1M-bsz128/global_step780_hf/eng-zho_simpl.txt"
     
     # tgt_list = ["zho_simpl", "ara", "deu", "spa", "fin", "jpn", "rus"]
@@ -77,35 +71,43 @@ if __name__ == "__main__":
     #         f.write(f"XCOMET Score: {score['mean_s
     # core']:.4f}\n")
     # Requires transformers>=4.51.0
-# Requires sentence-transformers>=2.7.0
+    # Requires sentence-transformers>=2.7.0
 
 
     # 26.0056
-    dataset = []
+    # dataset = []
     # path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Qwen2.5-3B-Instruct-En-Zh-1M/global_step160_hf/eng-zho_simpl.txt"
-    path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Rule-Detect-MetricX-Qwen3-4B-en-az-1M-bsz128/global_step260_hf/eng-hye.txt"
-    with open(path, 'r') as f:
-        lines = f.readlines()
-        # import code; code.interact(local=locals())
-        for line in lines[:-3]:
-            dataset.append(json.loads(line))
-    srcs = [data['src'] for data in dataset]
-    hyps = [data['pred'] for data in dataset]
-    refs = [data['ref'] for data in dataset]
+    # path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Qwen3-4B/eng-jpn.txt"
+    # # path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/New-Align-Rule-Detect-MetricX-Qwen3-4B-en-mix-mid2-1M-bsz128/global_step200_hf/eng-jpn.txt"
+    # with open(path, 'r') as f:
+    #     lines = f.readlines()
+    #     # import code; code.interact(local=locals())
+    #     for line in lines[:-3]:
+    #         dataset.append(json.loads(line))
+    # srcs = [data['src'] for data in dataset]
+    # hyps = [data['pred'] for data in dataset]
+    # refs = [data['ref'] for data in dataset]
     
+    # data_path = "/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest/slv.devtest"
+    # with open(data_path, 'r') as f:
+    #     hyps = f.readlines()
     # lang_detect_model = fasttext.load_model("/mnt/gemini/data1/yifengliu/model/lid.176.bin")
-    # tgts = ["Danius说，“现在我们正在做 nothing。我已经打电话并发送电子邮件给他的最亲近的合作者，并收到了非常友好的回复。目前来说，这已经足够了。”",
-    #         "达尼厄斯说道：“目前我们保持按兵不动。我给他关系最好的合作者打过电话并发送了电子邮件，而且收到了对方非常友好的回复。就目前而言，这足够了。”",
-    #         "Weitere Nominierungen gibt es zum Beispiel für den besten Film, die Regie, die Kameraführung, das Kostümbild, den Schnitt, die Original-Filmmusik, das Produktionsdesign, den Tonschnitt, die Tonmischung und das Original-Drehbuch.",
-    #         "Die anderen Nominierungen umfassen Best Picture, Director, Cinematography, Costume Design, Film-editing, Original Score, Production Design, Sound Editing, Sound Mixing und Original Screenplay.",
-    #         "加拿大糖尿病协会（Canadian Diabetes Association）临床与科学分会主席、达尔豪斯大学（Dalhousie University）哈利法克斯（Halifax, Nova Scotia）医学院教授埃胡德·乌（Ehud Ur）警告说，这项研究仍处于早期阶段。",
-    #         "埃胡德·乌尔博士（新斯科舍省哈利法克斯市达尔豪西大学医学教授，加拿大糖尿病协会临床与科学部门教授）提醒，这项研究仍处在早期阶段。",
-    #         "周一，瑞典学院诺贝尔文学委员会常务秘书萨拉·丹尼尔斯在瑞典广播电台的一档节目中向公众宣布，委员会因无法直接联系到鲍勃·迪伦，通知他获得了 2016 年诺贝尔文学奖，已经放弃了与他联系的尝试。"]
-    # result = lang_detect_model.predict(tgts)
-    # model = AutoModelForCausalLM.from_pretrained('/mnt/gemini/data1/yifengliu/model/Qwen3-4B')
-    # a = ""
-    # b = ""
-    # score = get_spBLEU([a], [b])
+    # hyps2 = [tgt.replace("\n", "") for tgt in hyps]
+    # lang_info = lang_detect_model.predict(hyps2)
+    # cnt = 0
+    # for idx, (lang, hyp) in enumerate(zip(lang_info[0], hyps)):
+    #     lang_code = lang[0].replace("__label__", "")
+    #     if lang_code != "sl":
+    #         print(f"{idx}: {hyp}")
+    #         cnt += 1
+    # print("Done!")
+    
+    # for idx, (lang, src, hyp, ref) in enumerate(zip(lang_info[0], srcs, hyps, refs)):
+        # lang_code = lang[0].replace("__label__", "")
+        # if lang_code != "ja":
+            # print(f"{idx}: {hyp}")
+            # print("============================")
+    
     
     # dataset[0]['label']=True
     # save_path = "/mnt/gemini/data1/yifengliu/qe-lr/est.jsonl"

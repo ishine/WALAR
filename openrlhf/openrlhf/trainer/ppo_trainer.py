@@ -235,6 +235,7 @@ class BasePPOTrainer(ABC):
         """
         import sacrebleu
         two2three = {
+            "ar": "ara",
             "az": "azj",
             "en": "eng",
             "el": "ell",
