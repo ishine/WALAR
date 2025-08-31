@@ -32,11 +32,14 @@ from mt_metrics_eval import meta_info
 from mt_metrics_eval import tasks
 import torch
 import numpy as np
+import itertools
+import tqdm
+from tqdm import *
 from vllm import LLM, SamplingParams
 import transformers
 import datasets
 
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, AutoModel
 from typing import Optional, List, Dict
 from utils import preprocess_dataset, mm_dict, lang_dict, RewardModel
 from mqm_utils import TEMPLATE_GEMBA_MQM, apply_template, parse_mqm_answer, TEMPLATE_GEMBA_ESA_ERROR_SPANS, TEMPLATE_GEMBA_ESA_RANKING, validate_number
@@ -94,6 +97,152 @@ class Arguments:
                   "Supported types: 'mqm', 'esa', 'da'."
       },
   )
+  
+  alignment: bool = dataclasses.field(
+      default=False,
+      metadata={
+          "help": "Whether to use alignment information. "
+                  "This is only used for ESA evaluation."
+      },
+  )
+  
+def align_score(srcs, tgts, model, tokenizer, batch_size=16):
+    align_score_list = []
+    align_layer = 24
+    threshold = 1e-3
+
+    # 将模型移动到GPU（如果可用）
+    device = model.device
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # model = model.to(device)
+    
+    # 预计算所有tokenizations和映射
+    tokenized_data = []
+    
+    # 预处理所有数据
+    for i in tqdm(range(len(srcs))):
+        sent_src, sent_tgt = srcs[i], tgts[i]
+        
+        # 同时处理源语言和目标语言
+        token_src = [tokenizer.tokenize(word) for word in sent_src]
+        token_tgt = [tokenizer.tokenize(word) for word in sent_tgt]
+        
+        # 转换为ID
+        wid_src = [tokenizer.convert_tokens_to_ids(x) for x in token_src]
+        wid_tgt = [tokenizer.convert_tokens_to_ids(x) for x in token_tgt]
+        
+        # 准备模型输入
+        ids_src = tokenizer.prepare_for_model(
+            list(itertools.chain(*wid_src)), 
+            return_tensors='pt', 
+            truncation=True,
+            max_length=tokenizer.model_max_length
+        )['input_ids']
+        
+        ids_tgt = tokenizer.prepare_for_model(
+            list(itertools.chain(*wid_tgt)), 
+            return_tensors='pt', 
+            truncation=True,
+            max_length=tokenizer.model_max_length
+        )['input_ids']
+        
+        # 创建子词到单词的映射
+        sub2word_map_src = []
+        for idx, word_list in enumerate(token_src):
+            sub2word_map_src.extend([idx] * len(word_list))
+            
+        sub2word_map_tgt = []
+        for idx, word_list in enumerate(token_tgt):
+            sub2word_map_tgt.extend([idx] * len(word_list))
+        
+        tokenized_data.append({
+            'input_ids_src': ids_src.squeeze(),
+            'input_ids_tgt': ids_tgt.squeeze(),
+            'sub2word_src': sub2word_map_src,
+            'sub2word_tgt': sub2word_map_tgt,
+            'src_len': len(sent_src),
+            'tgt_len': len(sent_tgt)
+        })
+    
+    # 批量处理
+    model.eval()
+    with torch.no_grad():
+        for i in tqdm(range(0, len(tokenized_data), batch_size)):
+            batch = tokenized_data[i:i+batch_size]
+            
+            # 准备批次输入
+            src_batch = [item['input_ids_src'] for item in batch]
+            tgt_batch = [item['input_ids_tgt'] for item in batch]
+            
+            # 获取实际长度（排除填充）
+            src_lengths = [len(ids) for ids in src_batch]
+            tgt_lengths = [len(ids) for ids in tgt_batch]
+            
+            # 填充批次并移动到设备
+            src_tensors = torch.nn.utils.rnn.pad_sequence(
+                src_batch, batch_first=True, padding_value=tokenizer.pad_token_id
+            ).to(device)
+            
+            tgt_tensors = torch.nn.utils.rnn.pad_sequence(
+                tgt_batch, batch_first=True, padding_value=tokenizer.pad_token_id
+            ).to(device)
+            
+            # 创建注意力掩码
+            src_mask = (src_tensors != tokenizer.pad_token_id).to(device)
+            tgt_mask = (tgt_tensors != tokenizer.pad_token_id).to(device)
+            
+            # 获取模型输出
+            out_src = model(src_tensors, attention_mask=src_mask, output_hidden_states=True)[2][align_layer]
+            out_tgt = model(tgt_tensors, attention_mask=tgt_mask, output_hidden_states=True)[2][align_layer]
+            
+            # 处理批次中的每个句子
+            for j in range(len(batch)):
+                item = batch[j]
+                
+                # 移除特殊标记 ([CLS] 和 [SEP])
+                src_start, src_end = 1, src_lengths[j] - 1
+                tgt_start, tgt_end = 1, tgt_lengths[j] - 1
+                
+                valid_src = out_src[j, src_start:src_end]  # 移除 [CLS] 和 [SEP]
+                valid_tgt = out_tgt[j, tgt_start:tgt_end]
+                
+                # 计算对齐
+                dot_prod = torch.matmul(valid_src, valid_tgt.transpose(-1, -2))
+                
+                # 使用更高效的softmax计算
+                softmax_srctgt = torch.softmax(dot_prod, dim=-1)
+                softmax_tgtsrc = torch.softmax(dot_prod, dim=-2)
+                
+                # 创建对齐掩码
+                softmax_inter = (softmax_srctgt > threshold) & (softmax_tgtsrc > threshold)
+                
+                # 转换为词对齐
+                align_subwords = torch.nonzero(softmax_inter, as_tuple=False)
+                
+                # 使用集合推导式提高效率
+                align_words = {
+                    (item['sub2word_src'][i_sub.item()], item['sub2word_tgt'][j_sub.item()])
+                    for i_sub, j_sub in align_subwords
+                }
+                
+                # 计算分数
+                src_words = {t[0] for t in align_words}
+                tgt_words = {t[1] for t in align_words}
+                n_src = len(src_words)
+                n_tgt = len(tgt_words)
+                
+                precision = n_tgt / item['tgt_len'] if n_tgt > 0 else 0
+                recall = n_src / item['src_len'] if n_src > 0 else 0
+                
+                if precision + recall > 0:
+                    f1 = 2 * precision * recall / (precision + recall)
+                else:
+                    f1 = 0.0
+                
+                align_score_list.append(f1)
+    
+    return align_score_list
+
   
 def get_dataset(
     ds: List[dict], model_name: str, tokenizer, max_input_length: int, device, is_qe: bool
@@ -198,9 +347,9 @@ def load_tokenizer_and_model(metric_name: str, model_size: str, model_dtype:str,
       }
     }
     path = path_dict[model_size][model_dtype]
-    tokenizer = transformers.AutoTokenizer.from_pretrained("google/mt5-xl", cache_dir="/mnt/data1/yifengliu/model")
+    tokenizer = transformers.AutoTokenizer.from_pretrained("google/mt5-xl", cache_dir="/mnt/gemini/data1/yifengliu/model")
     model = models.MT5ForRegression.from_pretrained(
-       path, torch_dtype="auto", device_map="auto", cache_dir="/mnt/data1/yifengliu/model"
+       path, torch_dtype="auto", device_map="auto", cache_dir="/mnt/gemini/data1/yifengliu/model"
     )
     model.eval()
   elif 'Comet' in metric_name:
@@ -415,10 +564,21 @@ def NewMetric(
   seg_scores = {}
   sys_scores = {}
   tokenizer, model = load_tokenizer_and_model(metric_name, model_size, model_dtype, torch.device('cuda' if torch.cuda.is_available() else 'cpu'))
+  if args.alignment:
+    align_path = "/mnt/gemini/data1/yifengliu/model/bge-m3"
+    align_model = AutoModel.from_pretrained(align_path)
+    align_tokenizer = AutoTokenizer.from_pretrained(align_path)
+    align_model.to("cuda:0")
   for sysname, hyp in hyps.items():
     print(f"Evaluating {metric_name}-{model_size}-{model_dtype} for system {sysname} on {lp}...")
     # src, hyp, ref = src[:len(src)//100], hyp[:len(hyp)//100], ref[:len(ref)//100]
     predictions = get_predictions(metric_name, model, tokenizer, src, hyp, ref, lp, args)
+    if args.alignment:
+      srcs, tgts = src, hyp
+      srcs = [src.split() for src in srcs]
+      tgts = [tgt.split() for tgt in tgts]
+      scores = align_score(srcs, tgts, align_model, align_tokenizer, batch_size=16)
+      predictions = np.array([prediction + score for prediction, score in zip(predictions, scores)])
     if metric_name == 'metricX':
       seg_scores[sysname] = -predictions
       sys_scores[sysname] = [-predictions.mean()]
@@ -517,7 +677,7 @@ def main() -> None:
   # lps = ["en-de", "en-es", "ja-zh"]
   # lps = ["en-es"]
   # lps = ["ja-zh"]
-  lps = ["en-de", "en-es", "ja-zh"]
+  lps = ["en-de", "en-es"]
   
   for lp in lps:
     evs = evs_dict[(f'wmt{args.wmt_year}', lp)]

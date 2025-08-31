@@ -7,7 +7,7 @@ model_size="xl"  ### model_size can be discarded if your model_name is not XCome
 dtype="bf16"  ### dtype can be discarded if your model_name is not metricX
 batch_size=16 ### Should be divisible by the number of GPUs
 
-export CUDA_VISIBLE_DEVICES=2
+export CUDA_VISIBLE_DEVICES=3
 
 num_gpus=$(echo "$CUDA_VISIBLE_DEVICES" | awk -F',' '{print NF}')
 # en->indic
@@ -66,9 +66,9 @@ if [ $data_name == "afriMTE" ]; then
 elif [ $data_name == "IndicMT" ]; then
   language_pairs_list=(
       "eng-assamese"
-      # "eng-maithili"
-      # "eng-kannada"
-      # "eng-punjabi"
+      "eng-maithili"
+      "eng-kannada"
+      "eng-punjabi"
   )
 
   for pair in "${language_pairs_list[@]}"; do
@@ -87,7 +87,8 @@ elif [ $data_name == "IndicMT" ]; then
       --output_dir /mnt/gemini/data1/yifengliu/qe-lr/output/IndicMT \
       --src $src \
       --tgt $tgt \
-      --qe
+      --qe \
+      --alignment
   done
 elif [ $data_name == "dev23" ]; then
   language_pairs_list=(
@@ -112,8 +113,8 @@ elif [ $data_name == "dev23" ]; then
       --input_file /mnt/gemini/data1/yifengliu/data/wmt23-dev/dev.${src}${tgt}.df.short.tsv \
       --output_dir /mnt/gemini/data1/yifengliu/qe-lr/output/wmt23-dev \
       --src $src \
-      --tgt $tgt \
-      --qe
+      --tgt $tgt
+      # --qe
   done
 elif [ $data_name == "test24" ]; then
   language_pairs_list=(
@@ -161,15 +162,18 @@ elif [ $data_name == "low-res" ]; then
       --output_dir /mnt/gemini/data1/yifengliu/qe-lr/output/low-res \
       --src $src \
       --tgt $tgt \
-      --qe
+      --qe \
+      --alignment
   done
 elif [ $data_name == "flores" ]; then
-  src="eng"
+  src="ara"
   tgt_list=(
-    # "mkd"
-    # "pol"
-    # "srp"
-    # "slk"
+    # "ben"
+    # "ltz"
+    "mkd"
+    "pol"
+    "srp"
+    "slk"
     "slv"
     "ben"
     "guj"
@@ -180,6 +184,7 @@ elif [ $data_name == "flores" ]; then
     "ell"
     "lav"
     "lit"
+    "fas"
     "tgl"
     "jav"
     "ara"
@@ -188,8 +193,12 @@ elif [ $data_name == "flores" ]; then
     "fin"
   )
   for tgt in "${tgt_list[@]}"; do
+    if [ "$tgt" == "$src" ]; then
+      continue
+    fi
     # tgt="slk"
-    dirname="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/New-Align-Rule-Detect-MetricX-Qwen3-4B-en-mix-mid2-1M-bsz128/global_step260_hf"
+    dirname="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/New-Align-Rule-Detect-MetricX-Qwen3-4B-ar-mix-mid2-1M-bsz128/global_step460_hf"
+    # dirname="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Qwen3-4B"
     python predict.py \
       --model_name $model_name \
       --model_size $model_size \

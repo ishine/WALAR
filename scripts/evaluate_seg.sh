@@ -5,5 +5,5 @@ cd /mnt/gemini/data1/yifengliu/qe-lr/code
 # Qwen3-235B-da
 # metricX-xxl-bf16
 python evaluate_seg.py \
-  --input_file /mnt/gemini/data1/yifengliu/qe-lr/output/IndicMT/Qwen3-30B-A3B-da/eng-kannada.jsonl \
+  --input_file /mnt/gemini/data1/yifengliu/qe-lr/output/IndicMT/metricX-xxl-bf16-align/eng-assamese.jsonl \
   --output_file /mnt/data1/yifengliu/qe-lr/output/temp.jsonl

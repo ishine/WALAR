@@ -20,7 +20,7 @@ export RAY_DEBUG_POST_MORTEM=1
 wandb_token=e00b93c51b52fed0712d2130a4df508e9a41e95c
 
 src="ar"
-tgt="cs"
+tgt="de"
 version="3"
 size="4B"
 reward_name="New-Align-Rule-Detect-MetricX"
@@ -35,6 +35,7 @@ fi
 # remote_metric_reference_url
 
 #--remote_comet_url http://localhost:4000/get_reward \
+# --pretrain /mnt/gemini/data1/yifengliu/model/Qwen${version}-${size} \
 ray job submit --address="http://127.0.0.1:8265" \
     --runtime-env-json='{"working_dir": "/mnt/gemini/data1/yifengliu/qe-lr/openrlhf", "excludes": ["/mnt/gemini/data1/yifengliu/qe-lr/openrlhf/wandb/run-20250726_165454-yl7o7sbx/run-yl7o7sbx.wandb"]}' \
     -- python -m openrlhf.cli.train_ppo_ray \
@@ -46,7 +47,7 @@ ray job submit --address="http://127.0.0.1:8265" \
     --vllm_tensor_parallel_size 1 \
     --colocate_actor_ref \
     --ref_reward_offload \
-    --pretrain /mnt/gemini/data1/yifengliu/model/Qwen${version}-${size} \
+    --pretrain /mnt/gemini/data1/yifengliu/model/Qwen3-4B \
     --remote_rm_url http://localhost:2000/get_reward \
     --remote_comet_url http://localhost:5555/get_reward \
     --micro_train_batch_size 32 \

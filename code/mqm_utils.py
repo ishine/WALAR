@@ -2,6 +2,7 @@ import json
 import re
 from collections import defaultdict
 
+
 def apply_template(template, data):
     if isinstance(template, str):
         return template.format(**data)

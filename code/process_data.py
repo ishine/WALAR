@@ -13,8 +13,10 @@ from transformers import AutoTokenizer
 def get_langs(args):
     src, tgt = args.src, args.tgt
     src_lang, tgt_lang = mm_dict.get(src, ''), mm_dict.get(tgt, '')
-    if len(src_lang) == 0 or len(tgt_lang) == 0:
-        src_lang, tgt_lang = lang_dict.get(src, ''), lang_dict.get(tgt, '')
+    if len(src_lang) == 0:
+        src_lang = lang_dict.get(src, '')
+    if len(tgt_lang) == 0:
+        tgt_lang = lang_dict.get(tgt, '')
     # The case for IndicMT
     if tgt_lang == '':
         tgt_lang = args.tgt.capitalize()

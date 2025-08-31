@@ -8,7 +8,7 @@
 #SBATCH --mem=32G
 #SBATCH --output=/mnt/gemini/data1/yifengliu/qe-lr/logs/temp_%j.out
 #SBATCH --error=/mnt/gemini/data1/yifengliu/qe-lr/logs/temp_%j.err
-#SBATCH --partition=taurus
+#SBATCH --partition=aries
 
 # project settings
 echo "CUDA gpus: $CUDA_VISIBLE_DEVICES"

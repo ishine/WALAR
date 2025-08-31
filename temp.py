@@ -41,9 +41,9 @@ def calculate_comet_score(src_texts, references, predictions, model_path="/mnt/g
 if __name__ == "__main__":
     # Example usage
     # dataset = []
-    path = "/mnt/gemini/data1/yifengliu/data/wmt24_news_crawl/ja/ja1m.jsonl"
+    # path = "/mnt/gemini/data1/yifengliu/data/wmt24_news_crawl/ja/ja1m.jsonl"
     # save_path = "/mnt/gemini/data1/yifengliu/data/wmt24_news_crawl/en/en1m.jsonl"
-    dataset = load_dataset(path)
+    # dataset = load_dataset(path)
     # new_dataset = []
 
     # path = f"/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Rule-Detect-MetricX-Qwen2.5-0.5B-en-zh-1M-bsz128/global_step780_hf/eng-zho_simpl.txt"
@@ -77,27 +77,28 @@ if __name__ == "__main__":
     # 26.0056
     # dataset = []
     # path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Qwen2.5-3B-Instruct-En-Zh-1M/global_step160_hf/eng-zho_simpl.txt"
-    # path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Qwen3-4B/eng-jpn.txt"
+    dataset = []
+    # path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Seq-Align-Rule-Detect-MetricX-Qwen3-4B-en-cs-1M-bsz128/global_step400_hf/eng-ben.txt"
+    path = "/mnt/gemini/data1/yifengliu/qe-lr/data/train/base_ar-mix-mid2-1m.jsonl"
+    dataset = load_dataset(path)
+    # path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Qwen3-4B/eng-jav.txt"
     # # path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/New-Align-Rule-Detect-MetricX-Qwen3-4B-en-mix-mid2-1M-bsz128/global_step200_hf/eng-jpn.txt"
     # with open(path, 'r') as f:
     #     lines = f.readlines()
     #     # import code; code.interact(local=locals())
-    #     for line in lines[:-3]:
+    #     for line in lines[:-4]:
     #         dataset.append(json.loads(line))
     # srcs = [data['src'] for data in dataset]
     # hyps = [data['pred'] for data in dataset]
     # refs = [data['ref'] for data in dataset]
     
-    # data_path = "/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest/slv.devtest"
-    # with open(data_path, 'r') as f:
-    #     hyps = f.readlines()
     # lang_detect_model = fasttext.load_model("/mnt/gemini/data1/yifengliu/model/lid.176.bin")
     # hyps2 = [tgt.replace("\n", "") for tgt in hyps]
     # lang_info = lang_detect_model.predict(hyps2)
     # cnt = 0
     # for idx, (lang, hyp) in enumerate(zip(lang_info[0], hyps)):
     #     lang_code = lang[0].replace("__label__", "")
-    #     if lang_code != "sl":
+    #     if lang_code != "bn":
     #         print(f"{idx}: {hyp}")
     #         cnt += 1
     # print("Done!")

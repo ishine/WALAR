@@ -268,7 +268,7 @@ class BasePPOTrainer(ABC):
             src_dataset, tgt_dataset = load_flores_dataset(eval_dir, f"{src_lang}-{tgt_lang}")
             assert len(src_dataset) == len(tgt_dataset), "Source and target datasets must have the same length."
             n = len(src_dataset)
-            src_dataset, tgt_dataset = src_dataset[:n//2], tgt_dataset[:n//2]  # Use only the first half for evaluation
+            src_dataset, tgt_dataset = src_dataset[:n], tgt_dataset[:n]  # Use only the first half for evaluation
             with torch.no_grad():
                 # First collect all prompts and labels
                 all_prompts = []

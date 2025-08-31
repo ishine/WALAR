@@ -320,10 +320,6 @@ def write_to_file(output_file, ds, predictions, model_name):
   with open(output_file, "w") as out:
     for pred, example in zip(predictions, ds):
       example["prediction"] = float(pred)
-      if model_name == "metricX":
-        del example["input"]
-        del example["input_ids"]
-        del example["attention_mask"]
       out.write(json.dumps(example) + "\n")
   
 

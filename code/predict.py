@@ -20,6 +20,9 @@ import pandas as pd
 import csv
 import os
 import sys
+import tqdm
+import itertools
+from tqdm import *
 
 sys.path.insert(0, "/mnt/gemini/data1/yifengliu/qe-lr/code")
 from utils import write_to_file, preprocess_dataset, my_load_dataset
@@ -29,7 +32,7 @@ from typing import Optional, Tuple, Union, List
 # from code import models
 import torch
 import transformers
-from transformers import DataCollatorWithPadding
+from transformers import DataCollatorWithPadding, AutoTokenizer, AutoModel
 
 
 @dataclasses.dataclass
@@ -80,6 +83,11 @@ class Arguments:
 
   qe: bool = dataclasses.field(
       metadata={"help": "Indicates the metric is a QE metric."},
+      default=False,
+  )
+  
+  alignment: bool = dataclasses.field(
+      metadata={"help": "Indicates whether to output word-level alignment."},
       default=False,
   )
   
@@ -216,6 +224,143 @@ def get_dataset(
 
   return ds, data_collator
 
+def align_score(srcs, tgts, model, tokenizer, batch_size=16):
+    align_score_list = []
+    align_layer = 24
+    threshold = 1e-3
+
+    # 将模型移动到GPU（如果可用）
+    device = model.device
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # model = model.to(device)
+    
+    # 预计算所有tokenizations和映射
+    tokenized_data = []
+    
+    # 预处理所有数据
+    for i in tqdm(range(len(srcs))):
+        sent_src, sent_tgt = srcs[i], tgts[i]
+        
+        # 同时处理源语言和目标语言
+        token_src = [tokenizer.tokenize(word) for word in sent_src]
+        token_tgt = [tokenizer.tokenize(word) for word in sent_tgt]
+        
+        # 转换为ID
+        wid_src = [tokenizer.convert_tokens_to_ids(x) for x in token_src]
+        wid_tgt = [tokenizer.convert_tokens_to_ids(x) for x in token_tgt]
+        
+        # 准备模型输入
+        ids_src = tokenizer.prepare_for_model(
+            list(itertools.chain(*wid_src)), 
+            return_tensors='pt', 
+            truncation=True,
+            max_length=tokenizer.model_max_length
+        )['input_ids']
+        
+        ids_tgt = tokenizer.prepare_for_model(
+            list(itertools.chain(*wid_tgt)), 
+            return_tensors='pt', 
+            truncation=True,
+            max_length=tokenizer.model_max_length
+        )['input_ids']
+        
+        # 创建子词到单词的映射
+        sub2word_map_src = []
+        for idx, word_list in enumerate(token_src):
+            sub2word_map_src.extend([idx] * len(word_list))
+            
+        sub2word_map_tgt = []
+        for idx, word_list in enumerate(token_tgt):
+            sub2word_map_tgt.extend([idx] * len(word_list))
+        
+        tokenized_data.append({
+            'input_ids_src': ids_src.squeeze(),
+            'input_ids_tgt': ids_tgt.squeeze(),
+            'sub2word_src': sub2word_map_src,
+            'sub2word_tgt': sub2word_map_tgt,
+            'src_len': len(sent_src),
+            'tgt_len': len(sent_tgt)
+        })
+    
+    # 批量处理
+    model.eval()
+    with torch.no_grad():
+        for i in tqdm(range(0, len(tokenized_data), batch_size)):
+            batch = tokenized_data[i:i+batch_size]
+            
+            # 准备批次输入
+            src_batch = [item['input_ids_src'] for item in batch]
+            tgt_batch = [item['input_ids_tgt'] for item in batch]
+            
+            # 获取实际长度（排除填充）
+            src_lengths = [len(ids) for ids in src_batch]
+            tgt_lengths = [len(ids) for ids in tgt_batch]
+            
+            # 填充批次并移动到设备
+            src_tensors = torch.nn.utils.rnn.pad_sequence(
+                src_batch, batch_first=True, padding_value=tokenizer.pad_token_id
+            ).to(device)
+            
+            tgt_tensors = torch.nn.utils.rnn.pad_sequence(
+                tgt_batch, batch_first=True, padding_value=tokenizer.pad_token_id
+            ).to(device)
+            
+            # 创建注意力掩码
+            src_mask = (src_tensors != tokenizer.pad_token_id).to(device)
+            tgt_mask = (tgt_tensors != tokenizer.pad_token_id).to(device)
+            
+            # 获取模型输出
+            out_src = model(src_tensors, attention_mask=src_mask, output_hidden_states=True)[2][align_layer]
+            out_tgt = model(tgt_tensors, attention_mask=tgt_mask, output_hidden_states=True)[2][align_layer]
+            
+            # 处理批次中的每个句子
+            for j in range(len(batch)):
+                item = batch[j]
+                
+                # 移除特殊标记 ([CLS] 和 [SEP])
+                src_start, src_end = 1, src_lengths[j] - 1
+                tgt_start, tgt_end = 1, tgt_lengths[j] - 1
+                
+                valid_src = out_src[j, src_start:src_end]  # 移除 [CLS] 和 [SEP]
+                valid_tgt = out_tgt[j, tgt_start:tgt_end]
+                
+                # 计算对齐
+                dot_prod = torch.matmul(valid_src, valid_tgt.transpose(-1, -2))
+                
+                # 使用更高效的softmax计算
+                softmax_srctgt = torch.softmax(dot_prod, dim=-1)
+                softmax_tgtsrc = torch.softmax(dot_prod, dim=-2)
+                
+                # 创建对齐掩码
+                softmax_inter = (softmax_srctgt > threshold) & (softmax_tgtsrc > threshold)
+                
+                # 转换为词对齐
+                align_subwords = torch.nonzero(softmax_inter, as_tuple=False)
+                
+                # 使用集合推导式提高效率
+                align_words = {
+                    (item['sub2word_src'][i_sub.item()], item['sub2word_tgt'][j_sub.item()])
+                    for i_sub, j_sub in align_subwords
+                }
+                
+                # 计算分数
+                src_words = {t[0] for t in align_words}
+                tgt_words = {t[1] for t in align_words}
+                n_src = len(src_words)
+                n_tgt = len(tgt_words)
+                
+                precision = n_tgt / item['tgt_len'] if n_tgt > 0 else 0
+                recall = n_src / item['src_len'] if n_src > 0 else 0
+                
+                if precision + recall > 0:
+                    f1 = 2 * precision * recall / (precision + recall)
+                else:
+                    f1 = 0.0
+                
+                align_score_list.append(f1)
+    
+    return align_score_list
+
 def get_predictions(
     ds: datasets.Dataset,
     model: Union[transformers.PreTrainedModel, models.MT5ForRegression],
@@ -223,6 +368,7 @@ def get_predictions(
     per_device_batch_size: int,
     model_name: str,
     output_dir: Optional[str] = None,
+    alignment: bool = False,
 ) -> Union[List[float], pd.DataFrame]:
   """Gets the predictions for the dataset.
 
@@ -257,6 +403,7 @@ def get_predictions(
   else:
     raise ValueError("Unsupported model name or path: {}".format(model_name))
   # import code; code.interact(local=locals())
+    
   return predictions
 
 def load_flores(path):
@@ -346,8 +493,9 @@ def main() -> None:
   # ]
   # ds = [
   #   {
-  #     "source": "The Three Kingdoms was one of the bloodiest eras in Ancient China’s history thousands of people died fighting to sit in the highest seat in the grand palace at Xi’an.",
-  #     "hypothesis": "Tri kraljestva bila je ena najkrvavijih epok in istorije stareg Kine, kjer je umrlo tisoce ljudi, bojeći za pravico sedeti na visokem mjestu v velikem palatu v Xi’anu.",
+  #     "source": "Dr. Ehud Ur, professor of medicine at Dalhousie University in Halifax, Nova Scotia and chair of the clinical and scientific division of the Canadian Diabetes Association cautioned that the research is still in its early days.",
+  #     "hypothesis": "Dr. Ehud Ur, dosen kedokteran di Universitas Dalhousie di Halifax, Nova Scotia, dan ketua divisi klinis dan ilmiah Asosiasi Diabetes Kanada memperingatkan bahwa penelitian ini masih dalam tahap awal.",
+  #     "reference": "Dr. Ehud Ur, profesor ilmu kedokteran ing Universitas Dalhousie ing Halifax, Nova Scotia lan ketua divisi klinis lan ilmiah saka Asosiasi Diabetes Kanada ngengetake menawa panaliten iku isih ing tahap wiwitan.",
   #   }
   # ]
   # src_path = f"/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest/eng.devtest"
@@ -357,19 +505,33 @@ def main() -> None:
   #   "source": src,
   #   "hypothesis": tgt,
   # } for src, tgt in zip(src_dataset, tgt_dataset)]
-  ds = datasets.Dataset.from_list(ds)
-  ds, data_collator = get_dataset(
-      ds,
+  dt = datasets.Dataset.from_list(ds)
+  dt, data_collator = get_dataset(
+      dt,
       args.model_name,
       tokenizer,
       args.max_input_length,
       device,
       args.qe,
   )
-  predictions = get_predictions(ds, model, data_collator, per_device_batch_size, args.model_name, args.output_dir)
+  predictions = get_predictions(dt, model, data_collator, per_device_batch_size, args.model_name, args.output_dir, args.alignment)
+  # predictions = [0]*len(predictions)
+  if args.alignment:
+    align_path = "/mnt/gemini/data1/yifengliu/model/bge-m3"
+    align_model = AutoModel.from_pretrained(align_path)
+    align_tokenizer = AutoTokenizer.from_pretrained(align_path)
+    align_model.to("cuda:0")
+    srcs, tgts = [d['source'] for d in ds], [d['hypothesis'] for d in ds]
+    srcs = [src.split() for src in srcs]
+    tgts = [tgt.split() for tgt in tgts]
+    scores = align_score(srcs, tgts, align_model, align_tokenizer, batch_size=16)
+    predictions = [prediction + score for prediction, score in zip(predictions, scores)]
   # print(predictions[0])
   dirname = args.output_dir
-  dirname = os.path.join(dirname, args.model_name + "-" + args.model_size + "-" + args.dtype)
+  if not args.alignment:
+    dirname = os.path.join(dirname, args.model_name + "-" + args.model_size + "-" + args.dtype)
+  else:
+    dirname = os.path.join(dirname, args.model_name + "-" + args.model_size + "-" + args.dtype + "-align")
   # import code; code.interact(local=locals())
   if name != "flores":
     if dirname:

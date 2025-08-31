@@ -1,6 +1,7 @@
 src="ar"
 tgt_list=(
-    "cs"
+    "de"
+    # "cs"
     # "hye"
     # "azj"
     # "ces"

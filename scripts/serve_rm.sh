@@ -12,8 +12,8 @@ bleu=False
 align=True
 
 # No need to care if align=False
-src=en
-tgt=ara
+src=ar
+tgt=deu
 
 export CUDA_VISIBLE_DEVICES=4
 python -m openrlhf.cli.serve_rm \
@@ -28,7 +28,7 @@ python -m openrlhf.cli.serve_rm \
     --align $align \
     --src $src \
     --tgt $tgt \
-    --batch_size 8 &
+    --batch_size 4 &
 
 # echo "MetricX serves successfully!"
 

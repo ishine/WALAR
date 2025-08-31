@@ -684,20 +684,20 @@ src_dataset, tgt_dataset = load_flores(src_path), load_flores(tgt_path)
 # tgt_dataset = ["他补充道：“我们现在有 4 个月大没有糖尿病的老鼠，但它们曾经得过该病。”\n中文翻译：\n他补充道：“我们现在有 4 个月大没有糖尿病的老鼠，但它们曾经得过该病。”"]
 # src_dataset = [src.split() for src in src_dataset]
 # tgt_dataset = [tgt.split() for tgt in tgt_dataset]
-# model = BGEM3FlagModel("/mnt/gemini/data1/yifengliu/model/bge-m3", use_fp16=True)
-# sentences_1 = ["Dr. Ehud Ur，来自Dalhousie大学的医学教授，同时也是加拿大糖尿病协会的临床和科学委员会主席。他强调，目前的研究还处于初级阶段。尽管如此，他指出，尽管研究的范围有限，但其重要性不容忽视。糖尿病是一种复杂的疾病，其病因、发病机制以及治疗方案等都尚未完全阐明。因此，深入研究和探索糖尿病的病因和治疗策略对于提高糖尿病患者的生活质量、降低疾病负担以及促进全球糖尿病研究的发展都具有重要意义。Dr. Ur强调，尽管研究还处于初级阶段，但其对于推动糖尿病医学领域的进步具有不可替代的作用。他建议，未来的研究应更加深入地探索糖尿病的发病机制、治疗策略以及相关因素，以期能够更有效地控制糖尿病，提高糖尿病患者的生活质量。"]
-# sentences_2 = ["中文翻译：\nDr. Ehud Ur，来自Dalhousie大学的医学教授，同时也是加拿大糖尿病协会的临床和科学委员会主席。他强调，目前的研究还处于初级阶段。尽管如此，他指出，尽管研究的范围有限，但其重要性不容忽视。糖尿病是一种复杂的疾病，其病因、发病机制以及治疗方案等都尚未完全阐明。因此，深入研究和探索糖尿病的病因和治疗策略对于提高糖尿病患者的生活质量、降低疾病负担以及促进全球糖尿病研究的发展都具有重要意义。Dr. Ur强调，尽管研究还处于初级阶段，但其对于推动糖尿病医学领域的进步具有不可替代的作用。他建议，未来的研究应更加深入地探索糖尿病的发病机制、治疗策略以及相关因素，以期能够更有效地控制糖尿病，提高糖尿病患者的生活质量。"]
+model = BGEM3FlagModel("/mnt/gemini/data1/yifengliu/model/bge-m3", use_fp16=True)
+sentences_1 = ["Dr. Ehud Ur, professor of medicine at Dalhousie University in Halifax, Nova Scotia and chair of the clinical and scientific division of the Canadian Diabetes Association cautioned that the research is still in its early days."]
+sentences_2 = ["Dr. Ehud Ur，来自Dalhousie大学的医学教授，同时也是加拿大糖尿病协会的临床和科学委员会主席。他强调，目前的研究还处于初级阶段。尽管如此，他指出，尽管研究的范围有限，但其重要性不容忽视。糖尿病是一种复杂的疾病，其病因、发病机制以及治疗方案等都尚未完全阐明。因此，深入研究和探索糖尿病的病因和治疗策略对于提高糖尿病患者的生活质量、降低疾病负担以及促进全球糖尿病研究的发展都具有重要意义。Dr. Ur强调，尽管研究还处于初级阶段，但其对于推动糖尿病医学领域的进步具有不可替代的作用。他建议，未来的研究应更加深入地探索糖尿病的发病机制、治疗策略以及相关因素，以期能够更有效地控制糖尿病，提高糖尿病患者的生活质量。\n中文翻译：\nDr. Ehud Ur，来自Dalhousie大学的医学教授，同时也是加拿大糖尿病协会的临床和科学委员会主席。他强调，目前的研究还处于初级阶段。尽管如此，他指出，尽管研究的范围有限，但其重要性不容忽视。糖尿病是一种复杂的疾病，其病因、发病机制以及治疗方案等都尚未完全阐明。因此，深入研究和探索糖尿病的病因和治疗策略对于提高糖尿病患者的生活质量、降低疾病负担以及促进全球糖尿病研究的发展都具有重要意义。Dr. Ur强调，尽管研究还处于初级阶段，但其对于推动糖尿病医学领域的进步具有不可替代的作用。他建议，未来的研究应更加深入地探索糖尿病的发病机制、治疗策略以及相关因素，以期能够更有效地控制糖尿病，提高糖尿病患者的生活质量。"]
 
-# embeddings_1 = model.encode(sentences_1, 
-                            # batch_size=12, 
-                            # max_length=8192, # If you don't need such a long length, you can set a smaller value to speed up the encoding process.
-                            # )['dense_vecs']
-# embeddings_2 = model.encode(sentences_2)['dense_vecs']
-# similarity = embeddings_1 @ embeddings_2.T
-# print(similarity)
+embeddings_1 = model.encode(sentences_1, 
+                            batch_size=12, 
+                            max_length=8192, # If you don't need such a long length, you can set a smaller value to speed up the encoding process.
+                            )['dense_vecs']
+embeddings_2 = model.encode(sentences_2)['dense_vecs']
+similarity = embeddings_1 @ embeddings_2.T
+print(similarity)
 # src_dataset, tgt_dataset = src_dataset[-1:], tgt_dataset[-1:]  # for test
 # align_score_list = align_score(src_dataset, tgt_dataset, model, tokenizer)
-align_score_list = align_score5(src_dataset, tgt_dataset, model, tokenizer, batch_size=16)
+# align_score_list = align_score5(src_dataset, tgt_dataset, model, tokenizer, batch_size=16)
 
 # align_score_list = align_score4(src_dataset, tgt_dataset, model, tokenizer, batch_size=16)
 # align_score_list = align_score3(src_dataset, tgt_dataset, model, tokenizer, batch_size=1024)

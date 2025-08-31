@@ -152,7 +152,7 @@ def get_scores(eval_type: str, ds: List[Dict], sampling_params: SamplingParams, 
     # import code; code.interact(local=locals())
     scores = [[0 if sc is None else sc for sc in s]for s in scores]
     scores = [sum(s) / len(s) for s in scores]
-    import code; code.interact(local=locals())
+    # import code; code.interact(local=locals())
     return scores
 
 def get_langs(args):
