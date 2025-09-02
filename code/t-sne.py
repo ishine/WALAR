@@ -5,6 +5,7 @@ from tqdm import *
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 
 def load_flores(path):
     with open(path, 'r') as f:
@@ -84,7 +85,7 @@ def apply_tsne(high_dim_vectors):
     return low_dim_vectors
 
 if __name__ == "__main__":
-    model_name = "checkpoint"
+    model_name = "Qwen3-4B"
     path_dict = {
         "Qwen3-4B": "/mnt/gemini/data1/yifengliu/model/Qwen3-4B",
         "checkpoint": "/mnt/gemini/data1/yifengliu/checkpoints/New-Align-Rule-Detect-MetricX-Qwen3-4B-en-mix-mid2-1M-bsz128/global_step580_hf",
@@ -101,13 +102,15 @@ if __name__ == "__main__":
     print("\nGenerating plot...")
     plt.style.use('seaborn-v0_8-whitegrid')
     fig, ax = plt.subplots(figsize=(10, 8))
-
+    norm = plt.Normalize(vmin=0, vmax=len(language_list)-1)
+    cmap = cm.get_cmap('tab20', len(language_list))  # use discrete colors
     # Create a scatter plot
     scatter = ax.scatter(
         low_dim_vectors[:, 0], 
         low_dim_vectors[:, 1], 
         c=colors, 
-        cmap='viridis', # Color map for different languages
+        cmap=cmap, # Color map for different languages
+        norm=norm,
         alpha=0.8,
         s=100 # Marker size
     )

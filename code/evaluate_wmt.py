@@ -671,18 +671,18 @@ def main() -> None:
   model_scores, sy_scores = {}, {}
   # ESA
   # lps = ["en-cs", "en-hi", "en-is"]
-  # lps = ["cs-uk"]
+  lps = ["cs-uk"]
   
   # MQM
   # lps = ["en-de", "en-es", "ja-zh"]
   # lps = ["en-es"]
   # lps = ["ja-zh"]
-  lps = ["en-de", "en-es"]
+  # lps = ["en-de", "en-es"]
   
   for lp in lps:
     evs = evs_dict[(f'wmt{args.wmt_year}', lp)]
-    gold_scores = evs.Scores("seg", "mqm")
-    # gold_scores = evs.Scores("seg", "esa")
+    # gold_scores = evs.Scores("seg", "mqm")
+    gold_scores = evs.Scores("seg", "esa")
     # import code; code.interact(local=locals())
     for refname, ref in evs.all_refs.items():
       seg_scores, sys_scores = NewMetric(

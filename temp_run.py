@@ -34,12 +34,12 @@ def extract_boxed_number(answer):
     return None
 
 if __name__ == '__main__':
-    os.environ['CUDA_VISIBLE_DEVICES'] = '0,1,2,3'
+    os.environ['CUDA_VISIBLE_DEVICES'] = '5'
     # model_path = "/mnt/gemini/data1/yifengliu/model/Qwen3-4B"
-    model_path = "/mnt/gemini/data1/yifengliu/model/Qwen3-235B-A22B-Instruct-2507-FP8"
+    model_path = "/mnt/gemini/data1/yifengliu/model/Qwen3-4B-Base"
     sample = SamplingParams(n=1, temperature=0.6, top_k=-1, top_p=1, max_tokens=32768)
     src, tgt = "en", "zh"
-    model = LLM(model=model_path, max_model_len=32768, tensor_parallel_size=4, trust_remote_code=True)
+    model = LLM(model=model_path, max_model_len=32768, tensor_parallel_size=1, trust_remote_code=True)
     tokenizer = AutoTokenizer.from_pretrained(model_path)
 #     system_prompt = "You are a professional translation evaluator."
 #     user_prompt = """Your task is to assess whether a translation segment successfully conveys the semantic content of the original sentence according to the following criteria:
@@ -55,42 +55,17 @@ if __name__ == '__main__':
 # Source sentence: {src}
 # Translation: {tgt}
 # """
-    # src = "There was an international drug ring based out of Jamaica at that time who had dealings with South America and it's my understanding the ring would use high-dollar art as collateral in deals."
+    src = "There was an international drug ring based out of Jamaica at that time who had dealings with South America and it's my understanding the ring would use high-dollar art as collateral in deals."
     # 当时有一个国际贩毒集团总部设在牙买加，与南美有业务往来，据我所知，这个集团在交易中会将高价艺术品作为 抵押品
     # tgt = "托尼·莫尔博士在南非夸祖鲁-纳塔尔省发现了这种广泛耐药结核病 (XDR-TB)。"
     # user_prompt = user_prompt.format(src=src, tgt=tgt)
-    # sentence = f"""{src}\nTranslate from English to Chinese:\n"""
-    # template = "Score the following translation from {source_lang} to {target_lang} on a continuous scale from 0 to 100, where a score of zero means \"no meaning preserved\" and score of one hundred means \"perfect meaning and grammar\". Please first give your explanation, and finally give your score in \\boxed{{}}.\n\n{source_lang} source: \"{source_seg}\"\n{target_lang} translation: \"{target_seg}\"\n"
-    # source_seg = "Danius said, \"Right now we are doing nothing. I have called and sent emails to his closest collaborator and received very friendly replies. For now, that is certainly enough.\""
-    # target_seg = "丹尼斯说：“目前我们暂时不采取行动。我已经联系并发邮件给他的主要合作者，对方回复非常友好。目前来说，这已经足够。”"
-    source_lang, target_lang = "English", "Chinese"
-    src_path = f"/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest/eng.devtest"
-    tgt_path = f"/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest/zho_simpl.devtest"
-    src_dataset, tgt_dataset = load_flores(src_path), load_flores(tgt_path)
-    # src = "Workplace harmony is crucial, emphasizing group effort rather than praising individual accomplishments."
-    # template = f"{src}\nTranslate from English to Chinese:\n"
-    src_dataset = ["Danius said, \"Right now we are doing nothing. I have called and sent emails to his closest collaborator and received very friendly replies. For now, that is certainly enough.\""]
-    tgt_dataset = ["丹尼斯说：“目前我们暂时不采取行动。我已经联系并发邮件给他的主要合作者，对方回复非常友好。目前来说，这已经足够。”"]
-    prompts = []
-    for src, tgt in zip(src_dataset, tgt_dataset):
-        source_seg = src.strip()
-        target_seg = tgt.strip()
-        # template = f"Identify if there is any overtranslation in the following {source_lang} to {target_lang} translation. Please first explain the reason then give your answer with Yes or No in \\boxed{{}}. English soure: \"{source_seg}\" Chinese translation: \"{target_seg}\". If there is no overtranslation, answer \"No\". If there is overtranslation, answer \"Yes\" and explain why in detail."
-        template = f"Score the following translation from {source_lang} to {target_lang} on a continuous scale from 0 to 100, where a score of zero means \"no meaning preserved\" and score of one hundred means \"perfect meaning and grammar\". Please first give your explanation, and finally give your score in \\boxed{{}}.\n\n{source_lang} source: \"{source_seg}\"\n{target_lang} translation: \"{target_seg}\"\n"
-        message = [
-            {"role": "user", "content": template},
-        ]
-        prompt = tokenizer.apply_chat_template(message, tokenize=False, add_generation_prompt=True, enable_thinking=False)
-        prompts.append(prompt)
-    outputs = model.generate(prompts, sampling_params=sample)
-    outputs1 = [[opt.text for opt in output.outputs] for output in outputs]
-    answers = [
-        [match if (match := extract_boxed_number(opt)) else "No" for opt in output]
-        for output in outputs1
+    sentence = f"""{src}\nTranslate from English to Chinese:\n"""
+    message = [
+        {"role": "user", "content": sentence}
     ]
-    final_answers = [Counter(answer).most_common(1)[0][0] for answer in answers]
-    correct = sum([answer == "Yes" for answer in final_answers])
-    wrong = sum([answer == "No" for answer in final_answers])
+    prompt = tokenizer.apply_chat_template(message, tokenize=False, add_generation_prompt=True, enable_thinking=False)
+    outputs = model.generate([prompt], sample)
+    print(outputs[0].outputs[0].text)
         # output = outputs[0].outputs[0].text
     
     # path = "/mnt/gemini/data1/yifengliu/qe-lr/simple_test.jsonl"

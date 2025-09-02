@@ -26,12 +26,14 @@ from tqdm import *
 
 sys.path.insert(0, "/mnt/gemini/data1/yifengliu/qe-lr/code")
 from utils import write_to_file, preprocess_dataset, my_load_dataset
+from utils import mm_dict, lang_dict
 import models
 import datasets
 from typing import Optional, Tuple, Union, List
 # from code import models
 import torch
 import transformers
+import fasttext
 from transformers import DataCollatorWithPadding, AutoTokenizer, AutoModel
 
 
@@ -88,6 +90,11 @@ class Arguments:
   
   alignment: bool = dataclasses.field(
       metadata={"help": "Indicates whether to output word-level alignment."},
+      default=False,
+  )
+  
+  lang: bool = dataclasses.field(
+      metadata={"help": "Indicates whether to do language filtering."},
       default=False,
   )
   
@@ -522,10 +529,19 @@ def main() -> None:
     align_tokenizer = AutoTokenizer.from_pretrained(align_path)
     align_model.to("cuda:0")
     srcs, tgts = [d['source'] for d in ds], [d['hypothesis'] for d in ds]
-    srcs = [src.split() for src in srcs]
-    tgts = [tgt.split() for tgt in tgts]
-    scores = align_score(srcs, tgts, align_model, align_tokenizer, batch_size=16)
+    src_copy = [src.split() for src in srcs]
+    tgt_copy = [tgt.split() for tgt in tgts]
+    scores = align_score(src_copy, tgt_copy, align_model, align_tokenizer, batch_size=16)
     predictions = [prediction + score for prediction, score in zip(predictions, scores)]
+  if args.lang:
+    srcs, tgts = [d['source'] for d in ds], [d['hypothesis'] for d in ds]
+    lang_detect_model = fasttext.load_model("/mnt/gemini/data1/yifengliu/model/lid.176.bin")
+    lang_info = lang_detect_model.predict(tgts)
+    lang_id = [language[0].replace("__label__", "") for language in lang_info[0]]
+    # pred_lang = [lang_dict.get(lang, 0) for lang in lang_id]
+    new_score_list = [-25 if lang != args.tgt else float("inf") for lang in lang_id]
+    # import code; code.interact(local=locals())
+    predictions = [min(prediction, score) for prediction, score in zip(predictions, new_score_list)]
   # print(predictions[0])
   dirname = args.output_dir
   if not args.alignment:

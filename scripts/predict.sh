@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 cd /mnt/gemini/data1/yifengliu/qe-lr/code
 
-data_name="flores"
-model_name="XComet"
-model_size="xl"  ### model_size can be discarded if your model_name is not XComet or metricX
+data_name="dev23"
+model_name="metricX"
+model_size="xxl"  ### model_size can be discarded if your model_name is not XComet or metricX
 dtype="bf16"  ### dtype can be discarded if your model_name is not metricX
 batch_size=16 ### Should be divisible by the number of GPUs
 
-export CUDA_VISIBLE_DEVICES=3
+export CUDA_VISIBLE_DEVICES=7
 
 num_gpus=$(echo "$CUDA_VISIBLE_DEVICES" | awk -F',' '{print NF}')
 # en->indic
@@ -57,7 +57,8 @@ if [ $data_name == "afriMTE" ]; then
       --output_dir /mnt/gemini/data1/yifengliu/qe-lr/output/afriMTE \
       --src $src \
       --tgt $tgt \
-      --qe
+      --qe \
+      --alignment
   done
   cd /mnt/gemini/data1/yifengliu/qe-lr
   python collate_afri.py \
@@ -92,9 +93,9 @@ elif [ $data_name == "IndicMT" ]; then
   done
 elif [ $data_name == "dev23" ]; then
   language_pairs_list=(
-      # "en-gu"
-      # "en-hi"
-      # "en-ta"
+      "en-gu"
+      "en-hi"
+      "en-ta"
       "en-te"
   )
 
@@ -113,8 +114,9 @@ elif [ $data_name == "dev23" ]; then
       --input_file /mnt/gemini/data1/yifengliu/data/wmt23-dev/dev.${src}${tgt}.df.short.tsv \
       --output_dir /mnt/gemini/data1/yifengliu/qe-lr/output/wmt23-dev \
       --src $src \
-      --tgt $tgt
-      # --qe
+      --tgt $tgt \
+      --qe \
+      --alignment
   done
 elif [ $data_name == "test24" ]; then
   language_pairs_list=(
@@ -138,7 +140,8 @@ elif [ $data_name == "test24" ]; then
       --output_dir /mnt/gemini/data1/yifengliu/qe-lr/output/wmt24-test \
       --src $src \
       --tgt $tgt \
-      --qe
+      --qe \
+      --alignment
   done
 elif [ $data_name == "low-res" ]; then
   language_pairs_list=(

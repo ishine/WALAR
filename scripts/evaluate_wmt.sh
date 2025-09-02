@@ -1,5 +1,5 @@
 #!/bin/bash
-export CUDA_VISIBLE_DEVICES=2
+export CUDA_VISIBLE_DEVICES=6
 year=24
 model_name="metricX"
 model_size="xxl"  ### model_size can be discarded if your model_name is not XComet or metricX

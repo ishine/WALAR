@@ -19,11 +19,11 @@ export RAY_DEBUG_POST_MORTEM=1
 # cmu key
 wandb_token=e00b93c51b52fed0712d2130a4df508e9a41e95c
 
-src="ar"
-tgt="de"
+src="en"
+tgt="cs"
 version="3"
 size="4B"
-reward_name="New-Align-Rule-Detect-MetricX"
+reward_name="Length-Rule-Detect-MetricX"
 if [ "${#tgt}" -le 3]; then
     evaluation_step=10
 else
@@ -50,7 +50,7 @@ ray job submit --address="http://127.0.0.1:8265" \
     --pretrain /mnt/gemini/data1/yifengliu/model/Qwen3-4B \
     --remote_rm_url http://localhost:2000/get_reward \
     --remote_comet_url http://localhost:5555/get_reward \
-    --micro_train_batch_size 32 \
+    --micro_train_batch_size 16 \
     --train_batch_size 128 \
     --micro_rollout_batch_size 32 \
     --rollout_batch_size 128 \

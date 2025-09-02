@@ -5,6 +5,7 @@ import re
 import os
 import sacrebleu
 import fasttext
+import matplotlib.pyplot as plt
 from bleurt import score
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from sentence_transformers import SentenceTransformer
@@ -79,22 +80,43 @@ if __name__ == "__main__":
     # path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Qwen2.5-3B-Instruct-En-Zh-1M/global_step160_hf/eng-zho_simpl.txt"
     dataset = []
     # path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Seq-Align-Rule-Detect-MetricX-Qwen3-4B-en-cs-1M-bsz128/global_step400_hf/eng-ben.txt"
-    path = "/mnt/gemini/data1/yifengliu/qe-lr/data/train/base_ar-mix-mid2-1m.jsonl"
-    dataset = load_dataset(path)
+    path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Qwen3-4B/eng-jav.txt"
+    # dataset = load_dataset(path)
     # path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Qwen3-4B/eng-jav.txt"
     # # path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/New-Align-Rule-Detect-MetricX-Qwen3-4B-en-mix-mid2-1M-bsz128/global_step200_hf/eng-jpn.txt"
-    # with open(path, 'r') as f:
-    #     lines = f.readlines()
-    #     # import code; code.interact(local=locals())
-    #     for line in lines[:-4]:
-    #         dataset.append(json.loads(line))
-    # srcs = [data['src'] for data in dataset]
-    # hyps = [data['pred'] for data in dataset]
-    # refs = [data['ref'] for data in dataset]
+    with open(path, 'r') as f:
+        lines = f.readlines()
+        # import code; code.interact(local=locals())
+        for line in lines:
+            try:
+                dataset.append(json.loads(line))
+            except:
+                break
+    srcs = [data['src'] for data in dataset]
+    hyps = [data['pred'] for data in dataset]
+    refs = [data['ref'] for data in dataset]
     
-    # lang_detect_model = fasttext.load_model("/mnt/gemini/data1/yifengliu/model/lid.176.bin")
-    # hyps2 = [tgt.replace("\n", "") for tgt in hyps]
-    # lang_info = lang_detect_model.predict(hyps2)
+    # tokenizer = AutoTokenizer.from_pretrained("/mnt/gemini/data1/yifengliu/model/Qwen3-4B")
+    # srcs_tokens_length = tokenizer(srcs)['input_ids']
+    # hyps_tokens_length = tokenizer(hyps)['input_ids']
+    # import code; code.interact(local=locals())
+    # ratio_list = [len(hyp) / len(src) for src, hyp in zip(srcs_tokens_length, hyps_tokens_length)]
+    
+    # plt.hist(ratio_list, bins=[i/10 for i in range(41)], edgecolor='black')
+
+    # plt.xlabel('Value Range')
+    # plt.ylabel('Count')
+    # plt.title('F1 Score Distribution')
+    # plt.grid(True, linestyle='--', alpha=0.5)
+    # # plt.show()
+    # plt.savefig(f"/mnt/gemini/data1/yifengliu/qe-lr/output/temp.png")
+    # print(f"Align Score: {align_score_list}")
+
+    
+    lang_detect_model = fasttext.load_model("/mnt/gemini/data1/yifengliu/model/lid.176.bin")
+    hyps2 = [tgt.replace("\n", "") for tgt in hyps]
+    lang_info = lang_detect_model.predict(hyps2)
+    
     # cnt = 0
     # for idx, (lang, hyp) in enumerate(zip(lang_info[0], hyps)):
     #     lang_code = lang[0].replace("__label__", "")

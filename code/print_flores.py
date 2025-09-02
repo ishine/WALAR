@@ -3,6 +3,7 @@ import os
 
 def print_result(file_path):
     bleu_score, xcomet_score = None, None
+    metricx_score = None
     with open(file_path, 'r', encoding='utf-8') as f:
         lines = f.readlines()
         for line in lines:

@@ -7,13 +7,13 @@ cd /mnt/gemini/data1/yifengliu/qe-lr/openrlhf
 base_model="Qwen3-4B"
 lang_detect=True
 rule=True       # '\n' for metricX
-truncate=False  # reward truncate
+truncate=True  # reward truncate
 bleu=False
-align=True
+align=False
 
 # No need to care if align=False
-src=ar
-tgt=deu
+src=en
+tgt=ces
 
 export CUDA_VISIBLE_DEVICES=4
 python -m openrlhf.cli.serve_rm \
@@ -55,7 +55,7 @@ python -m openrlhf.cli.serve_rm \
 
 # echo "COMET22 serves successfully!"
 
-# 8000
+# 80000
 export CUDA_VISIBLE_DEVICES=5
 python -m openrlhf.cli.serve_rm \
     --model_name XComet\

@@ -630,9 +630,14 @@ class RewardModelProxy:
           extra_logs['rule_penalty_percent'] = cnt / len(tgts)
           
         if self.args.truncate:
-          truncate_bound = -3
-          extra_logs['truncate_percent'] = sum(score >= truncate_bound for score in scores) / len(scores)
-          scores = [score if score < truncate_bound else truncate_bound for score in scores]
+          self.length_tokenizer = AutoTokenizer.from_pretrained("/mnt/gemini/data1/yifengliu/model/Qwen3-4B")
+          src_length = self.length_tokenizer(srcs)['input_ids']
+          tgt_length = self.length_tokenizer(tgts)['input_ids']
+          min_reward = -25 if 'metricX' in self.model_name else 0
+          # min_reward = -float('inf')
+          ratio_list = [len(tgt)/len(src) for src, tgt in zip(src_length, tgt_length)]
+          new_score_list = [float('inf') if (1.3 <= ratio <= 3) else min_reward for ratio in ratio_list]
+          scores = [min(score, new_score) for score, new_score in zip(scores, new_score_list)]
         if self.args.bleu:
           bleu_score_list = []
           for tgt, label in zip(tgts, labels):
