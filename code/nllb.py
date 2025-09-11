@@ -35,10 +35,10 @@ def load_flores_dataset(data_dir, lang_pair):
     
 if __name__ == '__main__':
     src_lang = "eng_Latn"
-    tgt_lang = "deu_Latn"
+    tgt_lang = "hin_Deva"
     model_path = "/mnt/gemini/data1/yifengliu/model/nllb-200-3.3B"
-    path = "/mnt/gemini/data1/yifengliu/qe-lr/data/train/base_en-de-1m.jsonl"
-    save_path = "/mnt/gemini/data1/yifengliu/qe-lr/data/train/base_en-de2-1m.jsonl"
+    path = "/mnt/gemini/data1/yifengliu/qe-lr/data/train/base_eng-hin-1m.jsonl"
+    save_path = "/mnt/gemini/data1/yifengliu/qe-lr/data/train/base_en-hin2-1m.jsonl"
     dataset = load_dataset(path)
     # dataset = my_load_dataset("/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest", "eng")
     new_dataset = []
@@ -48,7 +48,8 @@ if __name__ == '__main__':
     model = AutoModelForSeq2SeqLM.from_pretrained(model_path, token=True)
     model.to("cuda:0")
     batch_size = 32
-    dataset = dataset[:100_000]
+    dataset = dataset[:10_000]
+    # dataset = dataset[:1]
     # dataset = dataset[:10]
     for i in tqdm(range(0, len(dataset), batch_size)):
         right_bound = min(i + batch_size, len(dataset))
@@ -67,7 +68,8 @@ if __name__ == '__main__':
             new_dt['ref'] = opt
         # new_data['ref'] = output
         new_dataset.extend(new_data)
-    # import code; code.interact(local=locals())
+        
+        # import code; code.interact(local=locals())
     with open(save_path, 'w') as f:
         for data in new_dataset:
             f.write(json.dumps(data, ensure_ascii=False) + '\n')

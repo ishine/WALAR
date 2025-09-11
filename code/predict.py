@@ -505,6 +505,21 @@ def main() -> None:
   #     "reference": "Dr. Ehud Ur, profesor ilmu kedokteran ing Universitas Dalhousie ing Halifax, Nova Scotia lan ketua divisi klinis lan ilmiah saka Asosiasi Diabetes Kanada ngengetake menawa panaliten iku isih ing tahap wiwitan.",
   #   }
   # ]
+  # ds = [
+  #   {
+  #     "source": "Workplace harmony is crucial, emphasizing group effort rather than praising individual accomplishments.",
+  #     "hypothesis": "कार्यस्थल में समानता महत्वपूर्ण है, जहां समूह के सहयोग को सम्मानित किया जाता है, न कि व्यक्तिगत सफलता को।",
+  #     # "hypothesis": "कार्यस्थल में समानता (harmony) महत्वपूर्ण है, जहां समूह के सहयोग (group effort) को सम्मानित किया जाता है, न कि व्यक्तिगत सफलता (individual accomplishments) को।",
+  #     "reference": "कार्यस्थल सामंजस्य महत्वपूर्ण होता है, जो व्यक्तिगत उपलब्धियों की प्रशंसा की बजाय सामूहिक प्रयास पर ज़ोर देता है."
+  #   }
+  # ]
+  # ds = [
+  #   {
+  #     "source": "Poland's men's visually impaired skier Maciej Krezel and guide Anna Ogarzynska finished thirteenth in the Super-G. South Korea's Jong Seork Park finished twenty-fourth in the men's sitting Super-G.",
+  #     "hypothesis": '波兰男子视觉障碍滑雪运动员马切伊·克雷泽尔和他的向导安娜·奥加日斯卡在超级大回转项目中获得第十三名。韩国选手金成勋在男子坐式超级大回转项目中获得第二十四名。',
+  #     "reference": "'波兰男子视障滑雪选手马切吉·克雷泽尔（Maciej Krezel ）和向导安娜·奥加津斯卡（Anna Ogarzynska）在超级大回转比赛中获得第十三名，韩国选手朴钟硕（Jong Seork Park）在男子坐式超级大回转比赛中获得第二十四名。'"
+  #   }
+  # ]
   # src_path = f"/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest/eng.devtest"
   # tgt_path = f"/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest/azj.devtest"
   # src_dataset, tgt_dataset = load_flores(src_path), load_flores(tgt_path)
@@ -548,7 +563,7 @@ def main() -> None:
     dirname = os.path.join(dirname, args.model_name + "-" + args.model_size + "-" + args.dtype)
   else:
     dirname = os.path.join(dirname, args.model_name + "-" + args.model_size + "-" + args.dtype + "-align")
-  # import code; code.interact(local=locals())
+  import code; code.interact(local=locals())
   if name != "flores":
     if dirname:
       os.makedirs(dirname, exist_ok=True)

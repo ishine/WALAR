@@ -23,7 +23,7 @@ src="en"
 tgt="mix-mid2"
 version="3"
 size="4B"
-reward_name="New-Detect-New-Align-Rule-MetricX"
+reward_name="Mask-Detect-New-Align-Rule-MetricX"
 if [ "${#tgt}" -le 3]; then
     evaluation_step=10
 else

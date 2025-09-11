@@ -2,12 +2,12 @@
 cd /mnt/gemini/data1/yifengliu/qe-lr/code
 
 data_name="flores"
-model_name="XComet"
-model_size="xl"  ### model_size can be discarded if your model_name is not XComet or metricX
+model_name="metricX"
+model_size="xxl"  ### model_size can be discarded if your model_name is not XComet or metricX
 dtype="bf16"  ### dtype can be discarded if your model_name is not metricX
 batch_size=16 ### Should be divisible by the number of GPUs
 
-export CUDA_VISIBLE_DEVICES=4
+export CUDA_VISIBLE_DEVICES=0
 
 num_gpus=$(echo "$CUDA_VISIBLE_DEVICES" | awk -F',' '{print NF}')
 # en->indic
@@ -120,7 +120,7 @@ elif [ $data_name == "dev23" ]; then
   done
 elif [ $data_name == "test24" ]; then
   language_pairs_list=(
-      "en-yo"
+      # "en-yo"
       "en-mr"
   )
 
@@ -182,7 +182,7 @@ elif [ $data_name == "flores" ]; then
     # "slk"
     # "slv"
     # "ukr"
-    # "ben"
+    "ben"
     # "guj"
     # "hin"
     # "mar"
@@ -216,58 +216,59 @@ elif [ $data_name == "flores" ]; then
     # "khm"
     # "kor"
     # "lao"
-    "isl"
-    # "ltz"
-    "bel"
-    "ces"
-    "mkd"
-    "pol"
-    # "srp"
-    # "slk"
-    # "slv"
-    "ukr"
-    "ben"
-    # "guj"
-    # "hin"
-    "mar"
-    "npi"
-    "pan"
-    "urd"
-    # "hye"
-    # "ell"
-    # "lav"
-    # "lit"
-    # "fas"
-    "cym"
-    "ceb"
-    # "tgl"
-    # "jav"
-    "ara"
-    "azj"
-    "kaz"
-    # "tur"
-    "uzb"
-    "kan"
-    "mal"
-    "tam"
-    "tel"
-    "mya"
-    "est"
-    # "fin"
-    "hun"
-    "kat"
-    "heb"
-    "khm"
-    "kor"
-    "lao"
+
+    # "isl"
+    # # "ltz"
+    # "bel"
+    # "ces"
+    # "mkd"
+    # "pol"
+    # # "srp"
+    # # "slk"
+    # # "slv"
+    # "ukr"
+    # "ben"
+    # # "guj"
+    # # "hin"
+    # "mar"
+    # "npi"
+    # "pan"
+    # "urd"
+    # # "hye"
+    # # "ell"
+    # # "lav"
+    # # "lit"
+    # # "fas"
+    # "cym"
+    # "ceb"
+    # # "tgl"
+    # # "jav"
+    # "ara"
+    # "azj"
+    # "kaz"
+    # # "tur"
+    # "uzb"
+    # "kan"
+    # "mal"
+    # "tam"
+    # "tel"
+    # "mya"
+    # "est"
+    # # "fin"
+    # "hun"
+    # "kat"
+    # "heb"
+    # "khm"
+    # "kor"
+    # "lao"
   )
   for tgt in "${tgt_list[@]}"; do
     if [ "$tgt" == "$src" ]; then
       continue
     fi
     # tgt="slk"
-    # dirname="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/New-Align-Rule-Detect-MetricX-Qwen3-4B-en-mix-mid2-1M-bsz128/global_step580_hf"
-    dirname="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Qwen3-4B"
+    dirname="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Seq-Rule-Detect-MetricX-Qwen3-4B-en-mix-mid2-1M-bsz128/global_step280_hf"
+    # dirname="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Llama-3.2-3B-Instruct"
     python predict.py \
       --model_name $model_name \
       --model_size $model_size \

@@ -34,9 +34,9 @@ def extract_boxed_number(answer):
     return None
 
 if __name__ == '__main__':
-    os.environ['CUDA_VISIBLE_DEVICES'] = '5'
+    os.environ['CUDA_VISIBLE_DEVICES'] = '0'
     # model_path = "/mnt/gemini/data1/yifengliu/model/Qwen3-4B"
-    model_path = "/mnt/gemini/data1/yifengliu/model/Qwen3-4B-Base"
+    model_path = "/mnt/gemini/data1/yifengliu/model/Qwen3-4B"
     sample = SamplingParams(n=1, temperature=0.6, top_k=-1, top_p=1, max_tokens=32768)
     src, tgt = "en", "zh"
     model = LLM(model=model_path, max_model_len=32768, tensor_parallel_size=1, trust_remote_code=True)

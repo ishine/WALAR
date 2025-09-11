@@ -4,16 +4,16 @@ import os
 import sys
 import re
 import jieba
-import hanlp
-import hanlp_restful
-from hanlp_restful import HanLPClient
+# import hanlp
+# import hanlp_restful
+# from hanlp_restful import HanLPClient
 
 sys.path.insert(0, "/mnt/gemini/data1/yifengliu/qe-lr/code")
 import masklid
 from masklid import MaskLID
 from utils import lang2long, long2lang
 import models
-from sentence_transformers import SentenceTransformer
+# from sentence_transformers import SentenceTransformer
 from typing import Any, List, Tuple, Union, Optional
 from tqdm import *
 
@@ -25,7 +25,7 @@ import fasttext
 import sacrebleu
 import itertools
 from transformers import AutoTokenizer, AutoModel
-from simalign import SentenceAligner
+# from simalign import SentenceAligner
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from transformers import DataCollatorWithPadding
@@ -490,6 +490,25 @@ def align_score(srcs, tgts, model, tokenizer, batch_size=16):
     
     return align_score_list
 
+def get_ratio_list(model, flores_dataset, full_language, tokenizer):
+    # flores_glotlid = ['__label__eng_Latn', '__label__deu_Latn', '__label__isl_Latn', '__label__ltz_Latn', '__label__bel_Cyrl', '__label__ces_Latn', '__label__mkd_Cyrl', '__label__pol_Latn', '__label__srp_Cyrl', '__label__slk_Latn', '__label__slv_Latn', '__label__ukr_Cyrl', '__label__ben_Beng', '__label__guj_Gujr', '__label__hin_Deva', '__label__mar_Deva', '__label__npi_Deva', '__label__pan_Guru', '__label__urd_Arab', '__label__hye_Armn', '__label__ell_Grek', '__label__lvs_Latn', '__label__lit_Latn', '__label__fas_Arab', '__label__cym_Latn', '__label__ceb_Latn', '__label__jav_Latn', '__label__arb_Arab', '__label__azj_Latn', '__label__kaz_Cyrl', '__label__tur_Latn', '__label__uzn_Latn', '__label__kan_Knda', '__label__mal_Mlym', '__label__tam_Taml', '__label__tel_Telu', '__label__mya_Mymr', '__label__ekk_Latn', '__label__fin_Latn', '__label__hun_Latn', '__label__kat_Geor', '__label__heb_Hebr', '__label__khm_Khmr', '__label__kor_Hang', '__label__lao_Laoo', '__label__fil_Latn']
+    answers = []
+    for i in tqdm(range(len(flores_dataset))):
+        text = flores_dataset[i]
+        ans = model.predict_codeswitch(text, beta = 20 , alpha = 3, max_lambda = 3, min_length = 10, min_prob = 0.90, max_retry=3, alpha_step_increase = 3, beta_step_increase = 5)
+        ans = {key.replace("__label__", ""): value for key, value in ans.items()}
+        long_lang_id = lang2long.get(full_language, None)
+        if long_lang_id is None:
+            raise ValueError(f"Language code {lang} not found in lang2long.")
+        lang_translation = ans.get(long_lang_id, None)
+        if lang_translation is None:
+            lang_translation = ""
+        answers.append(lang_translation)
+    original_token_length = [len(tokenizer(text)['input_ids']) for text in flores_dataset]
+    detect_token_length = [len(tokenizer(answer)['input_ids']) for answer in answers]
+    ratio_list = [detect_len / orig_len for detect_len, orig_len in zip(detect_token_length, original_token_length) if orig_len > 0]
+    # import code; code.interact(local=locals())
+    return ratio_list
 
 class RewardModelProxy:
     def __init__(self, args):
@@ -506,8 +525,9 @@ class RewardModelProxy:
         else:
           raise ValueError(f"Unsupported base model: {args.base_model}")
         if args.lang_detect:
-          flores_glotlid = ['__label__eng_Latn', '__label__deu_Latn', '__label__isl_Latn', '__label__ltz_Latn', '__label__bel_Cyrl', '__label__ces_Latn', '__label__mkd_Cyrl', '__label__pol_Latn', '__label__srp_Cyrl', '__label__slk_Latn', '__label__slv_Latn', '__label__ukr_Cyrl', '__label__ben_Beng', '__label__guj_Gujr', '__label__hin_Deva', '__label__mar_Deva', '__label__npi_Deva', '__label__pan_Guru', '__label__urd_Arab', '__label__hye_Armn', '__label__ell_Grek', '__label__lvs_Latn', '__label__lit_Latn', '__label__fas_Arab', '__label__cym_Latn', '__label__ceb_Latn', '__label__jav_Latn', '__label__arb_Arab', '__label__azj_Latn', '__label__kaz_Cyrl', '__label__tur_Latn', '__label__uzn_Latn', '__label__kan_Knda', '__label__mal_Mlym', '__label__tam_Taml', '__label__tel_Telu', '__label__mya_Mymr', '__label__ekk_Latn', '__label__fin_Latn', '__label__hun_Latn', '__label__kat_Geor', '__label__heb_Hebr', '__label__khm_Khmr', '__label__kor_Hang', '__label__lao_Laoo', '__label__fil_Latn']
-          # self.lang_detect_model = fasttext.load_model("/mnt/gemini/data1/yifengliu/model/lid.176.bin")
+          # flores_glotlid = ['__label__eng_Latn', '__label__deu_Latn', '__label__isl_Latn', '__label__ltz_Latn', '__label__bel_Cyrl', '__label__ces_Latn', '__label__mkd_Cyrl', '__label__pol_Latn', '__label__srp_Cyrl', '__label__slk_Latn', '__label__slv_Latn', '__label__ukr_Cyrl', '__label__ben_Beng', '__label__guj_Gujr', '__label__hin_Deva', '__label__mar_Deva', '__label__npi_Deva', '__label__pan_Guru', '__label__urd_Arab', '__label__hye_Armn', '__label__ell_Grek', '__label__lvs_Latn', '__label__lit_Latn', '__label__fas_Arab', '__label__cym_Latn', '__label__ceb_Latn', '__label__jav_Latn', '__label__arb_Arab', '__label__azj_Latn', '__label__kaz_Cyrl', '__label__tur_Latn', '__label__uzn_Latn', '__label__kan_Knda', '__label__mal_Mlym', '__label__tam_Taml', '__label__tel_Telu', '__label__mya_Mymr', '__label__ekk_Latn', '__label__fin_Latn', '__label__hun_Latn', '__label__kat_Geor', '__label__heb_Hebr', '__label__khm_Khmr', '__label__kor_Hang', '__label__lao_Laoo', '__label__fil_Latn']
+          flores_glotlid = ['__label__eng_Latn', '__label__arb_Arab', '__label__rus_Cyrl', '__label__por_Latn', '__label__pol_Latn', '__label__ekk_Latn', '__label__ell_Grek', '__label__slk_Latn', '__label__slv_Latn', '__label__nld_Latn', '__label__lvs_Latn', '__label__hun_Latn', '__label__dan_Latn', '__label__swe_Latn', '__label__lit_Latn', '__label__fin_Latn', '__label__mlt_Latn', '__label__cmn_Hani', '__label__nob_Latn', '__label__kor_Hang', '__label__ind_Latn', '__label__uzn_Latn', '__label__fil_Latn', '__label__ukr_Cyrl', '__label__hin_Deva', '__label__hin_Latn', '__label__afr_Latn', '__label__mar_Deva', '__label__ceb_Latn', '__label__ilo_Latn', '__label__zul_Latn', '__label__heb_Hebr', '__label__xho_Latn', '__label__vie_Latn', '__label__jpn_Jpan', '__label__guj_Gujr', '__label__hrv_Latn', '__label__tur_Latn', '__label__nya_Latn', '__label__tsn_Latn', '__label__sna_Latn', '__label__tso_Latn', '__label__tha_Thai', '__label__spa_Latn', '__label__deu_Latn', '__label__eus_Latn', '__label__bul_Cyrl', '__label__amh_Ethi', '__label__fra_Latn', '__label__ewe_Latn', '__label__mkd_Cyrl', '__label__nso_Latn', '__label__tam_Taml', '__label__lin_Latn', '__label__twi_Latn', '__label__yor_Latn', '__label__als_Latn', '__label__ibo_Latn', '__label__ben_Beng', '__label__ita_Latn', '__label__tpi_Latn', '__label__azj_Latn', '__label__run_Latn', '__label__mya_Mymr', '__label__kin_Latn', '__label__ron_Latn', '__label__ces_Latn', '__label__kat_Geor', '__label__urd_Arab', '__label__zsm_Latn', '__label__pap_Latn', '__label__bem_Latn', '__label__mal_Mlym', '__label__kir_Cyrl', '__label__hye_Armn', '__label__smo_Latn', '__label__sin_Sinh', '__label__fij_Latn', '__label__kan_Knda', '__label__pan_Guru', '__label__hau_Latn', '__label__epo_Latn', '__label__gaz_Latn', '__label__tir_Ethi', '__label__bos_Latn', '__label__srp_Cyrl', '__label__hat_Latn', '__label__pag_Latn', '__label__lua_Latn', '__label__war_Latn', '__label__tel_Telu', '__label__tat_Cyrl', '__label__sag_Latn', '__label__lug_Latn', '__label__tum_Latn', '__label__swh_Latn', '__label__umb_Latn', '__label__som_Latn', '__label__gle_Latn', '__label__kng_Latn', '__label__mos_Latn', '__label__lus_Latn', '__label__khk_Cyrl', '__label__asm_Beng', '__label__tuk_Latn', '__label__quy_Latn', '__label__ayr_Latn', '__label__luo_Latn', '__label__tgk_Cyrl', '__label__cat_Latn', '__label__ssw_Latn', '__label__nno_Latn', '__label__cym_Latn', '__label__kik_Latn', '__label__kmb_Latn', '__label__ory_Orya', '__label__bel_Cyrl', '__label__bho_Deva', '__label__apc_Arab', '__label__bak_Cyrl', '__label__jav_Latn', '__label__yue_Hani', '__label__pbt_Arab', '__label__khm_Khmr', '__label__npi_Deva', '__label__npi_Latn', '__label__gug_Latn', '__label__uig_Arab', '__label__fur_Latn', '__label__kbp_Latn', '__label__hne_Deva', '__label__kam_Latn', '__label__gla_Latn', '__label__kab_Latn', '__label__arz_Arab', '__label__kaz_Cyrl', '__label__mri_Latn', '__label__lim_Latn', '__label__srd_Latn', '__label__sun_Latn', '__label__plt_Latn', '__label__mni_Beng', '__label__isl_Latn', '__label__vec_Latn', '__label__glg_Latn', '__label__scn_Latn', '__label__fao_Latn', '__label__san_Deva', '__label__ltz_Latn', '__label__cjk_Latn', '__label__ast_Latn', '__label__lmo_Latn', '__label__szl_Latn', '__label__oci_Latn', '__label__fon_Latn', '__label__min_Latn', '__label__wol_Latn', '__label__lij_Latn', '__label__ajp_Arab', '__label__snd_Arab', '__label__dik_Latn', '__label__ary_Arab', '__label__lao_Laoo', '__label__ars_Arab', '__label__bjn_Latn', '__label__shn_Mymr', '__label__crh_Latn', '__label__aeb_Arab', '__label__ace_Latn', '__label__ckb_Arab', '__label__dyu_Latn', '__label__ltg_Latn', '__label__kmr_Latn', '__label__ban_Latn', '__label__mai_Deva', '__label__fuv_Latn', '__label__kac_Latn', '__label__taq_Latn', '__label__bam_Latn', '__label__sat_Olck', '__label__tzm_Tfng', '__label__bug_Latn', '__label__dzo_Tibt', '__label__kas_Deva', '__label__fas_Arab', '__label__nus_Latn', '__label__knc_Latn', '__label__mag_Deva', '__label__taq_Tfng', '__label__kas_Arab', '__label__knc_Arab', '__label__bjn_Arab', '__label__ace_Arab', '__label__kea_Latn', '__label__awa_Deva', '__label__acm_Arab', '__label__bod_Tibt', '__label__sot_Latn', '__label__ydd_Hebr', '__label__azb_Arab']
+          self.lang_detect_model2 = fasttext.load_model("/mnt/gemini/data1/yifengliu/model/lid.176.bin")
           self.lang_detect_model = MaskLID("/mnt/gemini/data1/yifengliu/model/masklid/model_v3.bin", languages=flores_glotlid)
         if args.align:
           # another potential model: bert-base-multilingual-cased
@@ -664,9 +684,28 @@ class RewardModelProxy:
           scores = [4*score + bleu for score, bleu in zip(scores, bleu_score_list)]
           print(f"scores: {scores}")
           extra_logs['mean_bleu_score'] = sum(bleu_score_list) / len(bleu_score_list)
+          
         if self.args.align:
           print(srcs[0])
           print(tgts[0])
+          if self.args.lang_detect:
+            pattern = r"Translate from ([^\n<]+) to ([^\n<]+):"
+            target_languages = [re.search(pattern, query).group(2).strip() for query in queries if re.search(pattern, query)]
+            tgts = [tgt.replace("\n", "") for tgt in tgts]
+            new_tgts = []
+            for tgt, tgt_lang in zip(tgts, target_languages):
+              ans = self.lang_detect_model.predict_codeswitch(tgt, beta = 20 , alpha = 3, max_lambda = 3, min_length = 10, min_prob = 0.90, max_retry=3, alpha_step_increase = 3, beta_step_increase = 5)
+              ans = {key.replace("__label__", ""): value for key, value in ans.items()}
+              long_lang_id = lang2long.get(tgt_lang, None)
+              if long_lang_id is None:
+                raise ValueError(f"Language code {long_lang_id} not found in lang2long.")
+              lang_translation = ans.get(long_lang_id, None)
+              # print(tgt_lang, long_lang_id, ans, lang_translation)
+              if lang_translation is None:
+                lang_translation = ""
+              new_tgts.append(lang_translation)
+            tgts = new_tgts
+              
           if self.args.tgt == "zh":
             src_sentences = self.han1(srcs)['tok']
             src_sentences = [[c for c in src if c not in [",", "\"", ".", '—', "(", ")", "/", "\\", "'"]]for src in srcs]
@@ -681,47 +720,60 @@ class RewardModelProxy:
           print(align_score_list[:20])
           scores = [score + align_score for score, align_score in zip(scores, align_score_list)]
           extra_logs['mean_align_score'] = sum(align_score_list) / len(align_score_list)
+        if self.args.lang_detect:
+          pattern = r"Translate from ([^\n<]+) to ([^\n<]+):"
+          target_languages = [re.search(pattern, query).group(2).strip() for query in queries if re.search(pattern, query)]
+          print(tgt_pattern)
+          if 'Qwen3' in self.base_model:
+            tgt_pattern = r"<\|im_start\|>assistant\n<think>(.*?)</think>\n\n(.*?)<\|im_end\|>"
+            tgts = [re.search(tgt_pattern, q, re.DOTALL).group(2).strip() for q in queries]
+          else:
+            tgt_pattern = r"<\|im_start\|>assistant\n(.*?)<\|im_end\|>"
+            tgts = [re.search(tgt_pattern, q, re.DOTALL).group(1).strip() for q in queries]
+          tgts = [tgt.replace("\n", "") for tgt in tgts]
+          lang_info = self.lang_detect_model2.predict(tgts)
+          min_reward = -25 if 'metricX' in self.model_name else 0
+          detect_rewards = []
+          cnt = 0
+          for language, tgt in zip(lang_info[0], target_languages):
+            lang_code = language[0].replace("__label__", "")
+            pred_lang = lang_dict.get(lang_code, "")
+            print(language, tgt, pred_lang, pred_lang == tgt)
+            if pred_lang == tgt:
+              detect_rewards.append(float('inf'))
+            else:
+              cnt += 1
+              detect_rewards.append(min_reward)
+          extra_logs['lang_penalty_percent'] = cnt / len(tgts)
+          # logger.info(extra_logs[:20])
         # if self.args.lang_detect:
         #   pattern = r"Translate from ([^\n<]+) to ([^\n<]+):"
         #   target_languages = [re.search(pattern, query).group(2).strip() for query in queries if re.search(pattern, query)]
         #   tgts = [tgt.replace("\n", "") for tgt in tgts]
-        #   lang_info = self.lang_detect_model.predict(tgts)
-        #   min_reward = -25 if 'metricX' in self.model_name else 0
-        #   detect_rewards = []
-        #   cnt = 0
-        #   for language, tgt in zip(lang_info[0], target_languages):
-        #     lang_code = language[0].replace("__label__", "")
-        #     pred_lang = lang_dict.get(lang_code, "")
-        #     print(language, tgt, pred_lang, pred_lang == tgt)
-        #     if pred_lang == tgt:
-        #       detect_rewards.append(float('inf'))
-        #     else:
-        #       cnt += 1
-        #       detect_rewards.append(min_reward)
-        if self.args.lang_detect:
-          pattern = r"Translate from ([^\n<]+) to ([^\n<]+):"
-          target_languages = [re.search(pattern, query).group(2).strip() for query in queries if re.search(pattern, query)]
-          tgts = [tgt.replace("\n", "") for tgt in tgts]
-          translations = []
-          for tgt, tgt_lang in zip(tgts, target_languages):
-            ans = self.lang_detect_model.predict_codeswitch(tgt, beta = 20 , alpha = 3, max_lambda = 3, min_length = 10, min_prob = 0.90, max_retry=3, alpha_step_increase = 3, beta_step_increase = 5)
-            ans = {key.replace("__label__", ""): value for key, value in ans.items()}
-            long_lang_id = lang2long.get(tgt_lang, None)
-            if long_lang_id is None:
-              raise ValueError(f"Language code {long_lang_id} not found in lang2long.")
-            lang_translation = ans.get(long_lang_id, None)
-            # print(tgt_lang, long_lang_id, ans, lang_translation)
-            if lang_translation is None:
-              lang_translation = ""
-            translations.append(lang_translation)
-          original_token_length = [len(self.base_tokenizer(tgt)['input_ids']) for tgt in tgts]
-          detect_token_length = [len(self.base_tokenizer(translation)['input_ids']) for translation in translations]
-          ratio_list = [detect_len / orig_len for detect_len, orig_len in zip(detect_token_length, original_token_length) if orig_len > 0]
-          detect_rewards = [self.min_reward if ratio < 0.94 else float('inf') for ratio in ratio_list]
-          scores = [min(score, detect_reward) for score, detect_reward in zip(scores, detect_rewards)]
-          # logger.info(lang_info[0][:20])
-          logger.info(detect_rewards[:20])
-          extra_logs['lang_penalty_percent'] = len([reward for reward in detect_rewards if reward == self.min_reward ]) / len(tgts)
+        #   translations = []
+          
+        #   for tgt, tgt_lang in zip(tgts, target_languages):
+        #     ans = self.lang_detect_model.predict_codeswitch(tgt, beta = 20 , alpha = 3, max_lambda = 3, min_length = 10, min_prob = 0.90, max_retry=3, alpha_step_increase = 3, beta_step_increase = 5)
+        #     ans = {key.replace("__label__", ""): value for key, value in ans.items()}
+        #     long_lang_id = lang2long.get(tgt_lang, None)
+        #     if long_lang_id is None:
+        #       raise ValueError(f"Language code {long_lang_id} not found in lang2long.")
+        #     lang_translation = ans.get(long_lang_id, None)
+        #     # print(tgt_lang, long_lang_id, ans, lang_translation)
+        #     if lang_translation is None:
+        #       lang_translation = ""
+        #     translations.append(lang_translation)
+        #   original_token_length = [len(self.base_tokenizer(tgt)['input_ids']) for tgt in tgts]
+        #   detect_token_length = [len(self.base_tokenizer(translation)['input_ids']) for translation in translations]
+        #   ratio_list = [detect_len / orig_len for detect_len, orig_len in zip(detect_token_length, original_token_length) if orig_len > 0]
+        #   detect_rewards = [self.min_reward if ratio < 0.95 else float('inf') for ratio in ratio_list]
+        #   # detect_rewards = [ratio*25 for ratio in ratio_list]
+        #   scores = [min(score, detect_reward) for score, detect_reward in zip(scores, detect_rewards)]
+        #   # scores = [score+reward for score, reward in zip(scores, detect_rewards)]
+        #   # logger.info(lang_info[0][:20])
+        #   logger.info(detect_rewards[:20])
+        #   extra_logs['lang_penalty_percent'] = len([reward for reward in detect_rewards if reward == self.min_reward ]) / len(tgts)
+          # extra_logs['mean_lang_score'] = sum(detect_rewards) / len(detect_rewards)
           # import code; code.interact(local=locals())
         return scores, extra_logs
 

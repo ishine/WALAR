@@ -20,7 +20,7 @@ python -m openrlhf.cli.serve_rm \
     --model_name  metricX\
     --base_model $base_model \
     --port 2000 \
-    --max_len 1024 \
+    --max_len 512 \
     --rule $rule \
     --lang_detect $lang_detect \
     --truncate $truncate \

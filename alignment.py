@@ -20,8 +20,12 @@ def my_load_dataset(path):
   dataset = []
   with open(path, 'r') as f:
     lines = f.readlines()
-    for line in lines[:-3]:
-      dataset.append(json.loads(line.strip()))
+    # for line in lines[:-3]:
+    for line in lines:
+        try:
+            dataset.append(json.loads(line.strip()))
+        except:
+            break
   return dataset
 
 class color:
@@ -651,13 +655,18 @@ from hanlp_restful import HanLPClient
 # tgt = "恐龙的羽毛并没有发育良好的主干——这称为“羽轴”，但还是有羽毛的其他特征，比如羽枝和羽小枝，研究人员推断羽轴的进化可能比这些其他特征晚。"
 
 src_lang = "eng"
-tgt_lang = "hin"
+tgt_lang = "ben"
 src_path = f"/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest/{src_lang}.devtest"
 tgt_path = f"/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest/{tgt_lang}.devtest"
 src_dataset, tgt_dataset = load_flores(src_path), load_flores(tgt_path)
 
 src_dataset = [src.split() for src in src_dataset]
 tgt_dataset = [tgt.split() for tgt in tgt_dataset]
+
+data_path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Seq-Rule-Detect-MetricX-Qwen3-4B-en-mix-mid2-1M-bsz128/global_step280_hf/eng-ben.txt"
+# data_path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Qwen3-4B/eng-ben.txt"
+dataset = my_load_dataset(data_path)
+src_dataset, tgt_dataset = [data['src'] for data in dataset], [data['pred'] for data in dataset]
 # import code; code.interact(local=locals())
 
 # model = BGEM3FlagModel("/mnt/gemini/data1/yifengliu/model/bge-m3", use_fp16=True)
@@ -776,7 +785,7 @@ plt.ylabel('Count')
 plt.title('F1 Score Distribution')
 plt.grid(True, linestyle='--', alpha=0.5)
 # plt.show()
-plt.savefig(f"/mnt/gemini/data1/yifengliu/qe-lr/output/{tgt_lang}3.png")
+plt.savefig(f"/mnt/gemini/data1/yifengliu/qe-lr/output/{tgt_lang}2.png")
 print(f"Align Score: {align_score_list}")
 
 import code; code.interact(local=locals())
