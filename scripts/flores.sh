@@ -7,21 +7,22 @@ model_path["Qwen"]="/mnt/gemini/data1/yifengliu/model/Qwen3-4B"
 model_path["llama"]="/mnt/gemini/data1/yifengliu/model/Llama-3.2-3B-Instruct"
 model_path["Qwen-base"]="/mnt/gemini/data1/yifengliu/model/Qwen3-4B-Base"
 # model_path["checkpoint"]="/mnt/gemini/data1/yifengliu/checkpoints/3New-Detect-New-Align-Rule-MetricX-Qwen3-4B-en-mix-mid2-1M-bsz128/global_step400_hf"
-model_path["checkpoint"]="/mnt/gemini/data1/yifengliu/checkpoints/Seq-Rule-Detect-MetricX-Qwen3-4B-en-mix-mid2-1M-bsz128/global_step280_hf"
+model_path["checkpoint"]="/mnt/gemini/data1/yifengliu/checkpoints/Mask-Detect-New-Align-Rule-MetricX-Qwen3-4B-en-mix-mid2-1M-bsz128/global_step400_hf"
 model_path["nllb"]="/mnt/gemini/data1/yifengliu/model/nllb-200-distilled-1.3B"
-# Back-Translation-0.125-Qwen3-4B-en-zh-1M-bsz128/global_step380_hf
-# /mnt/gemini/data1/yifengliu/checkpoints/Back-Translation-0.06-Qwen3-4B-en-zh-1M-bsz128/global_step120_hf
-# zho_simpl, zho_trad, swh, tam, asm
-MODEL_NAME="llama"
+
+# Configuration
+MODEL_NAME="checkpoint"
 MODEL_PATH=${model_path[$MODEL_NAME]}
-# LANG_PAIR="eng-asm"
-# src="zho_simpl"
-# src="ben"
-src="eng"
-# source_language_list=(
-#     "deu"
-# )
-# src="eng"
+
+# Language configuration - can be set as single values or comma-separated lists
+# For single language pair mode (backward compatibility)
+LANG_PAIR=""  # Set this for single language pair evaluation
+
+# For multiple language pairs mode
+SOURCE_LANGUAGES="eng"  # Comma-separated list: "eng,deu,fra"
+# TARGET_LANGUAGES="ben,guj,hin,mar,pan,hye,ell,lav,lit,fas,tgl,jav,ara,tur,tam,fin"  # Comma-separated list
+
+# Legacy target_language_list for backward compatibility (will be converted to TARGET_LANGUAGES if not set)
 target_language_list=(
     # "isl"
     # "ltz"
@@ -67,30 +68,30 @@ target_language_list=(
     # "khm"
     # "kor"
     # "lao"
-    "tha"
+    # "tha"
 
-    # "ltz"
-    # "mkd"
-    # "pol"
-    # "srp"
-    # "slk"
-    # "slv"
-    # "ben"
-    # "guj"
-    # "hin"
-    # "mar"
-    # "pan"
-    # "hye"
-    # "ell"
-    # "lav"
-    # "lit"
-    # "fas"
-    # "tgl"
-    # "jav"
-    # "ara"
-    # "tur"
-    # "tam"
-    # "fin"
+    "ltz"
+    "mkd"
+    "pol"
+    "srp"
+    "slk"
+    "slv"
+    "ben"
+    "guj"
+    "hin"
+    "mar"
+    "pan"
+    "hye"
+    "ell"
+    "lav"
+    "lit"
+    "fas"
+    "tgl"
+    "jav"
+    "ara"
+    "tur"
+    "tam"
+    "fin"
     
     # "ben"
     # "ces"
@@ -233,6 +234,7 @@ target_language_list=(
 )
 INPUT_DIR="/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest"
 
+# Determine relative path for output directory
 if [ $MODEL_NAME == "Qwen" ]; then
     relative_path=${MODEL_PATH#*/model/}
 elif [ $MODEL_NAME == "Qwen-base" ]; then
@@ -245,28 +247,61 @@ fi
 
 OUTPUT_DIR="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/${relative_path}"
 
-# Check if model path is provided
-if [ -z "$MODEL_PATH" ]; then
-    echo "Error: Model path is required"
-fi
 
-# Create output directory if it doesn't exist
-for target in "${target_language_list[@]}"; do
-    mkdir -p "$OUTPUT_DIR"
-    LANG_PAIR="${src}-${target}"
+# # Convert legacy target_language_list to TARGET_LANGUAGES if TARGET_LANGUAGES is not set
+# if [ -z "$TARGET_LANGUAGES" ] && [ ${#target_language_list[@]} -gt 0 ]; then
+#     TARGET_LANGUAGES=$(IFS=','; echo "${target_language_list[*]}")
+# fi
+
+TARGET_LANGUAGES=$(IFS=','; echo "${target_language_list[*]}")
+
+# Determine evaluation mode
+if [ -n "$LANG_PAIR" ]; then
+    # Single language pair mode (backward compatibility)
+    echo "Running single language pair evaluation: $LANG_PAIR"
+    
     # Generate output filename
     OUTPUT_FILE="${OUTPUT_DIR}/${LANG_PAIR}.txt"
-
+    mkdir -p "$OUTPUT_DIR"
+    
     echo "Evaluating ${LANG_PAIR} with model ${MODEL_NAME} at ${INPUT_DIR}"
-
+    
     cd /mnt/gemini/data1/yifengliu/qe-lr
     # Run the evaluation
     python evaluate/flores.py \
         --model_name_or_path "$MODEL_PATH" \
-        --data_dir "$INPUT_DIR"\
+        --data_dir "$INPUT_DIR" \
         --lang_pair "$LANG_PAIR" \
         --comet22 True \
         --xcomet False \
         --tensor_parallel_size $num_gpus \
         --output_file "$OUTPUT_FILE"
-done
+        
+elif [ -n "$SOURCE_LANGUAGES" ] && [ -n "$TARGET_LANGUAGES" ]; then
+    # Multiple language pairs mode
+    echo "Running multiple language pairs evaluation"
+    echo "Source languages: $SOURCE_LANGUAGES"
+    echo "Target languages: $TARGET_LANGUAGES"
+    
+    # Create output directory
+    mkdir -p "$OUTPUT_DIR"
+    
+    cd /mnt/gemini/data1/yifengliu/qe-lr
+    # Run the evaluation for all language pairs
+    python evaluate/flores.py \
+        --model_name_or_path "$MODEL_PATH" \
+        --data_dir "$INPUT_DIR" \
+        --source_languages "$SOURCE_LANGUAGES" \
+        --target_languages "$TARGET_LANGUAGES" \
+        --comet22 True \
+        --xcomet False \
+        --tensor_parallel_size $num_gpus \
+        --output_dir "$OUTPUT_DIR"
+        
+else
+    echo "Error: Either LANG_PAIR or both SOURCE_LANGUAGES and TARGET_LANGUAGES must be set"
+    echo "Usage examples:"
+    echo "  Single language pair: LANG_PAIR=\"eng-hin\" ./flores.sh"
+    echo "  Multiple pairs: SOURCE_LANGUAGES=\"eng,deu\" TARGET_LANGUAGES=\"hin,ben,tam\" ./flores.sh"
+    exit 1
+fi

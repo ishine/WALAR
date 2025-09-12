@@ -27,17 +27,29 @@ class EvaluationArguments:
     model_name_or_path: str = field(
         metadata={"help": "Path to pretrained model or model identifier from huggingface.co/models"}
     )
-    lang_pair: str = field(
-        default="eng-hin",
-        metadata={"help": "Language pair for evaluation (e.g., eng-hin)"}
+    lang_pair: Optional[str] = field(
+        default=None,
+        metadata={"help": "Language pair for evaluation (e.g., eng-hin). If provided, overrides source_languages and target_languages."}
+    )
+    source_languages: Optional[str] = field(
+        default=None,
+        metadata={"help": "Comma-separated list of source languages (e.g., 'eng,deu,fra')"}
+    )
+    target_languages: Optional[str] = field(
+        default=None,
+        metadata={"help": "Comma-separated list of target languages (e.g., 'hin,ben,tam')"}
     )
     data_dir: str = field(
         default="/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest",
         metadata={"help": "Directory containing FLORES-101 dataset"}
     )
+    output_dir: Optional[str] = field(
+        default=None,
+        metadata={"help": "Directory to save evaluation results for all language pairs"}
+    )
     output_file: Optional[str] = field(
         default=None,
-        metadata={"help": "Path to save evaluation results"}
+        metadata={"help": "Path to save evaluation results for single language pair"}
     )
     tensor_parallel_size: int = field(
         default=1,
@@ -116,9 +128,8 @@ def predict(model, tokenizer, dataset, sampling_params, lang_pair, model_path):
             responses.extend(output)
     return responses
 
-def evaluate_model(model_path, data_dir, lang_pair, tensor_parallel_size=1, max_tokens=512):
-    """Evaluate a model on FLORES-101 dataset using vLLM."""
-    # Load model and tokenizer
+def load_model_and_tokenizer(model_path, tensor_parallel_size):
+    """Load model and tokenizer."""
     if "nllb" not in model_path:
         model = LLM(
             model=model_path,
@@ -132,6 +143,10 @@ def evaluate_model(model_path, data_dir, lang_pair, tensor_parallel_size=1, max_
         )
         model = AutoModelForSeq2SeqLM.from_pretrained(model_path, token=True)
         model.to("cuda:0")
+    return model, tokenizer
+
+def evaluate_model(model_path, model, tokenizer, data_dir, lang_pair, max_tokens=512):
+    """Evaluate a model on FLORES-101 dataset using vLLM."""
     
     # Load dataset
     src_dataset, tgt_dataset = load_flores_dataset(data_dir, lang_pair)
@@ -162,61 +177,144 @@ def calculate_comet_score(src_texts, references, predictions, model_path="/mnt/g
     # Prepare inputs for COMET
     inputs = [{"src": src.strip(), "mt": mt.strip(), "ref": ref.strip()} for src, mt, ref in zip(src_texts, predictions, references)]
     
-    output = model.predict(inputs)
+    output = model.predict(inputs, batch_size=8, gpus=1)
     
     scores, mean_score = output.scores, output.system_score
     return {"mean_score": mean_score, "scores": scores}
 
-def main():
-    parser = transformers.HfArgumentParser(EvaluationArguments)
-    args = parser.parse_args_into_dataclasses()[0]
-    
-    print(f"Evaluating model {args.model_name_or_path} on {args.lang_pair}...")
-    pred = []
+def evaluate_single_lang_pair(model_path, data_dir, model, tokenizer, lang_pair, max_tokens, comet22, xcomet, output_file=None):
+    """Evaluate a single language pair."""
+    print(f"Evaluating model {model_path} on {lang_pair}...")
     
     sources, references, predictions = evaluate_model(
-        args.model_name_or_path, 
-        args.data_dir,
-        args.lang_pair, 
-        args.tensor_parallel_size,
-        args.max_tokens
+        model_path, 
+        model,
+        tokenizer,
+        data_dir,
+        lang_pair, 
+        max_tokens
     )
-    pred.append(predictions)
+    
     metrics = get_spBLEU(predictions, references)
-    if args.comet22:
-        comet_score = calculate_comet_score(
-            sources, references, predictions
-        )
+    comet_score = None
+    xcomet_score = None
+    
+    if comet22:
+        comet_score = calculate_comet_score(sources, references, predictions)
         print(f"COMET22 Score: {comet_score['mean_score']:.4f}")
-    if args.xcomet:
+    
+    if xcomet:
         xcomet_score = calculate_comet_score(
             sources, references, predictions,
             model_path="/mnt/gemini/data1/yifengliu/model/models--Unbabel--XCOMET-XL/snapshots/6a123c5e8e6dccab25e5fcffa3c8b417abadb462/checkpoints/model.ckpt"
         )
         print(f"XCOMET Score: {xcomet_score['mean_score']:.4f}")
+    
     print("=====================================")
-    print(f"args.model_name_or_path: {args.model_name_or_path}")
-    print(f"Results for {args.lang_pair}:")
+    print(f"Results for {lang_pair}:")
     print(f"spBLEU: {metrics:.4f}")
-    print(f"COMET Score: {comet_score['mean_score']:.4f}")
+    if comet_score:
+        print(f"COMET Score: {comet_score['mean_score']:.4f}")
+    if xcomet_score:
+        print(f"XCOMET Score: {xcomet_score['mean_score']:.4f}")
         
     print(f"source: {sources[0]}")
     print(f"prediction: {predictions[0]}")
     print(f"reference: {references[0]}")
-    # import code; code.interact(local=locals())
 
-    dirname = os.path.dirname(args.output_file) if args.output_file else None
-    if dirname and not os.path.exists(dirname):
-        os.makedirs(dirname)
-    if args.output_file:
-        with open(args.output_file, 'w') as f:
+    # Save results if output_file is provided
+    if output_file:
+        dirname = os.path.dirname(output_file)
+        if dirname and not os.path.exists(dirname):
+            os.makedirs(dirname)
+        
+        with open(output_file, 'w') as f:
             for src, pred, ref in zip(sources, predictions, references):
                 f.write(json.dumps({'src': src, 'pred': pred, 'ref': ref}, ensure_ascii=False) + '\n')
             f.write(f"spBLEU: {metrics:.4f}\n")
-            if args.comet22:
+            if comet_score:
                 f.write(f"COMET Score: {comet_score['mean_score']:.4f}\n")
-            if args.xcomet:
+            if xcomet_score:
                 f.write(f"XCOMET Score: {xcomet_score['mean_score']:.4f}\n")
+    
+    return {
+        'lang_pair': lang_pair,
+        'spBLEU': metrics,
+        'comet_score': comet_score['mean_score'] if comet_score else None,
+        'xcomet_score': xcomet_score['mean_score'] if xcomet_score else None
+    }
+
+def evaluate_multiple_lang_pairs(model_path, data_dir, model, tokenizer, source_languages, target_languages, max_tokens, comet22, xcomet, output_dir=None):
+    """Evaluate multiple language pairs."""
+    # Parse language lists
+    src_langs = [lang.strip() for lang in source_languages.split(',')]
+    tgt_langs = [lang.strip() for lang in target_languages.split(',')]
+    
+    # Generate all language pairs
+    lang_pairs = []
+    for src in src_langs:
+        for tgt in tgt_langs:
+            lang_pairs.append(f"{src}-{tgt}")
+    
+    print(f"Evaluating {len(lang_pairs)} language pairs: {lang_pairs}")
+
+    results = []
+    for lang_pair in lang_pairs:
+        # Generate output file path if output_dir is provided
+        output_file = None
+        if output_dir:
+            output_file = os.path.join(output_dir, f"{lang_pair}.txt")
+        
+        result = evaluate_single_lang_pair(
+            model_path, data_dir, model, tokenizer,
+            lang_pair, max_tokens, 
+            comet22, xcomet, output_file
+        )
+        results.append(result)
+    
+    # Save summary results
+    # if output_dir:
+    #     summary_file = os.path.join(output_dir, "summary_results.json")
+    #     with open(summary_file, 'w') as f:
+    #         json.dump(results, f, indent=2)
+    #     print(f"Summary results saved to {summary_file}")
+    
+    return results
+
+def main():
+    parser = transformers.HfArgumentParser(EvaluationArguments)
+    args = parser.parse_args_into_dataclasses()[0]
+    model, tokenizer = load_model_and_tokenizer(args.model_name_or_path, args.tensor_parallel_size)
+    # Determine evaluation mode
+    if args.lang_pair:
+        # Single language pair mode (backward compatibility)
+        evaluate_single_lang_pair(
+            args.model_name_or_path,
+            args.data_dir,
+            model,
+            tokenizer,
+            args.lang_pair,
+            args.max_tokens,
+            args.comet22,
+            args.xcomet,
+            args.output_file
+        )
+    elif args.source_languages and args.target_languages:
+        # Multiple language pairs mode
+        evaluate_multiple_lang_pairs(
+            args.model_name_or_path,
+            args.data_dir,
+            model,
+            tokenizer,
+            args.source_languages,
+            args.target_languages,
+            args.max_tokens,
+            args.comet22,
+            args.xcomet,
+            args.output_dir
+        )
+    else:
+        raise ValueError("Either lang_pair or both source_languages and target_languages must be provided")
 
 if __name__ == "__main__":
     main()

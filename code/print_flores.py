@@ -46,13 +46,14 @@ def check_result(file_path):
     return
 
 if __name__ == "__main__":
-    # dir_path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Seq-Rule-Detect-MetricX-Qwen3-4B-en-mix-mid2-1M-bsz128/global_step280_hf"
-    dir_path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Llama-3.2-3B-Instruct"
+    dir_path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Mask-Detect-New-Align-Rule-MetricX-Qwen3-4B-en-mix-mid2-1M-bsz128/global_step400_hf"
+    # dir_path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/New-Align-Rule-Detect-MetricX-Qwen3-4B-en-mix-mid2-1M-bsz128/global_step340_hf"
+    # dir_path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Llama-3.2-3B-Instruct"
     # Walk through the directory and print all file paths
     whole_dict = {}
     src_lang = "eng"
-    tgt_langs_i_care = training_langs
-    # tgt_langs_i_care = ["ltz", "mkd","pol","srp","slk","slv","ben","guj","hin", "mar", "pan", "hye", "ell", "lav", "lit", "fas", "tgl", "jav", "ara", "tur", "tam", "fin"]
+    # tgt_langs_i_care = training_langs
+    tgt_langs_i_care = ["ltz", "mkd","pol","srp","slk","slv","ben","guj","hin", "mar", "pan", "hye", "ell", "lav", "lit", "fas", "tgl", "jav", "ara", "tur", "tam", "fin"]
     print(f"Direction\tspBLEU\tXComet\tMetricX")
     for root, dirs, files in os.walk(dir_path):
         for tgt in tgt_langs_i_care:

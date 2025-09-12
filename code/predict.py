@@ -63,6 +63,7 @@ class Arguments:
   
   tgt: str = dataclasses.field(
       metadata={"help": "The target language."},
+      default="zh",
   )
   
   model_size: str = dataclasses.field(
@@ -81,6 +82,16 @@ class Arguments:
   src: str = dataclasses.field(
       metadata={"help": "The source language."},
       default="en",
+  )
+  
+  src_list: Optional[List[str]] = dataclasses.field(
+      metadata={"help": "List of source languages for batch processing."},
+      default=None,
+  )
+  
+  tgt_list: Optional[List[str]] = dataclasses.field(
+      metadata={"help": "List of target languages for batch processing."},
+      default=None,
   )
 
   qe: bool = dataclasses.field(
@@ -375,7 +386,6 @@ def get_predictions(
     per_device_batch_size: int,
     model_name: str,
     output_dir: Optional[str] = None,
-    alignment: bool = False,
 ) -> Union[List[float], pd.DataFrame]:
   """Gets the predictions for the dataset.
 
@@ -417,6 +427,152 @@ def load_flores(path):
   with open(path, 'r') as f:
     lines = f.readlines()
   return lines
+
+def process_language_pairs(
+    src_list: List[str], 
+    tgt_list: List[str], 
+    args: Arguments,
+    tokenizer,
+    model,
+    device,
+    per_device_batch_size
+) -> None:
+  """Process multiple language pairs in batch.
+  
+  Args:
+    src_list: List of source languages
+    tgt_list: List of target languages  
+    args: Arguments object with model configuration
+    tokenizer: Model tokenizer
+    model: Model for prediction
+    device: Device to run on
+    per_device_batch_size: Batch size per device
+  """
+  # Generate all possible language pair combinations
+  language_pairs = []
+  for src in src_list:
+    for tgt in tgt_list:
+      if src != tgt:  # Skip same language pairs
+        language_pairs.append((src, tgt))
+  
+  print(f"Processing {len(language_pairs)} language pairs:")
+  for src, tgt in language_pairs:
+    print(f"  {src} -> {tgt}")
+  
+  # Process each language pair
+  for src, tgt in language_pairs:
+    print(f"\nProcessing language pair: {src} -> {tgt}")
+    
+    # Generate input file path based on the pattern
+    input_file = generate_input_file_path(args.input_file, src, tgt)
+    
+    # Update args for this language pair
+    current_args = dataclasses.replace(args, src=src, tgt=tgt, input_file=input_file)
+    
+    # Process the language pair
+    process_single_language_pair(current_args, tokenizer, model, device, per_device_batch_size)
+
+def generate_input_file_path(input_file_pattern: str, src: str, tgt: str) -> str:
+  """Generate input file path based on pattern and language pair.
+  
+  Args:
+    input_file_pattern: Base pattern for input files
+    src: Source language
+    tgt: Target language
+    
+  Returns:
+    Complete input file path
+  """
+  # Determine file extension and format based on pattern
+  if "afriMTE" in input_file_pattern:
+    return f"{input_file_pattern}.{src}-{tgt}.jsonl"
+  elif "IndicMT" in input_file_pattern:
+    return f"{input_file_pattern}/{tgt}.jsonl"
+  elif "wmt23-dev" in input_file_pattern:
+    return f"{input_file_pattern}.{src}{tgt}.df.short.tsv"
+  elif "wmt24-test" in input_file_pattern:
+    return f"{input_file_pattern}/{src}-{tgt}.jsonl"
+  elif "low-res" in input_file_pattern:
+    return f"{input_file_pattern}/{src}-{tgt}.csv"
+  elif "flores" in input_file_pattern:
+    return f"{input_file_pattern}/{src}-{tgt}.txt"
+  else:
+    # Default pattern
+    return f"{input_file_pattern}/{src}-{tgt}.jsonl"
+
+def process_single_language_pair(
+    args: Arguments,
+    tokenizer,
+    model,
+    device,
+    per_device_batch_size
+) -> None:
+  """Process a single language pair.
+  
+  Args:
+    args: Arguments object with model configuration
+    tokenizer: Model tokenizer
+    model: Model for prediction
+    device: Device to run on
+    per_device_batch_size: Batch size per device
+  """
+  model.eval()
+  ds, name = preprocess_dataset(args.input_file)
+  
+  dt = datasets.Dataset.from_list(ds)
+  dt, data_collator = get_dataset(
+      dt,
+      args.model_name,
+      tokenizer,
+      args.max_input_length,
+      device,
+      args.qe,
+  )
+  
+  predictions = get_predictions(dt, model, data_collator, per_device_batch_size, args.model_name, args.output_dir)
+  
+  if args.alignment:
+    align_path = "/mnt/gemini/data1/yifengliu/model/bge-m3"
+    align_model = AutoModel.from_pretrained(align_path)
+    align_tokenizer = AutoTokenizer.from_pretrained(align_path)
+    align_model.to("cuda:0")
+    srcs, tgts = [d['source'] for d in ds], [d['hypothesis'] for d in ds]
+    src_copy = [src.split() for src in srcs]
+    tgt_copy = [tgt.split() for tgt in tgts]
+    scores = align_score(src_copy, tgt_copy, align_model, align_tokenizer, batch_size=16)
+    predictions = [prediction + score for prediction, score in zip(predictions, scores)]
+  
+  if args.lang:
+    srcs, tgts = [d['source'] for d in ds], [d['hypothesis'] for d in ds]
+    lang_detect_model = fasttext.load_model("/mnt/gemini/data1/yifengliu/model/lid.176.bin")
+    lang_info = lang_detect_model.predict(tgts)
+    lang_id = [language[0].replace("__label__", "") for language in lang_info[0]]
+    new_score_list = [-25 if lang != args.tgt else float("inf") for lang in lang_id]
+    predictions = [min(prediction, score) for prediction, score in zip(predictions, new_score_list)]
+  
+  # Save results
+  dirname = args.output_dir
+  if not args.alignment:
+    dirname = os.path.join(dirname, args.model_name + "-" + args.model_size + "-" + args.dtype)
+  else:
+    dirname = os.path.join(dirname, args.model_name + "-" + args.model_size + "-" + args.dtype + "-align")
+  
+  if name != "flores":
+    if dirname:
+      os.makedirs(dirname, exist_ok=True)
+    output_file = os.path.join(
+        dirname,
+        f"{args.src}-{args.tgt}.jsonl",
+    )
+    write_to_file(output_file, ds, predictions, args.model_name)
+  else:
+    with open(args.input_file, 'a') as f:
+      mean_score = sum(predictions) / len(predictions)
+      if args.model_name == "metricX":
+        f.write(f"MetricX Score: {mean_score:.4f}\n")
+      if args.model_name == "XComet":
+        f.write(f"XComet Score: {mean_score:.4f}\n")
+        print(f"{args.src}-{args.tgt}: XComet Score: {mean_score:.4f}")
            
 def main() -> None:
   parser = transformers.HfArgumentParser(Arguments)
@@ -435,151 +591,14 @@ def main() -> None:
   tokenizer, model = get_tokenizer_and_model(args.model_name, args.model_size, args.dtype)
   if args.model_size != "xxl":
     model.to(device)
-  model.eval()
-  ds, name = preprocess_dataset(args.input_file)
-  # ds = [
-  #   {
-  #     "source": "Dr. Ehud Ur, professor of medicine at Dalhousie University in Halifax, Nova Scotia and chair of the clinical and scientific division of the Canadian Diabetes Association cautioned that the research is still in its early days.", 
-  #     "hypothesis": "Dr. Ehud Ur，Dalhousie University 在 Halifax，Nova Scotia 的医学教授，以及 Canadian Diabetes Association 的临床和科学分部主席，提醒说这项研究仍处于早期阶段。"
-  #   }
-  # ]
-  # ds = [
-  #   {
-  #     "source": "On Monday, scientists from the Stanford University School of Medicine announced the invention of a new diagnostic tool that can sort cells by type: a tiny printable chip that can be manufactured using standard inkjet printers for possibly about one U.S. cent each.",
-  #     "hypothesis": "On Monday, scientists from the Stanford University School of Medicine announced the development of a new diagnostic tool. This tool can identify cells based on their type. It is a tiny, printable chip that can be produced using standard inkjet printers. The cost of this tool is approximately one U.S. cent each."
-  #   }
-  # ]
-  # -2.88
-  # ds = [
-  #   {
-  #     "source": "\"We now have 4-month-old mice that are non-diabetic that used to be diabetic,\" he added.",
-  #     "hypothesis": "我们目前有4个月大的小鼠，这些小鼠都是非糖尿病状态，而以前的糖尿病小鼠则都患有糖尿病。他进一步解释说：“这些小鼠在实验过程中没有受到任何药物或营养物质的干扰，它们的生理状态和代谢过程都保持正常。这表明这些小鼠的健康状况非常良好，没有受到任何有害因素的影响。我们可以通过这些小鼠来研究糖尿病的病因、治疗方案以及预防措施等，为人类的健康研究提供宝贵的资料。”\n中文翻译：\n我们目前有4个月大的小鼠，这些小鼠都是非糖尿病状态，而以前的糖尿病小鼠则都患有糖尿病。他进一步解释说：“这些小鼠在实验过程中没有受到任何药物或营养物质的干扰，它们的生理状态和代谢过程都保持正常。这表明这些小鼠的健康状况非常良好，没有受到任何有害因素的影响。我们可以通过这些小鼠来研究糖尿病的病因、治疗方案以及预防措施等，为人类的健康研究提供宝贵的资料。”"
-  #   }
-  # ]
-  # ds = [
-  #   {
-  #     "source": "On Monday, Sara Danius, permanent secretary of the Nobel Committee for Literature at the Swedish Academy, publicly announced during a radio program on Sveriges Radio in Sweden the committee, unable to reach Bob Dylan directly about winning the 2016 Nobel Prize in Literature, had abandoned its efforts to reach him.",
-  #     "hypothesis": "周一，萨拉·丹努斯（Sara Danius），瑞典学院（Swedish Academy）文学奖委员会的常任秘书，在瑞典广播电台（Sveriges Radio）的一次广播节目中公开宣布，由于无法直接联系到鲍勃·迪伦（Bob Dylan）关于获得2016年诺贝尔文学奖一事，委员会已放弃了尝试联系他的努力。",
-  #   }
-  # ]
-  # ds = [
-  #   {
-  #     "source": "Danius said, \"Right now we are doing nothing. I have called and sent emails to his closest collaborator and received very friendly replies. For now, that is certainly enough.\"",
-  #     "hypothesis": "Danius说，“现在我们正在做 nothing。我已经打电话并发送电子邮件给他的最亲近的合作者，并收到了非常友好的回复。目前来说，这已经足够了。”"
-  #   }
-  # ]
-  # ds = [
-  #   {
-  #     "source": "Dr. Ehud Ur, professor of medicine at Dalhousie University in Halifax, Nova Scotia and chair of the clinical and scientific division of the Canadian Diabetes Association cautioned that the research is still in its early days.",
-  #     "hypothesis": "加拿大糖尿病协会（Canadian Diabetes Association, Kanadischen Diabetesverbands）临床与科学分会主席、达尔豪斯大学（Dalhousie University）哈利法克斯（Halifax, Nova Scotia）医学院教授埃胡德·乌（Ehud Ur）警告说，这项研究仍处于早期阶段。"
-  #   }
-  # ]
-  # ds = [
-  #   {
-  #     "source": 'Current senator and Argentine First Lady Cristina Fernandez de Kirchner announced her presidential candidacy yesterday evening in La Plata, a city 50 kilometers (31 miles) away from Buenos Aires.',
-  #     "hypothesis": "现任参议员及阿根廷第一夫人克ristina Fernández de Kirchner于昨晚在拉普拉塔（La Plata），这座距离布宜诺斯艾利斯（Buenos Aires）约50公里（31英里）的城市宣布参选总统"
-  #   }
-  # ]
-  # ds = [
-  #   {
-  #     "source": "The other nominations include Best Picture, Director, Cinematography, Costume Design, Film-editing, Original Score, Production Design, Sound Editing, Sound Mixing and Original Screenplay.",
-  #     "hypothesis": 'Die anderen Nominierungen umfassen Best Picture, Director, Cinematography, Costume Design, Film-editing, Original Score, Production Design, Sound Editing, Sound Mixing und Original Screenplay.'
-  #   }
-  # ]
-  # ds = [
-  #   {
-  #     "source": "On Monday, Sara Danius, permanent secretary of the Nobel Committee for Literature at the Swedish Academy, publicly announced during a radio program on Sveriges Radio in Sweden the committee, unable to reach Bob Dylan directly about winning the 2016 Nobel Prize in Literature, had abandoned its efforts to reach him.",
-  #     "hypothesis": "周一，瑞典学院文学奖委员会永久秘书萨拉·丹努斯在瑞典广播电台的一档节目中宣布，由于无法直接联系到鲍勃·迪伦，委员会放弃了尝试联系他的努力。"
-  #   }
-  # ]
-  # ds = [
-  #   {
-  #     "source": "The other nominations include Best Picture, Director, Cinematography, Costume Design, Film-editing, Original Score, Production Design, Sound Editing, Sound Mixing and Original Screenplay. ",
-  #     "hypothesis": "Die anderen Nominierungen umfassen Best Picture, Director, Cinematography, Costume Design, Film-editing, Original Score, Production Design, Sound Editing, Sound Mixing und Original Screenplay.",
-  #   }
-  # ]
-  # ds = [
-  #   {
-  #     "source": "Dr. Ehud Ur, professor of medicine at Dalhousie University in Halifax, Nova Scotia and chair of the clinical and scientific division of the Canadian Diabetes Association cautioned that the research is still in its early days.",
-  #     "hypothesis": "Dr. Ehud Ur, dosen kedokteran di Universitas Dalhousie di Halifax, Nova Scotia, dan ketua divisi klinis dan ilmiah Asosiasi Diabetes Kanada memperingatkan bahwa penelitian ini masih dalam tahap awal.",
-  #     "reference": "Dr. Ehud Ur, profesor ilmu kedokteran ing Universitas Dalhousie ing Halifax, Nova Scotia lan ketua divisi klinis lan ilmiah saka Asosiasi Diabetes Kanada ngengetake menawa panaliten iku isih ing tahap wiwitan.",
-  #   }
-  # ]
-  # ds = [
-  #   {
-  #     "source": "Workplace harmony is crucial, emphasizing group effort rather than praising individual accomplishments.",
-  #     "hypothesis": "कार्यस्थल में समानता महत्वपूर्ण है, जहां समूह के सहयोग को सम्मानित किया जाता है, न कि व्यक्तिगत सफलता को।",
-  #     # "hypothesis": "कार्यस्थल में समानता (harmony) महत्वपूर्ण है, जहां समूह के सहयोग (group effort) को सम्मानित किया जाता है, न कि व्यक्तिगत सफलता (individual accomplishments) को।",
-  #     "reference": "कार्यस्थल सामंजस्य महत्वपूर्ण होता है, जो व्यक्तिगत उपलब्धियों की प्रशंसा की बजाय सामूहिक प्रयास पर ज़ोर देता है."
-  #   }
-  # ]
-  # ds = [
-  #   {
-  #     "source": "Poland's men's visually impaired skier Maciej Krezel and guide Anna Ogarzynska finished thirteenth in the Super-G. South Korea's Jong Seork Park finished twenty-fourth in the men's sitting Super-G.",
-  #     "hypothesis": '波兰男子视觉障碍滑雪运动员马切伊·克雷泽尔和他的向导安娜·奥加日斯卡在超级大回转项目中获得第十三名。韩国选手金成勋在男子坐式超级大回转项目中获得第二十四名。',
-  #     "reference": "'波兰男子视障滑雪选手马切吉·克雷泽尔（Maciej Krezel ）和向导安娜·奥加津斯卡（Anna Ogarzynska）在超级大回转比赛中获得第十三名，韩国选手朴钟硕（Jong Seork Park）在男子坐式超级大回转比赛中获得第二十四名。'"
-  #   }
-  # ]
-  # src_path = f"/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest/eng.devtest"
-  # tgt_path = f"/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest/azj.devtest"
-  # src_dataset, tgt_dataset = load_flores(src_path), load_flores(tgt_path)
-  # ds = [{
-  #   "source": src,
-  #   "hypothesis": tgt,
-  # } for src, tgt in zip(src_dataset, tgt_dataset)]
-  dt = datasets.Dataset.from_list(ds)
-  dt, data_collator = get_dataset(
-      dt,
-      args.model_name,
-      tokenizer,
-      args.max_input_length,
-      device,
-      args.qe,
-  )
-  predictions = get_predictions(dt, model, data_collator, per_device_batch_size, args.model_name, args.output_dir, args.alignment)
-  # predictions = [0]*len(predictions)
-  if args.alignment:
-    align_path = "/mnt/gemini/data1/yifengliu/model/bge-m3"
-    align_model = AutoModel.from_pretrained(align_path)
-    align_tokenizer = AutoTokenizer.from_pretrained(align_path)
-    align_model.to("cuda:0")
-    srcs, tgts = [d['source'] for d in ds], [d['hypothesis'] for d in ds]
-    src_copy = [src.split() for src in srcs]
-    tgt_copy = [tgt.split() for tgt in tgts]
-    scores = align_score(src_copy, tgt_copy, align_model, align_tokenizer, batch_size=16)
-    predictions = [prediction + score for prediction, score in zip(predictions, scores)]
-  if args.lang:
-    srcs, tgts = [d['source'] for d in ds], [d['hypothesis'] for d in ds]
-    lang_detect_model = fasttext.load_model("/mnt/gemini/data1/yifengliu/model/lid.176.bin")
-    lang_info = lang_detect_model.predict(tgts)
-    lang_id = [language[0].replace("__label__", "") for language in lang_info[0]]
-    # pred_lang = [lang_dict.get(lang, 0) for lang in lang_id]
-    new_score_list = [-25 if lang != args.tgt else float("inf") for lang in lang_id]
-    # import code; code.interact(local=locals())
-    predictions = [min(prediction, score) for prediction, score in zip(predictions, new_score_list)]
-  # print(predictions[0])
-  dirname = args.output_dir
-  if not args.alignment:
-    dirname = os.path.join(dirname, args.model_name + "-" + args.model_size + "-" + args.dtype)
+  
+  # Check if we have language lists for batch processing
+  if args.src_list is not None and args.tgt_list is not None:
+    print("Batch processing mode: processing multiple language pairs")
+    process_language_pairs(args.src_list, args.tgt_list, args, tokenizer, model, device, per_device_batch_size)
   else:
-    dirname = os.path.join(dirname, args.model_name + "-" + args.model_size + "-" + args.dtype + "-align")
-  import code; code.interact(local=locals())
-  if name != "flores":
-    if dirname:
-      os.makedirs(dirname, exist_ok=True)
-    output_file = os.path.join(
-        dirname,
-        f"{args.src}-{args.tgt}.jsonl",
-    )
-    write_to_file(output_file, ds, predictions, args.model_name)
-  else:
-    with open(args.input_file, 'a') as f:
-      mean_score = sum(predictions) / len(predictions)
-      if args.model_name == "metricX":
-        f.write(f"MetricX Score: {mean_score:.4f}\n")
-      if args.model_name == "XComet":
-        f.write(f"XComet Score: {mean_score:.4f}\n")
-        print(f"{args.src}-{args.tgt}: XComet Score: {mean_score:.4f}")
+    print("Single language pair mode")
+    process_single_language_pair(args, tokenizer, model, device, per_device_batch_size)
 
 if __name__ == "__main__":
   main()
