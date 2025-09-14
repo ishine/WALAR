@@ -720,6 +720,7 @@ class RewardModelProxy:
           print(align_score_list[:20])
           scores = [score + align_score for score, align_score in zip(scores, align_score_list)]
           extra_logs['mean_align_score'] = sum(align_score_list) / len(align_score_list)
+          
         if self.args.lang_detect:
           pattern = r"Translate from ([^\n<]+) to ([^\n<]+):"
           target_languages = [re.search(pattern, query).group(2).strip() for query in queries if re.search(pattern, query)]
@@ -744,6 +745,7 @@ class RewardModelProxy:
             else:
               cnt += 1
               detect_rewards.append(min_reward)
+          scores = [min(score, detect_reward) for score, detect_reward in zip(scores, detect_rewards)]
           extra_logs['lang_penalty_percent'] = cnt / len(tgts)
           # logger.info(extra_logs[:20])
         # if self.args.lang_detect:

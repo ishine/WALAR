@@ -123,8 +123,8 @@ class MaskLID:
         Returns:
             tuple: Dictionaries of remaining and deleted words after masking.
         """
-        # dict_remained = deepcopy(dict_text)
-        dict_remained = dict_text.copy()
+        dict_remained = deepcopy(dict_text)
+        # dict_remained = dict_text.copy()
         dict_deleted = {}
 
         for key, value in dict_text.items():

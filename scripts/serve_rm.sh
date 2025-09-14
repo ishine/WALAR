@@ -15,7 +15,7 @@ align=True
 src=en
 tgt=mix-mid2
 
-export CUDA_VISIBLE_DEVICES=5
+export CUDA_VISIBLE_DEVICES=0
 python -m openrlhf.cli.serve_rm \
     --model_name  metricX\
     --base_model $base_model \
@@ -28,7 +28,7 @@ python -m openrlhf.cli.serve_rm \
     --align $align \
     --src $src \
     --tgt $tgt \
-    --batch_size 8 &
+    --batch_size 16 &
 
 # echo "MetricX serves successfully!"
 

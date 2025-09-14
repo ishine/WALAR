@@ -66,7 +66,7 @@ process_language_pairs() {
       input_file_pattern="/mnt/gemini/data1/yifengliu/data/low-res"
       ;;
     "flores")
-      input_file_pattern="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Mask+Detect-New-Align-Rule-MetricX-Qwen3-4B-en-mix-mid2-1M-bsz128/global_step280_hf"
+      input_file_pattern="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Mask+Detect-New-Align-Rule-MetricX-Qwen3-4B-en-mix-mid2-1M-bsz128/global_step500_hf"
       ;;
   esac
   
