@@ -157,6 +157,7 @@ def train(args):
         eval_split=args.eval_split,
         src=args.src,
         tgt=args.tgt,
+        schedule=args.schedule,
         back_translate=args.back_translate,
         interleave=args.interleave,
         # generate kwargs
@@ -262,6 +263,7 @@ if __name__ == "__main__":
     # Checkpoints
     parser.add_argument('--src', type=str, default="en")
     parser.add_argument('--tgt', type=str, default="zh")
+    parser.add_argument('--schedule', type=bool, default=False)
     parser.add_argument("--eval_steps", type=int, default=-1)
     parser.add_argument("--save_steps", type=int, default=-1)
     parser.add_argument("--logging_steps", type=int, default=1)

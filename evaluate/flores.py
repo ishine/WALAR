@@ -7,7 +7,7 @@ import json
 import sacrebleu
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'code')))
-from utils import lang_dict
+from utils import lang_dict, lang2long
 
 from datasets import load_dataset
 from tqdm import tqdm
@@ -30,6 +30,10 @@ class EvaluationArguments:
     lang_pair: Optional[str] = field(
         default=None,
         metadata={"help": "Language pair for evaluation (e.g., eng-hin). If provided, overrides source_languages and target_languages."}
+    )
+    enable_thinking: Optional[bool] = field(
+        default=None,
+        metadata={"help": "Whether to enable <think> in prompts for models that support it."}
     )
     source_languages: Optional[str] = field(
         default=None,
@@ -56,7 +60,7 @@ class EvaluationArguments:
         metadata={"help": "Number of GPUs to use for tensor parallelism"}
     )
     max_tokens: int = field(
-        default=256,
+        default=512,
         metadata={"help": "Maximum number of tokens to generate"}
     )
     comet22: bool = field(
@@ -97,7 +101,7 @@ def load_flores_dataset(data_dir, lang_pair):
     # Filter for the specific language pair
     return src_dataset, tgt_dataset
 
-def predict(model, tokenizer, dataset, sampling_params, lang_pair, model_path):
+def predict(enable_thinking, model, tokenizer, dataset, sampling_params, lang_pair, model_path):
     """Generate predictions using the model."""
     src_lang, tgt_lang = lang_pair.split("-")
     src_lang, tgt_lang = lang_dict[src_lang], lang_dict[tgt_lang]
@@ -111,15 +115,20 @@ def predict(model, tokenizer, dataset, sampling_params, lang_pair, model_path):
                 # prompt = f"{src_text.strip()}\nTranslate from {src_lang} to {tgt_lang}:\n"
             else:
                 prompt = f"{src_text.strip()}\nTranslate from {src_lang} to {tgt_lang}:\n"
+                # prompt = f'Translate the following text from {src_lang} to {tgt_lang}.\n\n{src_lang} source:\n{src_text}\n\n{tgt_lang} translation:'
             message = [
                 {"role": "user", "content": prompt},
             ]
-            new_prompt = tokenizer.apply_chat_template(message, tokenize=False, add_generation_prompt=True, enable_thinking=False)
+            new_prompt = tokenizer.apply_chat_template(message, tokenize=False, add_generation_prompt=True, enable_thinking=enable_thinking)
             prompts.append({"prompt": new_prompt})
         # import code; code.interact(local=locals())
         responses = model.generate(prompts, sampling_params=sampling_params)
         responses = [response.outputs[0].text for response in responses]
-        
+        # import code; code.interact(local=locals())
+        if enable_thinking:
+            responses = [response.strip().split('</think>')[1].strip() if len(response.strip().split("</think>"))>1 else "" for response in responses]
+        # responses = [response.strip().split('\n')[0] for response in responses]
+        # import code; code.interact(local=locals())
         # responses = model.beam_search(prompts, sampling_params)
         # responses = [response.sequences[0].text for response in responses]
     else:
@@ -130,10 +139,12 @@ def predict(model, tokenizer, dataset, sampling_params, lang_pair, model_path):
             sources = dataset[idx:right_bound]
             inputs = tokenizer(sources, return_tensors="pt", padding=True)
             inputs.to("cuda:0")
+            lang_code = lang2long[tgt_lang]
+            print(lang_code)
             translated_tokens = model.generate(
-                **inputs, forced_bos_token_id=tokenizer.convert_tokens_to_ids("deu_Latn"), max_length=512
+                **inputs, forced_bos_token_id=tokenizer.convert_tokens_to_ids(lang_code), max_length=256
             )
-            output = tokenizer.batch_decode(translated_tokens, skip_special_tokens=True, model_max_length=512)
+            output = tokenizer.batch_decode(translated_tokens, skip_special_tokens=True, model_max_length=256)
             responses.extend(output)
     return responses
 
@@ -144,7 +155,7 @@ def load_model_and_tokenizer(model_path, tensor_parallel_size):
             model=model_path,
             tensor_parallel_size=tensor_parallel_size,
             trust_remote_code=True,
-            max_model_len=2048,
+            max_model_len=4096,
             task="generate",
         )
         tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
@@ -156,7 +167,7 @@ def load_model_and_tokenizer(model_path, tensor_parallel_size):
         model.to("cuda:0")
     return model, tokenizer
 
-def evaluate_model(model_path, model, tokenizer, data_dir, lang_pair, max_tokens=512):
+def evaluate_model(enable_thinking, model_path, model, tokenizer, data_dir, lang_pair, max_tokens=512):
     """Evaluate a model on FLORES-101 dataset using vLLM."""
     
     # Load dataset
@@ -180,7 +191,7 @@ def evaluate_model(model_path, model, tokenizer, data_dir, lang_pair, max_tokens
     #     top_k=20,
     # )
     # sampling_params = BeamSearchParams(beam_width=4, max_tokens=max_tokens)
-    predictions = predict(model, tokenizer, src_dataset, sampling_params, lang_pair, model_path)
+    predictions = predict(enable_thinking, model, tokenizer, src_dataset, sampling_params, lang_pair, model_path)
     
     
     return src_dataset, tgt_dataset, predictions
@@ -205,14 +216,22 @@ def calculate_comet_score(src_texts, references, predictions, model_path="/mnt/g
 def has_content(file_path):
     return os.path.isfile(file_path) and os.path.getsize(file_path) > 0
 
-def evaluate_single_lang_pair(model_path, data_dir, model, tokenizer, lang_pair, max_tokens, comet22, xcomet, output_file=None):
+def evaluate_single_lang_pair(model_path, data_dir, enable_thinking, model, tokenizer, lang_pair, max_tokens, comet22, xcomet, output_file=None):
     """Evaluate a single language pair."""
+    def get_spBLEU(hyps, refs):
+        if len(hyps) != len(refs):
+            return None
+        hyps = [hyp.strip() for hyp in hyps]
+        refs = [ref.strip() for ref in refs]
+        result = sacrebleu.corpus_bleu(hyps, [refs], tokenize="flores200", force=True).score
+        return result
     print(f"Evaluating model {model_path} on {lang_pair}...")
-    if has_content(output_file):
-        print(f"Output file {output_file} already exists and is non-empty. Skipping evaluation.")
-        return
+    # if has_content(output_file):
+    #     print(f"Output file {output_file} already exists and is non-empty. Skipping evaluation.")
+    #     return
     
     sources, references, predictions = evaluate_model(
+        enable_thinking,
         model_path, 
         model,
         tokenizer,
@@ -220,7 +239,8 @@ def evaluate_single_lang_pair(model_path, data_dir, model, tokenizer, lang_pair,
         lang_pair, 
         max_tokens
     )
-    
+    # temp = [prediction.split("</think>")[1].strip() if len(prediction.split("</think>")) > 1 else "" for prediction in predictions]  
+    # import code; code.interact(local=locals())
     metrics = get_spBLEU(predictions, references)
     comet_score = None
     xcomet_score = None
@@ -247,7 +267,7 @@ def evaluate_single_lang_pair(model_path, data_dir, model, tokenizer, lang_pair,
     print(f"source: {sources[0]}")
     print(f"prediction: {predictions[0]}")
     print(f"reference: {references[0]}")
-
+    # import code; code.interact(local=locals())
     # Save results if output_file is provided
     if output_file:
         dirname = os.path.dirname(output_file)
@@ -270,7 +290,7 @@ def evaluate_single_lang_pair(model_path, data_dir, model, tokenizer, lang_pair,
         'xcomet_score': xcomet_score['mean_score'] if xcomet_score else None
     }
 
-def evaluate_multiple_lang_pairs(model_path, data_dir, model, tokenizer, source_languages, target_languages, max_tokens, comet22, xcomet, output_dir=None):
+def evaluate_multiple_lang_pairs(model_path, data_dir, enable_thinking, model, tokenizer, source_languages, target_languages, max_tokens, comet22, xcomet, output_dir=None):
     """Evaluate multiple language pairs."""
     # Parse language lists
     src_langs = [lang.strip() for lang in source_languages.split(',')]
@@ -294,7 +314,8 @@ def evaluate_multiple_lang_pairs(model_path, data_dir, model, tokenizer, source_
             output_file = os.path.join(output_dir, f"{lang_pair}.txt")
         
         result = evaluate_single_lang_pair(
-            model_path, data_dir, model, tokenizer,
+            model_path, data_dir, enable_thinking,
+            model, tokenizer,
             lang_pair, max_tokens, 
             comet22, xcomet, output_file
         )
@@ -314,6 +335,10 @@ def main():
     args = parser.parse_args_into_dataclasses()[0]
     model, tokenizer = load_model_and_tokenizer(args.model_name_or_path, args.tensor_parallel_size)
     # Determine evaluation mode
+    if args.enable_thinking:
+        args.max_tokens = 8192
+    else:
+        args.max_tokens = 512
     if args.lang_pair:
         # Single language pair mode (backward compatibility)
         evaluate_single_lang_pair(
@@ -332,6 +357,7 @@ def main():
         evaluate_multiple_lang_pairs(
             args.model_name_or_path,
             args.data_dir,
+            args.enable_thinking,
             model,
             tokenizer,
             args.source_languages,

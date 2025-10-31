@@ -22,12 +22,12 @@ bar_text_size=18
 
 # 数据
 data = np.array([
-    [10.28, 6.65, 6.88, 7.8],     # Baseline
-    [12.42, 8.09, 8.35, 9.24],   # En-X
-    [12.35, 8.46, 8.62, 9.27],   # Ar-X
-    [12.48, 8.37, 8.9, 9.49],    # Tr-X
-    [12.3, 7.97, 8.39, 9.38],    # Hi-X
-    [12.7, 8.67, 9.08, 9.71],   # Mixed
+    [44.58, 37.87, 38.42, 40.96],     # Baseline
+    [49.1, 40.78, 41.33, 44.07],   # En-X
+    [48.76, 42.05, 41.85, 44.3],   # Ar-X
+    [47.93, 40.6, 41.67, 43.75],    # Tr-X
+    [48.36, 40.71, 41.52, 44.9],    # Hi-X
+    [53.02, 45.2, 45.98, 47.83],   # Mixed
 ])
 
 # 创建图形 - 调整尺寸比例，减少高度以去除多余留白
@@ -59,7 +59,7 @@ for i, model_data in enumerate(data):
 
 # 设置坐标轴和标签
 ax.set_xlabel('Language Directions', fontsize=label_size, fontweight='bold', labelpad=12)
-ax.set_ylabel('spBLEU', fontsize=label_size, fontweight='bold', labelpad=12)
+ax.set_ylabel('XComet', fontsize=label_size, fontweight='bold', labelpad=12)
 ax.set_title('Generalization of QE-RL', 
              fontsize=title_size, fontweight='bold', pad=15)
 
@@ -68,20 +68,20 @@ ax.set_xticks(x_pos + bar_width * (len(models) - 1) / 2)
 ax.set_xticklabels(language_directions, fontsize=tick_size, fontweight='bold')
 
 # 设置y轴 - 从4开始，增大刻度标签
-ax.set_yticks(np.arange(4, 15, 2))
+ax.set_yticks(np.arange(30, 60, 5))
 ax.tick_params(axis='y', labelsize=tick_size)
 
 # 优化图例 - 放在图形内部右上角以节省空间
-ax.legend(loc='upper right', fontsize=legend_size, 
-          frameon=True, fancybox=True, shadow=False, framealpha=0.95,
-          edgecolor='black')
+# ax.legend(loc='upper right', fontsize=legend_size, 
+#           frameon=True, fancybox=True, shadow=False, framealpha=0.95,
+#           edgecolor='black')
 
 # 优化网格线 - 只保留y轴网格线
 ax.grid(True, axis='y', alpha=0.4, linestyle='-', linewidth=0.6)
 ax.grid(False, axis='x')
 
 # 设置y轴范围
-ax.set_ylim(4, 14.5)
+ax.set_ylim(30, 60)
 
 # 设置背景色
 ax.set_facecolor('#FFFFFF')
@@ -96,7 +96,7 @@ for spine in ax.spines.values():
 plt.tight_layout(pad=0.0)  # 减少padding
 
 # 保存为高分辨率图片，去除所有多余留白
-plt.savefig('/mnt/gemini/data1/yifengliu/qe-lr/figure/model_performance_comparison.png', 
+plt.savefig('/mnt/gemini/data1/yifengliu/qe-lr/figure/generalization_xcomet.png', 
             dpi=300, 
             bbox_inches='tight',  # 紧密边界
             pad_inches=0.0)       # 减少内边距

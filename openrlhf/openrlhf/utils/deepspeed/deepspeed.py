@@ -183,7 +183,7 @@ class DeepspeedStrategy(ABC):
                 drop_last=drop_last,
                 consumed_samples=consumed_samples,
             )
-
+        
         return StatefulDataLoader(
             replay_buffer,
             batch_size=batch_size,

@@ -4,7 +4,7 @@ import os
 import sys
 import re
 import jieba
-# import hanlp
+import hanlp
 # import hanlp_restful
 # from hanlp_restful import HanLPClient
 
@@ -358,7 +358,7 @@ def simple_align(srcs, tgts, aligner):
     align_score_list.append(f1)
   return align_score_list
 
-def align_score(srcs, tgts, model, tokenizer, batch_size=16):
+def align_score(srcs, tgts, target_languages, model, tokenizer, lang_detect_model, batch_size=16):
     align_score_list = []
     align_layer = 24
     threshold = 1e-3
@@ -374,11 +374,31 @@ def align_score(srcs, tgts, model, tokenizer, batch_size=16):
     # 预处理所有数据
     for i in tqdm(range(len(srcs))):
         sent_src, sent_tgt = srcs[i], tgts[i]
-        
+        tgt_lang = target_languages[i]
         # 同时处理源语言和目标语言
         token_src = [tokenizer.tokenize(word) for word in sent_src]
         token_tgt = [tokenizer.tokenize(word) for word in sent_tgt]
-        
+        temp_tgt = " ".join([" ".join(token) for token in token_tgt])
+        ans = lang_detect_model.predict_codeswitch(temp_tgt, beta = 20 , alpha = 3, max_lambda = 4, min_length = 10, min_prob = 0.90, max_retry=3, alpha_step_increase = 3, beta_step_increase = 5)
+        ans = {key.replace("__label__", ""): value for key, value in ans.items()}
+        long_lang_id = lang2long.get(tgt_lang, None)
+        if long_lang_id is None:
+            raise ValueError(f"Language code {tgt_lang} not found in lang2long.")
+        lang_translation = ans.get(long_lang_id, None)
+        if lang_translation is None:
+            lang_translation = ""
+        if i <= 2:
+          print(lang_translation)
+        translation_set = set(lang_translation.split())
+
+        # 过滤 token_tgt
+        token_tgt = [
+            [token for token in sublist if token in translation_set]
+            for sublist in token_tgt
+            if any(token in translation_set for token in sublist)  # 确保子列表不为空
+        ]
+        if i <= 2:
+          print(token_tgt)
         # 转换为ID
         wid_src = [tokenizer.convert_tokens_to_ids(x) for x in token_src]
         wid_tgt = [tokenizer.convert_tokens_to_ids(x) for x in token_tgt]
@@ -532,7 +552,7 @@ def get_source(model_name, queries):
 def get_target(model_name, queries):
   if 'Qwen3' in model_name:
     tgt_pattern = r"<\|im_start\|>assistant\n<think>(.*?)</think>\n\n(.*?)<\|im_end\|>"
-    tgts = [re.search(tgt_pattern, q, re.DOTALL).group(2).strip() for q in queries]
+    tgts = [re.search(tgt_pattern, q, re.DOTALL).group(2).strip() if re.search(tgt_pattern, q, re.DOTALL) is not None else "" for q in queries]
   elif 'Llama' == model_name:
     tgt_pattern = r"<\|start_header_id\|>assistant<\|end_header_id\|>\n\n(.*?)<\|eot_id\|>"
     tgts = [re.search(tgt_pattern, q, re.DOTALL).group(1).strip() for q in queries]
@@ -543,6 +563,18 @@ def get_target(model_name, queries):
     tgt_pattern = r"<\|im_start\|>assistant\n(.*?)<\|im_end\|>"
     tgts = [re.search(tgt_pattern, q, re.DOTALL).group(1).strip() for q in queries]
   return tgts
+
+def zh_tokenize(lang_list, text_list, tokenizer):
+  return_list = []
+  for lang, text in zip(lang_list, text_list):
+    if lang == "Chinese":
+      text = tokenizer(text)
+      text = [c for c in text if c not in [",", "\"", ".", '—', "(", ")", "/", "\\", "'", "：", "“", "”", "，", "。"]]
+    else:
+      text = text.split()
+    return_list.append(text)
+  return return_list
+  
 
 class RewardModelProxy:
     def __init__(self, args):
@@ -561,8 +593,9 @@ class RewardModelProxy:
         if args.lang_detect:
           # flores_glotlid = ['__label__eng_Latn', '__label__deu_Latn', '__label__isl_Latn', '__label__ltz_Latn', '__label__bel_Cyrl', '__label__ces_Latn', '__label__mkd_Cyrl', '__label__pol_Latn', '__label__srp_Cyrl', '__label__slk_Latn', '__label__slv_Latn', '__label__ukr_Cyrl', '__label__ben_Beng', '__label__guj_Gujr', '__label__hin_Deva', '__label__mar_Deva', '__label__npi_Deva', '__label__pan_Guru', '__label__urd_Arab', '__label__hye_Armn', '__label__ell_Grek', '__label__lvs_Latn', '__label__lit_Latn', '__label__fas_Arab', '__label__cym_Latn', '__label__ceb_Latn', '__label__jav_Latn', '__label__arb_Arab', '__label__azj_Latn', '__label__kaz_Cyrl', '__label__tur_Latn', '__label__uzn_Latn', '__label__kan_Knda', '__label__mal_Mlym', '__label__tam_Taml', '__label__tel_Telu', '__label__mya_Mymr', '__label__ekk_Latn', '__label__fin_Latn', '__label__hun_Latn', '__label__kat_Geor', '__label__heb_Hebr', '__label__khm_Khmr', '__label__kor_Hang', '__label__lao_Laoo', '__label__fil_Latn']
           # flores_glotlid = ['__label__eng_Latn', '__label__arb_Arab', '__label__rus_Cyrl', '__label__por_Latn', '__label__pol_Latn', '__label__ekk_Latn', '__label__ell_Grek', '__label__slk_Latn', '__label__slv_Latn', '__label__nld_Latn', '__label__lvs_Latn', '__label__hun_Latn', '__label__dan_Latn', '__label__swe_Latn', '__label__lit_Latn', '__label__fin_Latn', '__label__mlt_Latn', '__label__cmn_Hani', '__label__nob_Latn', '__label__kor_Hang', '__label__ind_Latn', '__label__uzn_Latn', '__label__fil_Latn', '__label__ukr_Cyrl', '__label__hin_Deva', '__label__hin_Latn', '__label__afr_Latn', '__label__mar_Deva', '__label__ceb_Latn', '__label__ilo_Latn', '__label__zul_Latn', '__label__heb_Hebr', '__label__xho_Latn', '__label__vie_Latn', '__label__jpn_Jpan', '__label__guj_Gujr', '__label__hrv_Latn', '__label__tur_Latn', '__label__nya_Latn', '__label__tsn_Latn', '__label__sna_Latn', '__label__tso_Latn', '__label__tha_Thai', '__label__spa_Latn', '__label__deu_Latn', '__label__eus_Latn', '__label__bul_Cyrl', '__label__amh_Ethi', '__label__fra_Latn', '__label__ewe_Latn', '__label__mkd_Cyrl', '__label__nso_Latn', '__label__tam_Taml', '__label__lin_Latn', '__label__twi_Latn', '__label__yor_Latn', '__label__als_Latn', '__label__ibo_Latn', '__label__ben_Beng', '__label__ita_Latn', '__label__tpi_Latn', '__label__azj_Latn', '__label__run_Latn', '__label__mya_Mymr', '__label__kin_Latn', '__label__ron_Latn', '__label__ces_Latn', '__label__kat_Geor', '__label__urd_Arab', '__label__zsm_Latn', '__label__pap_Latn', '__label__bem_Latn', '__label__mal_Mlym', '__label__kir_Cyrl', '__label__hye_Armn', '__label__smo_Latn', '__label__sin_Sinh', '__label__fij_Latn', '__label__kan_Knda', '__label__pan_Guru', '__label__hau_Latn', '__label__epo_Latn', '__label__gaz_Latn', '__label__tir_Ethi', '__label__bos_Latn', '__label__srp_Cyrl', '__label__hat_Latn', '__label__pag_Latn', '__label__lua_Latn', '__label__war_Latn', '__label__tel_Telu', '__label__tat_Cyrl', '__label__sag_Latn', '__label__lug_Latn', '__label__tum_Latn', '__label__swh_Latn', '__label__umb_Latn', '__label__som_Latn', '__label__gle_Latn', '__label__kng_Latn', '__label__mos_Latn', '__label__lus_Latn', '__label__khk_Cyrl', '__label__asm_Beng', '__label__tuk_Latn', '__label__quy_Latn', '__label__ayr_Latn', '__label__luo_Latn', '__label__tgk_Cyrl', '__label__cat_Latn', '__label__ssw_Latn', '__label__nno_Latn', '__label__cym_Latn', '__label__kik_Latn', '__label__kmb_Latn', '__label__ory_Orya', '__label__bel_Cyrl', '__label__bho_Deva', '__label__apc_Arab', '__label__bak_Cyrl', '__label__jav_Latn', '__label__yue_Hani', '__label__pbt_Arab', '__label__khm_Khmr', '__label__npi_Deva', '__label__npi_Latn', '__label__gug_Latn', '__label__uig_Arab', '__label__fur_Latn', '__label__kbp_Latn', '__label__hne_Deva', '__label__kam_Latn', '__label__gla_Latn', '__label__kab_Latn', '__label__arz_Arab', '__label__kaz_Cyrl', '__label__mri_Latn', '__label__lim_Latn', '__label__srd_Latn', '__label__sun_Latn', '__label__plt_Latn', '__label__mni_Beng', '__label__isl_Latn', '__label__vec_Latn', '__label__glg_Latn', '__label__scn_Latn', '__label__fao_Latn', '__label__san_Deva', '__label__ltz_Latn', '__label__cjk_Latn', '__label__ast_Latn', '__label__lmo_Latn', '__label__szl_Latn', '__label__oci_Latn', '__label__fon_Latn', '__label__min_Latn', '__label__wol_Latn', '__label__lij_Latn', '__label__ajp_Arab', '__label__snd_Arab', '__label__dik_Latn', '__label__ary_Arab', '__label__lao_Laoo', '__label__ars_Arab', '__label__bjn_Latn', '__label__shn_Mymr', '__label__crh_Latn', '__label__aeb_Arab', '__label__ace_Latn', '__label__ckb_Arab', '__label__dyu_Latn', '__label__ltg_Latn', '__label__kmr_Latn', '__label__ban_Latn', '__label__mai_Deva', '__label__fuv_Latn', '__label__kac_Latn', '__label__taq_Latn', '__label__bam_Latn', '__label__sat_Olck', '__label__tzm_Tfng', '__label__bug_Latn', '__label__dzo_Tibt', '__label__kas_Deva', '__label__fas_Arab', '__label__nus_Latn', '__label__knc_Latn', '__label__mag_Deva', '__label__taq_Tfng', '__label__kas_Arab', '__label__knc_Arab', '__label__bjn_Arab', '__label__ace_Arab', '__label__kea_Latn', '__label__awa_Deva', '__label__acm_Arab', '__label__bod_Tibt', '__label__sot_Latn', '__label__ydd_Hebr', '__label__azb_Arab']
-          flores_glotlid = ['__label__rus_Cyrl', '__label__eng_Latn', '__label__arb_Arab', '__label__rus_Cyrl', '__label__por_Latn', '__label__pol_Latn', '__label__ekk_Latn', '__label__ell_Grek', '__label__slk_Latn', '__label__slv_Latn', '__label__nld_Latn', '__label__lvs_Latn', '__label__hun_Latn', '__label__dan_Latn', '__label__swe_Latn', '__label__lit_Latn', '__label__fin_Latn', '__label__mlt_Latn', '__label__cmn_Hani', '__label__nob_Latn', '__label__kor_Hang', '__label__ind_Latn', '__label__uzn_Latn', '__label__fil_Latn', '__label__ukr_Cyrl', '__label__hin_Deva', '__label__hin_Latn', '__label__afr_Latn', '__label__mar_Deva', '__label__ceb_Latn', '__label__ilo_Latn', '__label__zul_Latn', '__label__heb_Hebr', '__label__xho_Latn', '__label__vie_Latn', '__label__jpn_Jpan', '__label__guj_Gujr', '__label__hrv_Latn', '__label__tur_Latn', '__label__nya_Latn', '__label__tsn_Latn', '__label__sna_Latn', '__label__tso_Latn', '__label__tha_Thai', '__label__spa_Latn', '__label__deu_Latn', '__label__eus_Latn', '__label__bul_Cyrl', '__label__amh_Ethi', '__label__fra_Latn', '__label__ewe_Latn', '__label__mkd_Cyrl', '__label__nso_Latn', '__label__tam_Taml', '__label__lin_Latn', '__label__twi_Latn', '__label__yor_Latn', '__label__als_Latn', '__label__ibo_Latn', '__label__ben_Beng', '__label__ita_Latn', '__label__tpi_Latn', '__label__azj_Latn', '__label__run_Latn', '__label__mya_Mymr', '__label__kin_Latn', '__label__ron_Latn', '__label__ces_Latn', '__label__kat_Geor', '__label__urd_Arab', '__label__zsm_Latn', '__label__pap_Latn', '__label__bem_Latn', '__label__mal_Mlym', '__label__kir_Cyrl', '__label__hye_Armn', '__label__smo_Latn', '__label__sin_Sinh', '__label__fij_Latn', '__label__kan_Knda', '__label__pan_Guru', '__label__hau_Latn', '__label__epo_Latn', '__label__gaz_Latn', '__label__tir_Ethi', '__label__bos_Latn', '__label__srp_Cyrl', '__label__hat_Latn', '__label__pag_Latn', '__label__lua_Latn', '__label__war_Latn', '__label__tel_Telu', '__label__tat_Cyrl', '__label__sag_Latn', '__label__lug_Latn', '__label__tum_Latn', '__label__swh_Latn', '__label__umb_Latn', '__label__som_Latn', '__label__gle_Latn', '__label__kng_Latn', '__label__mos_Latn', '__label__lus_Latn', '__label__khk_Cyrl', '__label__asm_Beng', '__label__tuk_Latn', '__label__quy_Latn', '__label__ayr_Latn', '__label__luo_Latn', '__label__tgk_Cyrl', '__label__cat_Latn', '__label__ssw_Latn', '__label__nno_Latn', '__label__cym_Latn', '__label__kik_Latn', '__label__kmb_Latn', '__label__ory_Orya', '__label__bel_Cyrl', '__label__bho_Deva', '__label__apc_Arab', '__label__bak_Cyrl', '__label__jav_Latn', '__label__yue_Hani', '__label__pbt_Arab', '__label__khm_Khmr', '__label__npi_Deva', '__label__npi_Latn', '__label__gug_Latn', '__label__uig_Arab', '__label__fur_Latn', '__label__kbp_Latn', '__label__hne_Deva', '__label__kam_Latn', '__label__gla_Latn', '__label__kab_Latn', '__label__arz_Arab', '__label__kaz_Cyrl', '__label__mri_Latn', '__label__lim_Latn', '__label__srd_Latn', '__label__sun_Latn', '__label__plt_Latn', '__label__mni_Beng', '__label__isl_Latn', '__label__vec_Latn', '__label__glg_Latn', '__label__scn_Latn', '__label__fao_Latn', '__label__san_Deva', '__label__ltz_Latn', '__label__cjk_Latn', '__label__ast_Latn', '__label__lmo_Latn', '__label__szl_Latn', '__label__oci_Latn', '__label__fon_Latn', '__label__min_Latn', '__label__wol_Latn', '__label__lij_Latn', '__label__ajp_Arab', '__label__snd_Arab', '__label__dik_Latn', '__label__ary_Arab', '__label__lao_Laoo', '__label__ars_Arab', '__label__bjn_Latn', '__label__shn_Mymr', '__label__crh_Latn', '__label__aeb_Arab', '__label__ace_Latn', '__label__ckb_Arab', '__label__dyu_Latn', '__label__ltg_Latn', '__label__kmr_Latn', '__label__ban_Latn', '__label__mai_Deva', '__label__fuv_Latn', '__label__kac_Latn', '__label__taq_Latn', '__label__bam_Latn', '__label__sat_Olck', '__label__tzm_Tfng', '__label__bug_Latn', '__label__dzo_Tibt', '__label__kas_Deva', '__label__fas_Arab', '__label__nus_Latn', '__label__knc_Latn', '__label__mag_Deva', '__label__taq_Tfng', '__label__kas_Arab', '__label__knc_Arab', '__label__bjn_Arab', '__label__ace_Arab', '__label__kea_Latn', '__label__awa_Deva', '__label__acm_Arab', '__label__bod_Tibt', '__label__sot_Latn', '__label__ydd_Hebr', '__label__azb_Arab']
-          self.lang_detect_model2 = fasttext.load_model("/mnt/gemini/data1/yifengliu/model/lid.176.bin")
+          flores_glotlid = ['__label__eng_Latn', '__label__arb_Arab', '__label__rus_Cyrl', '__label__por_Latn', '__label__pol_Latn', '__label__ekk_Latn', '__label__ell_Grek', '__label__slk_Latn', '__label__slv_Latn', '__label__nld_Latn', '__label__lvs_Latn', '__label__hun_Latn', '__label__dan_Latn', '__label__swe_Latn', '__label__lit_Latn', '__label__fin_Latn', '__label__mlt_Latn', '__label__cmn_Hani', '__label__nob_Latn', '__label__kor_Hang', '__label__ind_Latn', '__label__uzn_Latn', '__label__fil_Latn', '__label__ukr_Cyrl', '__label__hin_Deva', '__label__hin_Latn', '__label__afr_Latn', '__label__mar_Deva', '__label__ceb_Latn', '__label__ilo_Latn', '__label__zul_Latn', '__label__heb_Hebr', '__label__xho_Latn', '__label__vie_Latn', '__label__jpn_Jpan', '__label__guj_Gujr', '__label__hrv_Latn', '__label__tur_Latn', '__label__nya_Latn', '__label__tsn_Latn', '__label__sna_Latn', '__label__tso_Latn', '__label__tha_Thai', '__label__spa_Latn', '__label__deu_Latn', '__label__eus_Latn', '__label__bul_Cyrl', '__label__amh_Ethi', '__label__fra_Latn', '__label__ewe_Latn', '__label__mkd_Cyrl', '__label__nso_Latn', '__label__tam_Taml', '__label__lin_Latn', '__label__twi_Latn', '__label__yor_Latn', '__label__als_Latn', '__label__ibo_Latn', '__label__ben_Beng', '__label__ita_Latn', '__label__tpi_Latn', '__label__azj_Latn', '__label__run_Latn', '__label__mya_Mymr', '__label__kin_Latn', '__label__ron_Latn', '__label__ces_Latn', '__label__kat_Geor', '__label__urd_Arab', '__label__zsm_Latn', '__label__pap_Latn', '__label__bem_Latn', '__label__mal_Mlym', '__label__kir_Cyrl', '__label__hye_Armn', '__label__smo_Latn', '__label__sin_Sinh', '__label__fij_Latn', '__label__kan_Knda', '__label__pan_Guru', '__label__hau_Latn', '__label__epo_Latn', '__label__gaz_Latn', '__label__tir_Ethi', '__label__bos_Latn', '__label__srp_Cyrl', '__label__hat_Latn', '__label__pag_Latn', '__label__lua_Latn', '__label__war_Latn', '__label__tel_Telu', '__label__tat_Cyrl', '__label__sag_Latn', '__label__lug_Latn', '__label__tum_Latn', '__label__swh_Latn', '__label__umb_Latn', '__label__som_Latn', '__label__gle_Latn', '__label__kng_Latn', '__label__mos_Latn', '__label__lus_Latn', '__label__khk_Cyrl', '__label__asm_Beng', '__label__tuk_Latn', '__label__quy_Latn', '__label__ayr_Latn', '__label__luo_Latn', '__label__tgk_Cyrl', '__label__cat_Latn', '__label__ssw_Latn', '__label__nno_Latn', '__label__cym_Latn', '__label__kik_Latn', '__label__kmb_Latn', '__label__ory_Orya', '__label__bel_Cyrl', '__label__bho_Deva', '__label__apc_Arab', '__label__bak_Cyrl', '__label__jav_Latn', '__label__yue_Hani', '__label__pbt_Arab', '__label__khm_Khmr', '__label__npi_Deva', '__label__npi_Latn', '__label__gug_Latn', '__label__uig_Arab', '__label__fur_Latn', '__label__kbp_Latn', '__label__hne_Deva', '__label__kam_Latn', '__label__gla_Latn', '__label__kab_Latn', '__label__arz_Arab', '__label__kaz_Cyrl', '__label__mri_Latn', '__label__lim_Latn', '__label__srd_Latn', '__label__sun_Latn', '__label__plt_Latn', '__label__mni_Beng', '__label__isl_Latn', '__label__vec_Latn', '__label__glg_Latn', '__label__scn_Latn', '__label__fao_Latn', '__label__san_Deva', '__label__ltz_Latn', '__label__cjk_Latn', '__label__ast_Latn', '__label__lmo_Latn', '__label__szl_Latn', '__label__oci_Latn', '__label__fon_Latn', '__label__min_Latn', '__label__wol_Latn', '__label__lij_Latn', '__label__ajp_Arab', '__label__snd_Arab', '__label__dik_Latn', '__label__ary_Arab', '__label__lao_Laoo', '__label__ars_Arab', '__label__bjn_Latn', '__label__shn_Mymr', '__label__crh_Latn', '__label__aeb_Arab', '__label__ace_Latn', '__label__ckb_Arab', '__label__dyu_Latn', '__label__ltg_Latn', '__label__kmr_Latn', '__label__ban_Latn', '__label__mai_Deva', '__label__fuv_Latn', '__label__kac_Latn', '__label__taq_Latn', '__label__bam_Latn', '__label__sat_Olck', '__label__tzm_Tfng', '__label__bug_Latn', '__label__dzo_Tibt', '__label__kas_Deva', '__label__fas_Arab', '__label__nus_Latn', '__label__knc_Latn', '__label__mag_Deva', '__label__taq_Tfng', '__label__kas_Arab', '__label__knc_Arab', '__label__bjn_Arab', '__label__ace_Arab', '__label__kea_Latn', '__label__awa_Deva', '__label__acm_Arab', '__label__bod_Tibt', '__label__sot_Latn', '__label__ydd_Hebr', '__label__azb_Arab']
+          # self.lang_detect_model2 = fasttext.load_model("/mnt/gemini/data1/yifengliu/model/lid.176.bin")
+          self.lang_detect_model2 = fasttext.load_model('/mnt/gemini/data1/yifengliu/model/models--cis-lmu--glotlid/snapshots/74cb50b709c9eefe0f790030c6c95c461b4e3b77/model.bin')
           self.lang_detect_model = MaskLID("/mnt/gemini/data1/yifengliu/model/masklid/model_v3.bin", languages=flores_glotlid)
         if args.align:
           # another potential model: bert-base-multilingual-cased
@@ -574,9 +607,9 @@ class RewardModelProxy:
           self.align_tokenizer = AutoTokenizer.from_pretrained(model_path)
           self.align_model.to("cuda:0")
           # self.aligner = SentenceAligner(model="bge-m3", token_type="bpe", matching_methods="m", device="cuda:0")
-          if self.args.tgt == "zh":
-            self.han1 = hanlp.load("/mnt/taurus/home/yifengliu/.hanlp/mtl/ud_ontonotes_tok_pos_lem_fea_ner_srl_dep_sdp_con_xlm_base_20220608_003435", devices=1)
-            self.han2 = hanlp.load("/mnt/taurus/home/yifengliu/.hanlp/tok/coarse_electra_small_20220616_012050", devices=1)
+          # if self.args.tgt == "zh":
+            # self.han1 = hanlp.load("/mnt/taurus/home/yifengliu/.hanlp/mtl/ud_ontonotes_tok_pos_lem_fea_ner_srl_dep_sdp_con_xlm_base_20220608_003435", devices=1)
+          self.han = hanlp.load("/mnt/taurus/home/yifengliu/.hanlp/tok/coarse_electra_small_20220616_012050", devices=0)
         if 'metricX' in args.model_name:
             self.min_reward = -25
             self.model_name = args.model_name
@@ -643,8 +676,6 @@ class RewardModelProxy:
                 dataset = get_dataset(ds, self.model_name, self.tokenizer, self.max_length, self.model.device, is_qe=False)
               else:
                 dataset = get_dataset(ds, self.model_name, self.tokenizer, self.max_length, self.model.device, is_qe=True)
-              # import code; code.interact(local=locals())
-              # print(dataset)
               print(self.model.device)
               print(dataset['input_ids'][0].device)
               predictions, _, _ = self.trainer.predict(test_dataset=dataset)
@@ -687,37 +718,35 @@ class RewardModelProxy:
         if self.args.align:
           print(srcs[0])
           print(tgts[0])
-          if self.args.masklid:
-            if 'llamax' in self.base_model.lower():
-              pattern = r"Translate the following sentences from ([^\n<]+) to ([^\n<]+)."
-              target_languages = [re.search(pattern, query).group(2).strip() for query in queries if re.search(pattern, query)]
-            else:
-              pattern = r"Translate from ([^\n<]+) to ([^\n<]+):"
-              target_languages = [re.search(pattern, query).group(2).strip() for query in queries if re.search(pattern, query)]
-            tgts = [tgt.replace("\n", "") for tgt in tgts]
-            new_tgts = []
-            for tgt, tgt_lang in zip(tgts, target_languages):
-              ans = self.lang_detect_model.predict_codeswitch(tgt, beta = 20 , alpha = 3, max_lambda = 3, min_length = 10, min_prob = 0.90, max_retry=3, alpha_step_increase = 3, beta_step_increase = 5)
-              ans = {key.replace("__label__", ""): value for key, value in ans.items()}
-              long_lang_id = lang2long.get(tgt_lang, None)
-              if long_lang_id is None:
-                raise ValueError(f"Language code {tgt_lang} not found in lang2long.")
-              lang_translation = ans.get(long_lang_id, None)
-              # print(tgt_lang, long_lang_id, ans, lang_translation)
-              if lang_translation is None:
-                lang_translation = ""
-              new_tgts.append(lang_translation)
-            tgts = new_tgts
-              
-          if self.args.tgt == "zh":
-            src_sentences = self.han1(srcs)['tok']
-            src_sentences = [[c for c in src if c not in [",", "\"", ".", '—', "(", ")", "/", "\\", "'"]]for src in srcs]
-            tgt_sentences = self.han2(tgts)
-            tgt_sentences = [[c for c in tgt if c not in ["：", "。", "，", "“", "”", "（", "）", "·", "-", "/", "\\", "、"]]for tgt in tgts]
+          if 'llamax' in self.base_model.lower():
+            pattern = r"Translate the following sentences from ([^\n<]+) to ([^\n<]+)."
+            source_languages = [re.search(pattern, query).group(1).strip() for query in queries if re.search(pattern, query)]
+            target_languages = [re.search(pattern, query).group(2).strip() for query in queries if re.search(pattern, query)]
           else:
-            src_sentences = [src.split() for src in srcs]
-            tgt_sentences = [tgt.split() for tgt in tgts]
-          align_score_list = align_score(src_sentences, tgt_sentences, self.align_model, self.align_tokenizer)
+            pattern = r"Translate from ([^\n<]+) to ([^\n<]+):"
+            source_languages = [re.search(pattern, query).group(1).strip() for query in queries if re.search(pattern, query)]
+            target_languages = [re.search(pattern, query).group(2).strip() for query in queries if re.search(pattern, query)]
+            
+          tgts = [tgt.replace("\n", "") for tgt in tgts]
+          # if self.args.masklid:
+          #   new_tgts = []
+          #   for tgt, tgt_lang in zip(tgts, target_languages):
+          #     ans = self.lang_detect_model.predict_codeswitch(tgt, beta = 20 , alpha = 3, max_lambda = 3, min_length = 10, min_prob = 0.90, max_retry=3, alpha_step_increase = 3, beta_step_increase = 5)
+          #     ans = {key.replace("__label__", ""): value for key, value in ans.items()}
+          #     long_lang_id = lang2long.get(tgt_lang, None)
+          #     if long_lang_id is None:
+          #       print(f"Language {tgt_lang} not found in lang2long.")
+          #       raise ValueError(f"Language code {tgt_lang} not found in lang2long.")
+          #     lang_translation = ans.get(long_lang_id, None)
+          #     # print(tgt_lang, long_lang_id, ans, lang_translation)
+          #     if lang_translation is None:
+          #       lang_translation = ""
+          #     new_tgts.append(lang_translation)
+          #   tgts = new_tgts
+              
+          src_sentences = zh_tokenize(source_languages, srcs, self.han)
+          tgt_sentences = zh_tokenize(target_languages, tgts, self.han)
+          align_score_list = align_score(src_sentences, tgt_sentences, target_languages, self.align_model, self.align_tokenizer, self.lang_detect_model)
           # align_score_list = simple_align(srcs, tgts, self.aligner)
           align_score_list = [score*25 for score in align_score_list]
           print(align_score_list[:20])
@@ -744,7 +773,6 @@ class RewardModelProxy:
           else:
             pattern = r"Translate from ([^\n<]+) to ([^\n<]+):"
             target_languages = [re.search(pattern, query).group(2).strip() for query in queries if re.search(pattern, query)]
-          target_languages = [re.search(pattern, query).group(2).strip() for query in queries if re.search(pattern, query)]
           
           tgts = [tgt.replace("\n", "") for tgt in tgts]
           lang_info = self.lang_detect_model2.predict(tgts)
@@ -754,7 +782,10 @@ class RewardModelProxy:
           for language, tgt in zip(lang_info[0], target_languages):
             lang_code = language[0].replace("__label__", "")
             pred_lang = lang_dict.get(lang_code, "")
-            print(language, tgt, pred_lang, pred_lang == tgt)
+            if pred_lang == "":
+              pred_lang = long2lang.get(lang_code, "")
+            
+            # print(language, tgt, pred_lang, pred_lang == tgt)
             if pred_lang == tgt:
               detect_rewards.append(float('inf'))
             else:

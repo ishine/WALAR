@@ -7,19 +7,20 @@ cd /mnt/gemini/data1/yifengliu/qe-lr/openrlhf
 # Llama
 # base_model="Qwen3-4B"
 # base_model="Llama-3.2-3B-Instruct"
-base_model="Qwen3-4B"
+# LlamaX
+base_model="LlamaX"
 lang_detect=True
-rule=False       # '\n' for metricX
+rule=True       # '\n' for metricX
 truncate=False  # length truncate
 bleu=False
-masklid=False
-align=False
+masklid=True
+align=True
 
 # No need to care if align=False
 src=en
 tgt=mix-mid2
 
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=5
 python -m openrlhf.cli.serve_rm \
     --model_name  metricX\
     --base_model $base_model \

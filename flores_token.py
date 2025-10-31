@@ -38,15 +38,37 @@ def sample_trainset(trainset, test_dist, binsize=100):
     return new_train
 
 if __name__ == "__main__":
-    tgt_lang = "hin"
+    tgt_lang = "swh"
     dic = {
-        "tur": "tr",
+        "ben": "bn",
+        "bul": "bg",
+        "bos": "bs",
+        "ces": "cs",
+        "deu": "de",
+        "spa": "es",
+        "est": "et",
+        "fin": "fi",
+        "fra": "fr",
         "ara": "ar",
         "hin": "hi",
         "eng": "en",
+        "hun": "hu",
+        "ind": "id",
+        "isl": "is",
+        "ita": "it",
+        "nld": "nl",
+        "mkd": "mk",
+        "pol": "pl",
+        "por": "pt",
+        "ron": "ro",
+        "rus": "ru",
+        "swh": "sw",
+        "tur": "tr",
+        "ukr": "uk",
+        "zho_simpl": "zh",
     }
-    # path = f"/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest/{tgt_lang}.devtest"
-    path = f"/mnt/gemini/data1/yifengliu/data/wmt24_news_crawl/{dic[tgt_lang]}/news.2024.{dic[tgt_lang]}.shuffled.deduped"
+    path = f"/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest/{tgt_lang}.devtest"
+    # path = f"/mnt/gemini/data1/yifengliu/data/wmt24_news_crawl/{dic[tgt_lang]}/news.2024.{dic[tgt_lang]}.shuffled.deduped"
     model_path = "/mnt/gemini/data1/yifengliu/model/Qwen3-4B"
     tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
     with open(path, 'r') as f:

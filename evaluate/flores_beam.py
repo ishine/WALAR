@@ -409,6 +409,8 @@ def get_spBLEU(hyps, refs):
     result = sacrebleu.corpus_bleu(hyps, [refs], tokenize="spm", force=True).score
     return result
 
+def has_content(file_path):
+    return os.path.isfile(file_path) and os.path.getsize(file_path) > 0
 
 def calculate_comet_score(src_texts, references, predictions, model_path="/mnt/gemini/data1/yifengliu/model/models--Unbabel--wmt22-comet-da/snapshots/2760a223ac957f30acfb18c8aa649b01cf1d75f2/checkpoints/model.ckpt"):
     """Calculate COMET score."""
@@ -428,6 +430,9 @@ def evaluate_single_lang_pair(model_path, data_dir, evaluator, lang_pair, max_ne
     print(f"Evaluating model {model_path} on {lang_pair}...")
     
     # Load dataset
+    if has_content(output_file):
+        print(f"Output file {output_file} already exists and is non-empty. Skipping evaluation.")
+        return
     src_dataset, tgt_dataset = evaluator.load_flores_dataset(data_dir, lang_pair)
     
     # Generate predictions

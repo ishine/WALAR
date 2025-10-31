@@ -23,6 +23,7 @@ lang_dict = {
     "cat": "Catalan",
     "ceb": "Cebuano",
     "zho_simpl": "Chinese",
+    "zho_trad": "Traditional Chinese",
     "hrv": "Croatian",
     "ces": "Czech",
     "dan": "Danish",
@@ -297,6 +298,31 @@ def get_spBLEU(hyps, refs):
     result = sacrebleu.corpus_bleu(hyps, [refs], tokenize="spm", force=True).score
     return result
 
+def get_src_and_tgt_lang(rand_prompts, tokenizer, model_path):
+    if "Qwen" in model_path:
+        pattern = r"<\|im_start\|>user\n(.*?)Translate from (.*?) to (.*?):"
+        src_langs = [re.search(pattern, q, re.DOTALL).group(2).strip() for q in rand_prompts]
+        tgt_langs = [re.search(pattern, q, re.DOTALL).group(3).strip() for q in rand_prompts]
+    else:
+        pattern = r"Translate the following sentences from ([^\n<]+) to ([^\n<]+)."
+        src_langs = [re.search(pattern, q, re.DOTALL).group(1).strip() for q in rand_prompts]
+        tgt_langs = [re.search(pattern, q, re.DOTALL).group(2).strip() for q in rand_prompts]
+    return src_langs, tgt_langs
+
+# def get_srcs_and_tgts(rand_prompts, tokenizer, model_path):
+    
+    
+
+def make_first_forward(rand_prompts, tokenizer, model_path):
+    src_langs, tgt_langs = get_src_and_tgt_lang(rand_prompts, tokenizer, model_path)
+    # Create the first forward prompts
+    new_prompts = []
+    for src_lang in src_langs:
+        sentence = f"{src_lang}\nTranslate from {src_lang} to English:"
+        message = [{"role": "user", "content": sentence}]
+        new_prompts.append(tokenizer.apply_chat_template(message, tokenize=False, add_generation_prompt=True, enable_thinking=False))
+    return new_prompts
+
 def make_back_translation_prompts(rollout_samples, tokenizer, model_path):
     all_queries = sum(
         [
@@ -307,9 +333,14 @@ def make_back_translation_prompts(rollout_samples, tokenizer, model_path):
         ],
         [],
     )
-    pattern = r"<\|im_start\|>user\n(.*?)Translate from (.*?) to (.*?):"
-    src_langs = [re.search(pattern, q, re.DOTALL).group(2).strip() for q in all_queries]
-    tgt_langs = [re.search(pattern, q, re.DOTALL).group(3).strip() for q in all_queries]
+    if "Qwen" in model_path:
+        pattern = r"<\|im_start\|>user\n(.*?)Translate from (.*?) to (.*?):"
+        src_langs = [re.search(pattern, q, re.DOTALL).group(2).strip() for q in all_queries]
+        tgt_langs = [re.search(pattern, q, re.DOTALL).group(3).strip() for q in all_queries]
+    else:
+        pattern = r"Translate the following sentences from ([^\n<]+) to ([^\n<]+)."
+        src_langs = [re.search(pattern, q, re.DOTALL).group(1).strip() for q in all_queries]
+        tgt_langs = [re.search(pattern, q, re.DOTALL).group(2).strip() for q in all_queries]
     new_prompt = []
     if 'Qwen3' in model_path:
         tgt_pattern = r"<\|im_start\|>assistant\n<think>(.*?)</think>\n\n(.*?)<\|im_end\|>"

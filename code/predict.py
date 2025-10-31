@@ -25,7 +25,7 @@ import itertools
 from tqdm import *
 
 sys.path.insert(0, "/mnt/gemini/data1/yifengliu/qe-lr/code")
-from utils import write_to_file, preprocess_dataset, my_load_dataset
+from utils import write_to_file, preprocess_dataset, my_load_dataset, three2two, two2three
 from utils import mm_dict, lang_dict
 import models
 import datasets
@@ -192,10 +192,10 @@ def get_dataset(
     elif 'Comet' in model_name:
       src = example.pop("source", "")
       mt = example.pop("hypothesis", "")
-      if src == "" or mt == "":
-        raise ValueError(
-            "Input data must have 'source' and 'hypothesis' fields for Comet models."
-        )
+      # if src == "" or mt == "":
+      #   raise ValueError(
+      #       "Input data must have 'source' and 'hypothesis' fields for Comet models."
+      #   )
       if is_qe:
         example["input"] = {
           "src": src, 
@@ -415,6 +415,7 @@ def get_predictions(
     # predictions = model.predict(ds, batch_size=per_device_batch_size).predictions
     ds = list(ds)
     inputs = [data['input'] for data in ds]
+    # import code; code.interact(local=locals())
     model_output = model.predict(inputs, batch_size=per_device_batch_size, gpus=torch.cuda.device_count())
     predictions = model_output.scores
   else:
@@ -427,6 +428,86 @@ def load_flores(path):
   with open(path, 'r') as f:
     lines = f.readlines()
   return lines
+
+def load_benchmax_json(file_path, src_lang, tgt_lang):
+  """Load JSON file for benchmax data and return dataset.
+  
+  Args:
+    file_path: Path to the benchmax JSON file (contains only outputs)
+    src_lang: Source language code (e.g., 'en')
+    tgt_lang: Target language code (e.g., 'cs')
+  
+  Returns:
+    List of dictionaries with 'source', 'hypothesis', and 'reference' fields
+  """
+  # Load the benchmax JSON file (contains only outputs)
+  with open(file_path, 'r', encoding='utf-8') as f:
+    data = json.load(f)
+  
+  # Get the translated outputs
+  outputs = data.get('outputs', [])
+  try:
+    output = outputs[0].get("score")
+    outputs = [item["text"] for item in outputs]
+  except:
+    pass
+  # if len(outputs) > 0 and outputs[0].get("score") is not None:
+    # outputs = [item["text"] for item in outputs]
+  # Load source sentences from flores dataset
+  flores_dir = "/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest"
+  src_file = os.path.join(flores_dir, f"{two2three[src_lang]}.devtest")
+  tgt_file = os.path.join(flores_dir, f"{two2three[tgt_lang]}.devtest")
+  
+  if not os.path.exists(src_file):
+    raise FileNotFoundError(f"Source file not found: {src_file}")
+  if not os.path.exists(tgt_file):
+    raise FileNotFoundError(f"Target file not found: {tgt_file}")
+  
+  with open(src_file, 'r', encoding='utf-8') as f:
+    source_sentences = [line.strip() for line in f.readlines()]
+  
+  with open(tgt_file, 'r', encoding='utf-8') as f:
+    reference_sentences = [line.strip() for line in f.readlines()]
+  
+  # Ensure we have the same number of sentences
+  if len(source_sentences) != len(outputs):
+    raise ValueError(f"Mismatch in sentence counts: {len(source_sentences)} source vs {len(outputs)} target")
+  if len(reference_sentences) != len(outputs):
+    raise ValueError(f"Mismatch in sentence counts: {len(reference_sentences)} reference vs {len(outputs)} target")
+  
+  # Create dataset
+  ds = []
+  for src, ref, hyp in zip(source_sentences, reference_sentences, outputs):
+    ds.append({
+      "source": src,
+      "reference": ref,
+      "hypothesis": hyp
+    })
+  
+  return ds
+
+def save_benchmax_results(file_path, ds, predictions, model_name):
+  """Save benchmax results back to the same JSON file with scores added."""
+  # Load the original JSON file
+  with open(file_path, 'r', encoding='utf-8') as f:
+    original_data = json.load(f)
+  
+  
+  # Add overall score information
+  mean_score = sum(predictions) / len(predictions)
+  if model_name == "metricX":
+    original_data["metricx_score"] = float(mean_score)
+  elif model_name == "XComet":
+    original_data["xcomet_score"] = float(mean_score)
+  else:
+    original_data[f"{model_name.lower()}_score"] = float(mean_score)
+  
+  # Save back to the same file
+  with open(file_path, 'w', encoding='utf-8') as f:
+    json.dump(original_data, f, ensure_ascii=False, indent=2)
+  
+  print(f"Saved {len(predictions)} scores to {file_path}")
+  print(f"{model_name} Score: {mean_score:.4f}")
 
 def process_language_pairs(
     src_list: List[str], 
@@ -494,13 +575,34 @@ def generate_input_file_path(input_file_pattern: str, src: str, tgt: str) -> str
     return f"{input_file_pattern}/{src}-{tgt}.jsonl"
   elif "low-res" in input_file_pattern:
     return f"{input_file_pattern}/{src}-{tgt}.csv"
+  elif "flores101_dataset/devtest" in input_file_pattern:
+    # For flores_devtest, we use the base directory directly
+    # The actual file paths are constructed in process_single_language_pair
+    return input_file_pattern
+  elif "BenchMAX" in input_file_pattern:
+    return f"{input_file_pattern}/result_{src}-{tgt}.json"
   elif "flores" in input_file_pattern:
     return f"{input_file_pattern}/{src}-{tgt}.txt"
   else:
     # Default pattern
     return f"{input_file_pattern}/{src}-{tgt}.jsonl"
 
-def has_content(file_path):
+def has_content(model, file_path):
+  target_content = None
+  if model == "metricX":
+    target_content = "MetricX Score: "    
+  elif model == "XComet":
+    target_content = "XComet Score: "
+  else:
+    raise ValueError("Unsupported model name or path: {}".format(model))
+  with open(file_path, 'r') as f:
+    lines = f.readlines()
+    for line in lines:
+      if target_content in line:
+        return True
+  return False
+
+def has_content2(file_path):
     return os.path.isfile(file_path) and os.path.getsize(file_path) > 0
 
 def process_single_language_pair(
@@ -520,8 +622,73 @@ def process_single_language_pair(
     per_device_batch_size: Batch size per device
   """
   model.eval()
-  ds, name = preprocess_dataset(args.input_file)
-  
+  # Handle flores_devtest case specially
+  if 'flores101_dataset/devtest' in args.input_file:
+    # For flores_devtest, we need to read two separate files and combine them
+    base_dir = args.input_file
+    src_file = os.path.join(base_dir, f"{args.src}.devtest")
+    tgt_file = os.path.join(base_dir, f"{args.tgt}.devtest")
+    
+    print(f"Loading source file: {src_file}")
+    print(f"Loading target file: {tgt_file}")
+    
+    # Check if files exist
+    if not os.path.exists(src_file):
+      raise FileNotFoundError(f"Source file not found: {src_file}")
+    if not os.path.exists(tgt_file):
+      raise FileNotFoundError(f"Target file not found: {tgt_file}")
+    
+    src_dataset = load_flores(src_file)
+    tgt_dataset = load_flores(tgt_file)
+    
+    if len(src_dataset) != len(tgt_dataset):
+      raise ValueError(f"Source and target datasets have different lengths: {len(src_dataset)} vs {len(tgt_dataset)}")
+    
+    print(f"Successfully loaded {len(src_dataset)} sentence pairs for {args.src} -> {args.tgt}")
+    
+    ds = [
+      {
+        "source": src_dataset[i].strip(),
+        "hypothesis": tgt_dataset[i].strip(),
+      } for i in range(len(src_dataset))
+    ]
+    name = "flores_devtest"
+  elif 'BenchMAX' in args.input_file:
+    # Handle benchmax JSON files
+    print(f"Loading benchmax JSON file: {args.input_file}")
+    
+    # Check if file exists
+    if not os.path.exists(args.input_file):
+      raise FileNotFoundError(f"Benchmax file not found: {args.input_file}")
+    
+    ds = load_benchmax_json(args.input_file, args.src, args.tgt)
+    print(f"Successfully loaded {len(ds)} sentence pairs for {args.src} -> {args.tgt}")
+    name = "benchmax"
+  else:
+    ds, name = preprocess_dataset(args.input_file)
+  dirname = args.output_dir
+  if not args.alignment:
+    dirname = os.path.join(dirname, args.model_name + "-" + args.model_size + "-" + args.dtype)
+  else:
+    dirname = os.path.join(dirname, args.model_name + "-" + args.model_size + "-" + args.dtype + "-align")
+  if name != "flores":
+    if name == "benchmax":
+      with open(args.input_file, 'r') as f:
+        data = json.load(f)
+      if data.get('xcomet_score', None) is not None and args.model_name == "XComet":
+        print(f"Benchmax file {args.input_file} already has XComet score. Skipping...")
+        return
+        
+    else:
+      if dirname:
+        os.makedirs(dirname, exist_ok=True)
+      output_file = os.path.join(
+          dirname,
+          f"{args.src}-{args.tgt}.jsonl",
+      )
+      if has_content2(output_file):
+        print(f"Output file {output_file} already exists and is non-empty. Skipping...")
+        return
   dt = datasets.Dataset.from_list(ds)
   dt, data_collator = get_dataset(
       dt,
@@ -531,7 +698,6 @@ def process_single_language_pair(
       device,
       args.qe,
   )
-  
   predictions = get_predictions(dt, model, data_collator, per_device_batch_size, args.model_name, args.output_dir)
   
   if args.alignment:
@@ -543,7 +709,8 @@ def process_single_language_pair(
     src_copy = [src.split() for src in srcs]
     tgt_copy = [tgt.split() for tgt in tgts]
     scores = align_score(src_copy, tgt_copy, align_model, align_tokenizer, batch_size=16)
-    predictions = [prediction + score for prediction, score in zip(predictions, scores)]
+    # import code; code.interact(local=locals())
+    predictions = [prediction + score*25 for prediction, score in zip(predictions, scores)]
   
   if args.lang:
     srcs, tgts = [d['source'] for d in ds], [d['hypothesis'] for d in ds]
@@ -554,13 +721,12 @@ def process_single_language_pair(
     predictions = [min(prediction, score) for prediction, score in zip(predictions, new_score_list)]
   
   # Save results
-  dirname = args.output_dir
-  if not args.alignment:
-    dirname = os.path.join(dirname, args.model_name + "-" + args.model_size + "-" + args.dtype)
-  else:
-    dirname = os.path.join(dirname, args.model_name + "-" + args.model_size + "-" + args.dtype + "-align")
-  
-  if name != "flores":
+  print(f"prediction: {sum(predictions)/len(predictions)}")
+  # import code; code.interact(local=locals())
+  if name == "benchmax":
+    # For benchmax, save results back to the same JSON file
+    save_benchmax_results(args.input_file, ds, predictions, args.model_name)
+  elif name != "flores":
     if dirname:
       os.makedirs(dirname, exist_ok=True)
     output_file = os.path.join(

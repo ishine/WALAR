@@ -1,4 +1,4 @@
-export CUDA_VISIBLE_DEVICES=6,7
+export CUDA_VISIBLE_DEVICES=0,1,2,3
 num_gpus=$(echo "$CUDA_VISIBLE_DEVICES" | awk -F',' '{print NF}')
 ray start --head --node-ip-address 0.0.0.0 --num-gpus ${num_gpus}
 
@@ -25,13 +25,14 @@ path_dict["Llama"]="/mnt/gemini/data1/yifengliu/model/Llama-3.2-3B-Instruct"
 path_dict["Qwen"]="/mnt/gemini/data1/yifengliu/model/Qwen3-4B"
 path_dict["LlamaX"]="/mnt/gemini/data1/yifengliu/model/LLaMAX3-8B-Alpaca"
 
-model="Qwen"
+model="LlamaX"
 src="en"
 tgt="mix-mid2"
-dataname="pure41_en-mix-1m"
+dataname="schedule_mix10k"
 version="3"
-size="4B"
-reward_name="Pure2-QE"
+size="8B"
+schedule=true
+reward_name="schedule1024"
 if [ "${#tgt}" -le 3 ]; then
     evaluation_step=10
 else
@@ -57,18 +58,18 @@ ray job submit --address="http://127.0.0.1:8265" \
     --colocate_all_models \
     --vllm_gpu_memory_utilization 0.6 \
     --ref_reward_offload \
-    --pretrain ${path_dict[$model]} \
+    --pretrain /mnt/gemini/data1/yifengliu/checkpoints/schedule_mix-LlamaX3-8B-schedule_mix-1M-bsz128/global_step1400_hf \
     --remote_rm_url http://localhost:2000/get_reward \
     --remote_comet_url http://localhost:5555/get_reward \
     --micro_train_batch_size 16 \
-    --train_batch_size 128 \
+    --train_batch_size 1024 \
     --micro_rollout_batch_size 16 \
     --rollout_batch_size 128 \
     --n_samples_per_prompt 8 \
     --max_samples 250000 \
     --max_epochs 1 \
-    --prompt_max_len 1024 \
-    --generate_max_len 1024 \
+    --prompt_max_len 512 \
+    --generate_max_len 512 \
     --packing_samples \
     --zero_stage 3 \
     --bf16 \
@@ -80,6 +81,7 @@ ray job submit --address="http://127.0.0.1:8265" \
     --prompt_data /mnt/gemini/data1/yifengliu/qe-lr/data/train/${dataname}.jsonl \
     --src ${src} \
     --tgt ${tgt} \
+    --schedule ${schedule} \
     --eval_dir "/mnt/gemini/data1/yifengliu/data/flores101_dataset/dev" \
     --eval_temperature 0.0 \
     --eval_steps 100000 \
@@ -94,7 +96,7 @@ ray job submit --address="http://127.0.0.1:8265" \
     --temperature 1 \
     --save_steps 50 \
     --save_path /mnt/gemini/data1/yifengliu/checkpoints/final/${reward_name}-${model}${version}-${size}-${dataname}-1M-bsz128 \
-    --ckpt_path /mnt/gemini/data1/yifengliu/checkpoints/Pure2-QE-Qwen3-4B-base_en-mix-mid2-1m-bsz128 \
+    --ckpt_path /mnt/gemini/data1/yifengliu/checkpoints/${reward_name}-${model}${version}-${size}-${dataname}-1M-bsz128 \
     --load_checkpoint \
     --save_hf_ckpt \
     --use_wandb ${wandb_token}\
@@ -104,9 +106,9 @@ ray job submit --address="http://127.0.0.1:8265" \
     --deepspeed_enable_sleep
 
 
-
 # export CUDA_VISIBLE_DEVICES=4,5,6,7
-# ray start --head --node-ip-address 0.0.0.0 --num-gpus 4
+# num_gpus=$(echo "$CUDA_VISIBLE_DEVICES" | awk -F',' '{print NF}')
+# ray start --head --node-ip-address 0.0.0.0 --num-gpus ${num_gpus}
 
 # eval "$(/mnt/gemini/home/yifengliu/miniconda3/bin/conda shell.bash hook)"
 # which python
@@ -129,14 +131,15 @@ ray job submit --address="http://127.0.0.1:8265" \
 # declare -A path_dict
 # path_dict["Llama"]="/mnt/gemini/data1/yifengliu/model/Llama-3.2-3B-Instruct"
 # path_dict["Qwen"]="/mnt/gemini/data1/yifengliu/model/Qwen3-4B"
+# path_dict["LlamaX"]="/mnt/gemini/data1/yifengliu/model/LLaMAX3-8B-Alpaca"
 
 # model="Qwen"
-# src="final"
-# tgt="final"
-# dataname="post_final_mix-320k"
+# src="en"
+# tgt="mix-mid2"
+# dataname="eight_direction41_mix-1m"
 # version="3"
 # size="4B"
-# reward_name="Final"
+# reward_name="eight_directions"
 # if [ "${#tgt}" -le 3 ]; then
 #     evaluation_step=10
 # else
@@ -149,29 +152,31 @@ ray job submit --address="http://127.0.0.1:8265" \
 
 # #--remote_comet_url http://localhost:4000/get_reward \
 # # --pretrain /mnt/gemini/data1/yifengliu/model/Qwen${version}-${size} \
+# # --ckpt_path /mnt/gemini/data1/yifengliu/checkpoints/${reward_name}-${model}${version}-${size}-${dataname}-1M-bsz128 \
 # ray job submit --address="http://127.0.0.1:8265" \
 #     --runtime-env-json='{"working_dir": "/mnt/gemini/data1/yifengliu/qe-lr/openrlhf", "excludes": ["/mnt/gemini/data1/yifengliu/qe-lr/openrlhf/wandb/run-20250726_165454-yl7o7sbx/run-yl7o7sbx.wandb"]}' \
 #     -- python -m openrlhf.cli.train_ppo_ray \
 #     --ref_num_nodes 1 \
-#     --ref_num_gpus_per_node 4 \
+#     --ref_num_gpus_per_node ${num_gpus} \
 #     --actor_num_nodes 1 \
-#     --actor_num_gpus_per_node 4 \
-#     --vllm_num_engines 4 \
+#     --actor_num_gpus_per_node ${num_gpus} \
+#     --vllm_num_engines ${num_gpus} \
 #     --vllm_tensor_parallel_size 1 \
 #     --colocate_all_models \
 #     --vllm_gpu_memory_utilization 0.7 \
-#     --pretrain ${path_dict[$model]} \
+#     --ref_reward_offload \
+#     --pretrain /mnt/gemini/data1/yifengliu/checkpoints/Final-Qwen3-4B-final_mix-160k-1M-bsz128/global_step1000_hf \
 #     --remote_rm_url http://localhost:2000/get_reward \
 #     --remote_comet_url http://localhost:5555/get_reward \
 #     --micro_train_batch_size 16 \
-#     --train_batch_size 128 \
+#     --train_batch_size 64 \
 #     --micro_rollout_batch_size 16 \
 #     --rollout_batch_size 128 \
 #     --n_samples_per_prompt 8 \
-#     --max_samples 200000 \
+#     --max_samples 250000 \
 #     --max_epochs 1 \
-#     --prompt_max_len 1024 \
-#     --generate_max_len 1024 \
+#     --prompt_max_len 2048 \
+#     --generate_max_len 2048 \
 #     --packing_samples \
 #     --zero_stage 3 \
 #     --bf16 \
@@ -185,19 +190,20 @@ ray job submit --address="http://127.0.0.1:8265" \
 #     --tgt ${tgt} \
 #     --eval_dir "/mnt/gemini/data1/yifengliu/data/flores101_dataset/dev" \
 #     --eval_temperature 0.0 \
-#     --eval_steps 10000 \
+#     --eval_steps 100000 \
 #     --eval_n_samples_per_prompt 1\
 #     --input_key input_key \
 #     --apply_chat_template \
 #     --normalize_reward \
-#     --flash_attn \
+#     --ring_attn_size 4 \
+#     --ring_head_stride 4 \
 #     --adam_offload \
 #     --overlap_comm \
 #     --gradient_checkpointing \
 #     --temperature 1 \
-#     --save_steps 40 \
+#     --save_steps 50 \
 #     --save_path /mnt/gemini/data1/yifengliu/checkpoints/final/${reward_name}-${model}${version}-${size}-${dataname}-1M-bsz128 \
-#     --ckpt_path /mnt/gemini/data1/yifengliu/checkpoints/Final-Qwen3-4B-final_mix-160k-1M-bsz128 \
+#     --ckpt_path /mnt/gemini/data1/yifengliu/checkpoints/${reward_name}-${model}${version}-${size}-${dataname}-1M-bsz128 \
 #     --load_checkpoint \
 #     --save_hf_ckpt \
 #     --use_wandb ${wandb_token}\
@@ -205,3 +211,4 @@ ray job submit --address="http://127.0.0.1:8265" \
 #     --enforce_eager \
 #     --vllm_enable_sleep \
 #     --deepspeed_enable_sleep
+

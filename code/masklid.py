@@ -102,8 +102,7 @@ class MaskLID:
         words = self.model.get_line(text)[0]
         words = [w for w in words if w not in ['</s>', '</s>']]
         subword_ids = [self.model.get_subwords(sw)[1] for sw in words]
-        sentence_vector = [np.sum([self.model.get_input_vector(id) for id in sid], axis=0) for sid in subword_ids]
-        # import code; code.interact(local=locals())  
+        sentence_vector = [np.sum([self.model.get_input_vector(id) for id in sid], axis=0) for sid in subword_ids] 
         dict_text = {}
         for i, word in enumerate(words):
             key = f"{i}_{word}"
@@ -220,7 +219,7 @@ class MaskLID:
             prev_text = text
             # mask
             dict_data, dict_masked = self.mask_label_top_k(dict_data, label, beta, alpha)
-
+            # import code; code.interact(local=locals())
             # get the text from the masked text and remained text
             masked_text = ' '.join(x.split('_', 1)[1] for x in dict_masked.keys())
             text = ' '.join(x.split('_', 1)[1] for x in dict_data.keys())

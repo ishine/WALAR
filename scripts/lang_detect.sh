@@ -47,12 +47,16 @@ source_language_list=(
 )
 
 target_language_list=(
-    # "ara" "ces" "dan" "deu" "spa" "fin" "fra" "hrv" "hun" "ind" "ita" "jpn" "kor" "msa" "nld" "nob" "pol" "por" "ron" "rus" "swe" "tha" "tur" "ukr" "vie" "zho_simpl"
+    # 'afr' 'dan' 'nld' 'deu' 'nob' 'swe' 'cat' 'fra' 'glg' 'por' 'ron' 'spa' 'bul' 'rus' 'ita' 'ind' 'msa' 'zho_simpl' 'jpn' 'vie'
     "isl" 
     "ltz" "bel" "ces" "mkd" "pol" "slk" "slv" "ukr" "ben"
     "guj" "hin" "mar" "npi" "pan" "urd" "hye" "ell" "lav" "lit" "fas"
     "cym" "ceb" "tgl" "jav" "ara" "azj" "tur" "uzb" "kan" "mal"
     "tam" "tel" "est" "fin" "hun" "kat" "heb" "khm" "kor" "tha"
+
+    # 'amh' 'azj' 'bel' 'isl' 'jav' 'kan' 'kor' 'kir' 'lit' 'mal'
+    # 'mon' 'mar' 'mya' 'pol' 'pus' 'snd' 'som' 'srp' 'tam' 'tha'
+    # 'tur' 'yor'
 
     # "ben"
     # "guj"
@@ -89,10 +93,14 @@ target_language_list=(
 )
 
 # Input directory for flores files
-# INPUT_DIR="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Qwen3-4B"
+# INPUT_DIR="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Qwen3-4B_thinking"
 # INPUT_DIR="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/final/Final-Qwen3-4B-post_final_mix-320k-1M-bsz128"
 # INPUT_DIR="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Llama-3.2-3B-Instruct"
-INPUT_DIR="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/final/Continue-Final-Llama3.2-3B-post_final_mix-160k-1M-bsz128"
+# INPUT_DIR="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/LLaMAX3-8B-Alpaca"
+INPUT_DIR="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/thinking_training-Qwen3-4B-thinking_mix-1m-1M-bsz128/global_step350_hf_thinking"
+# INPUT_DIR="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/final/Continue-Final-Llama3.2-3B-post_final_mix-160k-1M-bsz128"
+# INPUT_DIR="/mnt/gemini/data1/yifengliu/qe-lr/output/flores_beam/final/Final2-mix-LlamaX3-8B-final_llamax_mix-100k-1M-bsz128"
+# INPUT_DIR="/mnt/gemini/data1/yifengliu/qe-lr/output/flores_beam/final/Final2-mix-LlamaX3-8B-final_llamax_mix-100k-1M-bsz128"
 
 # Convert language lists to comma-separated strings
 SOURCE_LANGUAGES=$(IFS=','; echo "${source_language_list[*]}")

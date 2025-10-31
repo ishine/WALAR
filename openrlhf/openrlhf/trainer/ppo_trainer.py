@@ -14,7 +14,7 @@ from openrlhf.trainer.ppo_utils.experience_maker import RemoteExperienceMaker
 from openrlhf.trainer.ray.launcher import RayActorGroup
 from openrlhf.utils.deepspeed import DeepspeedStrategy
 from openrlhf.utils.logging_utils import init_logger
-from openrlhf.utils.utils import get_tokenizer, remove_pad_token, zero_pad_sequences, lang_dict
+from openrlhf.utils.utils import get_tokenizer, remove_pad_token, zero_pad_sequences, lang_dict, get_src_and_tgt_lang
 from openrlhf.utils.utils import make_back_translation_prompts, get_spBLEU, load_flores_dataset, calculate_bleu_reward
 
 logger = init_logger(__name__)
@@ -36,6 +36,7 @@ class BasePPOTrainer(ABC):
         eval_split: str = "test",
         src: str = "eng",
         tgt: str = "zho_simpl",
+        schedule: bool = False,
         back_translate: bool = False,
         interleave: bool = False,
         **generate_kwargs,
@@ -58,6 +59,7 @@ class BasePPOTrainer(ABC):
         
         self.src = src
         self.tgt = tgt  
+        self.schedule = schedule
         self.back_translate = back_translate
         self.interleave = interleave
 
@@ -370,12 +372,20 @@ class BasePPOTrainer(ABC):
         # Create train dataset
         train_data = train_data.select(range(min(args.max_samples, len(train_data))))
         prompts_dataset = PromptDataset(train_data, self.tokenizer, strategy, input_template=args.input_template)
-        prompts_dataloader = strategy.setup_dataloader(
-            prompts_dataset,
-            args.vllm_generate_batch_size,
-            True,
-            True,
+        if args.schedule:
+            prompts_dataloader = strategy.setup_dataloader(
+                prompts_dataset,
+                args.vllm_generate_batch_size,
+                pin_memory=True,
+                shuffle=False,
         )
+        else:            
+            prompts_dataloader = strategy.setup_dataloader(
+                prompts_dataset,
+                args.vllm_generate_batch_size,
+                pin_memory=True,
+                shuffle=True,
+            )
 
         # Create eval dataset if eval data exists
         if getattr(args, "eval_dataset", None):
@@ -427,6 +437,7 @@ class PPOTrainer(BasePPOTrainer):
         eval_split: str = "test",
         src: str = "eng",
         tgt: str = "zho_simpl",
+        schedule: bool = False,
         back_translate: bool = False,
         interleave: bool = False,
         **generate_kwargs,
@@ -539,29 +550,25 @@ class PPOTrainer(BasePPOTrainer):
                 print(f"rand_prompts: {rand_prompts[0]}")
                 remote_reward_model = self.remote_reward_model
                 if self.back_translate or (self.interleave and steps % 2 == 0):
-                    # print(self.generate_kwargs)
-                    print("Back translating.....")
-                    rollout_samples = self.samples_generator.generate_samples(
-                        rand_prompts, labels, remote_reward_model=remote_reward_model, remote_reward_model2=self.remote_reward_model2, **self.generate_kwargs
-                    )
+                    # print("Back translating.....")
                     # rollout_samples = self.samples_generator.generate_samples(
-                    #     rand_prompts, labels, remote_reward_model=None, remote_reward_model2=None, **self.generate_kwargs
+                    #     rand_prompts, labels, remote_reward_model=remote_reward_model, remote_reward_model2=self.remote_reward_model2, **self.generate_kwargs
                     # )
-                    back_translate_prompts = make_back_translation_prompts(rollout_samples, self.tokenizer, self.pretrain)
-                    print(self.tokenizer.batch_decode(rollout_samples[0].sequences[0]))
-                    print(back_translate_prompts[0])
-                    print(len(rollout_samples), len(back_translate_prompts))
-                    back_translate_samples = self.samples_generator.generate_samples(
-                        back_translate_prompts, [""]*len(back_translate_prompts), remote_reward_model=None, remote_reward_model2=None, n_samples_per_prompt=1, **self.generate_kwargs
-                    )
-                    bleu_reward_list = calculate_bleu_reward(rollout_samples, back_translate_samples, self.tokenizer, self.pretrain)
-                    print([s.rewards for s in rollout_samples[:10]])
-                    for rollout_sample, bleu_reward in zip(rollout_samples, bleu_reward_list):
-                        rollout_sample.info['bleu_reward'] = torch.tensor(bleu_reward).unsqueeze(0)
-                        rollout_sample.rewards = rollout_sample.rewards + bleu_reward / 4 if (rollout_sample.rewards[0][0] != -25) else torch.tensor([[-25.]])
-                        # rollout_sample.info['reward'] = torch.tensor(bleu_reward / 4).unsqueeze(0)
-                        # rollout_sample.info['score'] = torch.tensor(bleu_reward / 4).unsqueeze(0)
-                    print([s.rewards for s in rollout_samples[:10]])
+                    # back_translate_prompts = make_back_translation_prompts(rollout_samples, self.tokenizer, self.pretrain)
+                    # print(self.tokenizer.batch_decode(rollout_samples[0].sequences[0]))
+                    # print(back_translate_prompts[0])
+                    # print(len(rollout_samples), len(back_translate_prompts))
+                    # back_translate_samples = self.samples_generator.generate_samples(
+                    #     back_translate_prompts, [""]*len(back_translate_prompts), remote_reward_model=None, remote_reward_model2=None, n_samples_per_prompt=1, **self.generate_kwargs
+                    # )
+                    # bleu_reward_list = calculate_bleu_reward(rollout_samples, back_translate_samples, self.tokenizer, self.pretrain)
+                    # print([s.rewards for s in rollout_samples[:10]])
+                    # for rollout_sample, bleu_reward in zip(rollout_samples, bleu_reward_list):
+                    #     rollout_sample.info['bleu_reward'] = torch.tensor(bleu_reward).unsqueeze(0)
+                    #     rollout_sample.rewards = rollout_sample.rewards + bleu_reward / 4 if (rollout_sample.rewards[0][0] != -25) else torch.tensor([[-25.]])
+                    # print([s.rewards for s in rollout_samples[:10]])
+                    srcs, tgts = get_src_and_tgt_lang(rand_prompts, self.tokenizer, self.pretrain)
+                    
                 else:
                     print("Normal sampling.......")
                     rollout_samples = self.samples_generator.generate_samples(

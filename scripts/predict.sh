@@ -2,11 +2,14 @@
 cd /mnt/gemini/data1/yifengliu/qe-lr/code
 
 # Default values
-data_name="flores"
-model_name="XComet"
-model_size="xl"  ### model_size can be discarded if your model_name is not XComet or metricX
+# metricX, XComet
+# xxl, xl
+# Xcomet
+data_name="benchmax"
+model_name="metricX" # XComet
+model_size="xxl"  ### model_size can be discarded if your model_name is not XComet or metricX
 dtype="bf16"  ### dtype can be discarded if your model_name is not metricX
-batch_size=6 ### Should be divisible by the number of GPUs
+batch_size=16 ### Should be divisible by the number of GPUs
 
 # Language lists for batch processing
 src_list=()  # Will be populated based on data_name
@@ -66,15 +69,19 @@ process_language_pairs() {
       input_file_pattern="/mnt/gemini/data1/yifengliu/data/low-res"
       ;;
     "flores")
-      # input_file_pattern="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/final/Final-Qwen3-4B-post_final_mix-320k-1M-bsz128"
-      # input_file_pattern="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Qwen3-4B"
-      # input_file_pattern="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Llama-3.2-3B-Instruct"
-      # input_file_pattern="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/LLaMAX3-8B-Alpaca"
-      input_file_pattern="/mnt/gemini/data1/yifengliu/qe-lr/output/flores_beam/final/Final2-mix-LlamaX3-8B-final_llamax_mix-100k-1M-bsz128"
-      # input_file_pattern="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/final/Generalization2-Qwen3-4B-final_tr-mix-1m-1M-bsz128"
-      # input_file_pattern="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/final/Continue-Final-Llama3.2-3B-post_final_mix-160k-1M-bsz128"
-      # input_file_pattern="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/final/Generalization-Qwen3-4B-final_en-mix-1m-1M-bsz128"
-      # input_file_pattern="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Final-Qwen3-4B-final_mix-160k-1M-bsz128/global_step1240_hf"
+      # input_file_pattern="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/final/Final-Qwen3-4B-post_final_mix-320k-1M-bsz128_thinking"
+      input_file_pattern="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Qwen3-4B_thinking"
+      ;;
+      "flores_devtest")
+      input_file_pattern="/mnt/gemini/data1/yifengliu/data/flores101_dataset/devtest"
+      ;;
+      "benchmax")
+      # input_file_pattern="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/Qwen3-4B/flores"
+      input_file_pattern="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/schedule_mix-LlamaX3-8B-schedule_mix-1M-bsz128_global_step150_hf/flores"
+      # input_file_pattern="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/global_step1250_hf/flores"
+      # input_file_pattern="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/LLaMAX3-8B-Alpaca/flores"
+      # input_file_pattern="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/aya-expanse-8b/flores"
+      # input_file_pattern="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/Tower-Plus-9B/flores"
       ;;
   esac
   
@@ -155,7 +162,14 @@ elif [ $data_name == "low-res" ]; then
 elif [ $data_name == "flores" ]; then
   # Use provided language lists or default values
   if [ ${#src_list[@]} -eq 0 ]; then
-    src_list=("eng" "ara" "tur" "hin")  # "ara" commented out as in original
+    src_list=(
+      "eng"
+      # "tur" "hin"
+      # "isl" "ltz" "bel" "ces" "mkd" "pol" "slk" "slv" "ukr" "ben"
+      # "guj" "hin" "mar" "npi" "pan" "urd" "hye" "ell" "lav" "lit" "fas"
+      # "cym" "ceb" "tgl" "jav" "ara" "azj" "tur" "uzb" "kan" "mal"
+      # "tam" "tel" "est" "fin" "hun" "kat" "heb" "khm" "kor" "tha"
+    )  # "ara" commented out as in original
   fi
   if [ ${#tgt_list[@]} -eq 0 ]; then
     tgt_list=(
@@ -163,55 +177,53 @@ elif [ $data_name == "flores" ]; then
       # "guj" "hin" "mar" "npi" "pan" "urd" "hye" "ell" "lav" "lit" "fas"
       # "cym" "ceb" "tgl" "jav" "ara" "azj" "tur" "uzb" "kan" "mal"
       # "tam" "tel" "est" "fin" "hun" "kat" "heb" "khm" "kor" "tha"
-    # "ara" "ces" "dan" "deu" "spa" "fin" "fra" "hrv" "hun" "ind" "ita" "jpn" "kor" "msa" "nld" "nob" "pol" "por" "ron" "rus" "swe" "tha" "tur" "ukr" "vie" "zho_simpl"
+      # "isl"
+      # "eng" "ara" "tur" "hin"
       'afr' 'dan' 'nld' 'deu' 'nob' 'swe' 'cat' 'fra' 'glg' 'por' 'ron' 'spa' 'bul' 'rus' 'ita' 'ind' 'msa' 'zho_simpl' 'jpn' 'vie'
-      # 'afr' 'dan' 'nld' 'deu' 'nob' 'swe' 'cat' 'fra' 'glg' 'por' 'ron' 'spa' 'bul' 'rus' 'ita' 'ind' 'msa' 'zho_simpl' 'jpn'
-      # "isl" "bel" "ces" "ukr" "npi" "urd" "cym" "ceb" "azj" "uzb" "kan" "mal" "tam" "tel" "est" "hun" "kat" "heb" "khm" "kor"
-    # 'amh'
-    # 'azj'
-    # 'bel'
-    # 'isl'
-    # 'jav'
-    # 'kan'
-    # 'kor'
-    # 'kir'
-    # 'lit'
-    # 'mal'
-    # 'mon'
-    # 'mar'
-    # 'mya'
-    # 'pol'
-    # 'pus'
-    # 'snd'
-    # 'som'
-    # 'srp'
-    # 'tam'
-    # 'tha'
-    # 'tur'
-    # 'yor'
-    
-    # "ltz"
-    # "mkd"
-    # "pol"
-    # "srp"
-    # "slk"
-    # "slv"
-    # "ben"
-    # "guj"
-    # "hin"
-    # "mar"
-    # "pan"
-    # "hye"
-    # "ell"
-    # "lav"
-    # "lit"
-    # "fas"
-    # "tgl"
-    # "jav"
-    # "ara"
-    # "tur"
-    # "tam"
-    # "fin"
+
+
+    )
+  fi
+  
+  # Use batch processing
+  process_language_pairs ${#src_list[@]} "${src_list[@]}" "${tgt_list[@]}"
+elif [ $data_name == "flores_devtest" ]; then
+  # Use provided language lists or default values
+  if [ ${#src_list[@]} -eq 0 ]; then
+    src_list=(
+    "mkd" "ita" "por" "ron"
+    # eng,zho_simpl,rus,hin,tur,ara,swh
+    )
+  fi
+  if [ ${#tgt_list[@]} -eq 0 ]; then
+    tgt_list=(
+    'afr' 'amh' 'ara' 'hye' 'asm' 'ast' 'azj' 'bel' 'ben' 'bos' 'bul' 'mya' 'cat' 'ceb' 'zho_simpl' 'hrv' 'ces' 'dan' 
+    'nld' 'eng' 'est' 'tgl' 'fin' 'fra' 'ful' 'glg' 'lug' 'kat' 'deu' 'ell' 'guj' 'hau' 'heb' 'hin' 'hun' 'isl' 'ibo' 
+    'ind' 'gle' 'ita' 'jpn' 'jav' 'kea' 'kam' 'kan' 'kaz' 'khm' 'kor' 'kir' 'lao' 'lav' 'lin' 'lit' 'luo' 'ltz' 'mkd' 
+    'msa' 'mal' 'mlt' 'mri' 'mar' 'mon' 'nob' 'npi' 'nso' 'nya' 'oci' 'ory' 'orm' 'pus' 'fas' 'pol' 'por' 'pan' 'ron' 'rus' 
+    'srp' 'sna' 'snd' 'slk' 'slv' 'som' 'ckb' 'spa' 'swh' 'swe' 'tgk' 'tam' 'tel' 'tha' 'tur' 'ukr' 'umb' 'urd' 'uzb' 
+    'vie' 'cym' 'wol' 'xho' 'yor' 'zul' 'zho_trad'
+    )
+  fi
+  
+  # Use batch processing
+  process_language_pairs ${#src_list[@]} "${src_list[@]}" "${tgt_list[@]}"
+elif [ $data_name == "benchmax" ]; then
+  # Use provided language lists or default values (ISO 2-character codes)
+  if [ ${#src_list[@]} -eq 0 ]; then
+    src_list=(
+      # "en" "ar" "tr" "hi" "ru" "sw" "zh"
+      "en"
+      # 'af' 'am' 'ar' 'hy' 'as' 'ast' 'az' 'be' 'bn' 'bs' 'bg' 'my' 'ca' 'ceb' 'zh' 'zho_trad' 'hr' 'cs' 'da' 'nl' 'en' 'et' 'tl' 'fi' 'fr' 'ff' 'gl' 'lg' 'ka' 'de' 'el' 'gu' 'ha' 'he' 'hi' 'hu' 'is' 'ig' 'id' 'ga' 'it' 'ja' 'jv' 'kea' 'kam' 'kn' 'kk' 'km' 'ko' 'ky' 'lo' 'lv' 'ln' 'lt' 'luo' 'lb' 'mk' 'ms' 'ml' 'mt' 'mi' 'mr' 'mn' 'ne' 'ns' 'no' 'ny' 'oc' 'or' 'om' 'ps' 'fa' 'pl' 'pt' 'pa' 'ro' 'ru' 'sr' 'sn' 'sd' 'sk' 'sl' 'so' 'ku' 'es' 'sw' 'sv' 'tg' 'ta' 'te' 'th' 'tr' 'uk' 'umb' 'ur' 'uz' 'vi' 'cy' 'wo' 'xh' 'yo' 'zu'
+    #  'ig' 'id' 'ga' 'it' 'ja' 'jv' 'kea' 'kam' 'kn' 'kk' 'km' 'ko' 'ky' 'lo' 'lv' 'ln' 'lt' 'luo' 'lb' 'mk' 'ms' 'ml' 'mt' 'mi' 'mr' 'mn' 'ne' 'ns' 'no' 'ny' 'oc' 'or' 'om' 'ps' 'fa' 'pl' 'pt' 'pa' 'ro' 'ru' 'sr' 'sn' 'sd' 'sk' 'sl' 'so' 'ku' 'es' 'sw' 'sv' 'tg' 'ta' 'te' 'th' 'tr' 'uk' 'umb' 'ur' 'uz' 'vi' 'cy' 'wo' 'xh' 'yo' 'zu'
+
+    )
+  fi
+  if [ ${#tgt_list[@]} -eq 0 ]; then
+    tgt_list=(
+      # 'af' 'am' 'ar' 'hy' 'as' 'ast' 'az' 'be' 'bn' 'bs' 'bg' 'my' 'ca' 'ceb' 'zh' 'zho_trad' 'hr' 'cs' 'da' 'nl' 'en' 'et' 'tl' 'fi' 'fr' 'ff' 'gl' 'lg' 'ka' 'de' 'el' 'gu' 'ha' 'he' 'hi' 'hu' 'is' 'ig' 'id' 'ga' 'it' 'ja' 'jv' 'kea' 'kam' 'kn' 'kk' 'km' 'ko' 'ky' 'lo' 'lv' 'ln' 'lt' 'luo' 'lb' 'mk' 'ms' 'ml' 'mt' 'mi' 'mr' 'mn' 'ne' 'ns' 'no' 'ny' 'oc' 'or' 'om' 'ps' 'fa' 'pl' 'pt' 'pa' 'ro' 'ru' 'sr' 'sn' 'sd' 'sk' 'sl' 'so' 'ku' 'es' 'sw' 'sv' 'tg' 'ta' 'te' 'th' 'tr' 'uk' 'umb' 'ur' 'uz' 'vi' 'cy' 'wo' 'xh' 'yo' 'zu'
+      # "en" "ar" "tr" "hi" "ru" "sw" "zh"
+      "ar" "az" "be" "bn" "ceb" "cs" "cy" "el" "fa" "gu" "hi" "hy" "is" "jv" "lb" "lt" "lv" "mk" "mr" "ne" "pa" "sk" "sl" "tl" "tr" "uk" "uz" "uz"
     )
   fi
   

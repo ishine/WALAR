@@ -88,15 +88,38 @@ def merge_entities(tokens):
     return merged
 
 if __name__ == "__main__":
-    lang_code = "en"
+    lang_code = "sw"
     spacy_dict = {
         "en": "en_core_web_sm",
     }
     bound_dict = {
         "ar": (20, 80),
+        "bn": (50, 250),
+        "bs": (10, 110),
+        "bg": (20, 140),
+        "cs": (20, 120),
+        "de": (20, 90),
         "tr": (20, 80),
         "hi": (50, 230),
         "en": (10, 50),
+        "es": (10, 100),
+        "et": (10, 110),
+        "fi": (20, 100),
+        "mk": (30, 120),
+        "id": (10, 100),
+        "hu": (20, 120),
+        "ru": (30, 180),
+        "is": (20, 110),
+        "fr": (10, 120),
+        "it": (20, 100),
+        "nl": (20, 100),
+        "pl": (20, 100),
+        "pt": (20, 100),
+        "ro": (20, 100),
+        "ru": (20, 100),
+        "sw": (20, 100),
+        "uk": (20, 150),
+        "zh": (10, 150),
     }
     ner_model_path_dict = {
         "ar": "/mnt/gemini/data1/yifengliu/model/bert-base-arabic-camelbert-msa-ner",
@@ -119,40 +142,40 @@ if __name__ == "__main__":
         tokens = tokenizer(line)
         if lower_bound <= len(tokens['input_ids']) <= upper_bound:
             new_dataset.append({"src": line.strip(), "data_source": f"wmt24_news_crawl_{lang_code}", "length": len(tokens['input_ids'])})
-        if len(new_dataset) >= 110_0000:
+        if len(new_dataset) >= 10_0000:
         # if len(new_dataset) >= 10000:
             break
-    # new_dataset = new_dataset[:1_0000]
-    if lang_code != "en":
-        ner_model_path = ner_model_path_dict[lang_code]
-        ner_model = pipeline("ner", model=ner_model_path, device=0)
-    else:
-        ner_model = spacy.load(spacy_dict[lang_code])
-    newer_dataset = []
-    # ratio_list = []
-    for i in tqdm(range(len(new_dataset))):
-        data = new_dataset[i]
-        original_length = data['length']
-        data_info = ner_model(data['src'])
-        # import code; code.interact(local=locals())
-        if lang_code != "en":
-            merged_word_info = merge_entities(data_info)
-            word_list = [word_info['word'] for word_info in merged_word_info]
-        else:
-            try:
-                word_list = [ent.text for ent in data_info.ents if ent.label_ in ["PERSON", "ORG", "FAC", "GPE", "LOC", "WORK_OF_ART"]]
-            except:
-                print(f"word_list corrupted")
-                import code; code.interact(local=locals())
-        words = " ".join(word_list)
-        word_tokenized = tokenizer(words)
-        length = len(word_tokenized['input_ids'])
-        # ratio_list.append(length/original_length)
-        if length / original_length < 0.6:
-            newer_dataset.append(data)
-        if len(newer_dataset) == 100_0000:
-            break
+    
+    # if lang_code != "en":
+    #     ner_model_path = ner_model_path_dict[lang_code]
+    #     ner_model = pipeline("ner", model=ner_model_path, device=0)
+    # else:
+    #     ner_model = spacy.load(spacy_dict[lang_code])
+    # newer_dataset = []
+    # # ratio_list = []
+    # for i in tqdm(range(len(new_dataset))):
+    #     data = new_dataset[i]
+    #     original_length = data['length']
+    #     data_info = ner_model(data['src'])
+    #     # import code; code.interact(local=locals())
+    #     if lang_code != "en":
+    #         merged_word_info = merge_entities(data_info)
+    #         word_list = [word_info['word'] for word_info in merged_word_info]
+    #     else:
+    #         try:
+    #             word_list = [ent.text for ent in data_info.ents if ent.label_ in ["PERSON", "ORG", "FAC", "GPE", "LOC", "WORK_OF_ART"]]
+    #         except:
+    #             print(f"word_list corrupted")
+    #             import code; code.interact(local=locals())
+    #     words = " ".join(word_list)
+    #     word_tokenized = tokenizer(words)
+    #     length = len(word_tokenized['input_ids'])
+    #     # ratio_list.append(length/original_length)
+    #     if length / original_length < 0.6:
+    #         newer_dataset.append(data)
+    #     if len(newer_dataset) == 100_0000:
+    #         break
     import code; code.interact(local=locals())
-    # with open(save_path, 'w') as f:
-    #     for data in newer_dataset:
-    #         f.write(json.dumps(data, ensure_ascii=False) + "\n")
+    with open(save_path, 'w') as f:
+        for data in new_dataset:
+            f.write(json.dumps(data, ensure_ascii=False) + "\n")

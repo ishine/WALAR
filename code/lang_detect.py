@@ -128,6 +128,14 @@ def append_error_rate_to_file(file_path: str, error_rate: float):
     with open(file_path, 'a', encoding='utf-8') as f:
         f.write(f"Lang_Error_Rate: {error_rate:.2f}%\n")
 
+def check_file(file_path):
+    """Check if the file already contains a language error rate."""
+    with open(file_path, 'r', encoding='utf-8') as f:
+        lines = f.readlines()
+        for line in lines:
+            if "Lang_Error_Rate: " in line:
+                return True
+    return False
 
 def detect_single_lang_pair(model, input_dir: str, lang_pair: str, output_file: str = None):
     """Detect language for a single language pair."""
@@ -139,7 +147,9 @@ def detect_single_lang_pair(model, input_dir: str, lang_pair: str, output_file: 
     if not os.path.exists(file_path):
         print(f"File not found: {file_path}")
         return
-    
+    if check_file(file_path):
+        print(f"File already contains Lang_Error_Rate: {file_path}")
+        return
     # Process file
     error_rate = process_file(file_path, model, tgt_lang)
     
