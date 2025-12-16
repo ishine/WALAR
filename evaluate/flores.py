@@ -137,14 +137,23 @@ def predict(enable_thinking, model, tokenizer, dataset, sampling_params, lang_pa
         for idx in tqdm(range(0, len(dataset), batch_size), desc="Generating predictions"):
             right_bound = min(idx + batch_size, len(dataset))
             sources = dataset[idx:right_bound]
-            inputs = tokenizer(sources, return_tensors="pt", padding=True)
-            inputs.to("cuda:0")
-            lang_code = lang2long[tgt_lang]
+            inputs = tokenizer(sources, return_tensors="pt", padding=True).to("cuda:0")
+            if tgt_lang == "Chinese":
+                lang_code = "zho_Hans"
+            elif tgt_lang == "Traditional Chinese":
+                lang_code = "zho_Hant"
+            elif tgt_lang == "Persian":
+                lang_code = "pes_Arab"
+            elif tgt_lang == "Filipino":
+                lang_code = "tgl_Latn"
+            else:
+                lang_code = lang2long[tgt_lang]
             print(lang_code)
+            # import code; code.interact(local=locals())
             translated_tokens = model.generate(
-                **inputs, forced_bos_token_id=tokenizer.convert_tokens_to_ids(lang_code), max_length=256
+                **inputs, forced_bos_token_id=tokenizer.convert_tokens_to_ids(lang_code), max_length=128
             )
-            output = tokenizer.batch_decode(translated_tokens, skip_special_tokens=True, model_max_length=256)
+            output = tokenizer.batch_decode(translated_tokens, skip_special_tokens=True, model_max_length=128)
             responses.extend(output)
     return responses
 
@@ -161,9 +170,9 @@ def load_model_and_tokenizer(model_path, tensor_parallel_size):
         tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
     else:
         tokenizer = AutoTokenizer.from_pretrained(
-            model_path, token=True, src_lang="eng_Latn"
+            model_path
         )
-        model = AutoModelForSeq2SeqLM.from_pretrained(model_path, token=True)
+        model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
         model.to("cuda:0")
     return model, tokenizer
 
@@ -223,12 +232,12 @@ def evaluate_single_lang_pair(model_path, data_dir, enable_thinking, model, toke
             return None
         hyps = [hyp.strip() for hyp in hyps]
         refs = [ref.strip() for ref in refs]
-        result = sacrebleu.corpus_bleu(hyps, [refs], tokenize="flores200", force=True).score
+        result = sacrebleu.corpus_bleu(hyps, [refs], tokenize="flores101", force=True).score
         return result
     print(f"Evaluating model {model_path} on {lang_pair}...")
-    # if has_content(output_file):
-    #     print(f"Output file {output_file} already exists and is non-empty. Skipping evaluation.")
-    #     return
+    if has_content(output_file):
+        print(f"Output file {output_file} already exists and is non-empty. Skipping evaluation.")
+        return
     
     sources, references, predictions = evaluate_model(
         enable_thinking,

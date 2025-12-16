@@ -1,6 +1,6 @@
 import json
 import os
-from utils import training_langs, training_langs2, llamax_langs, high_langs, flores_langs, qwen_langs
+from utils import training_langs, training_langs2, llamax_langs, high_langs, flores_langs, qwen_langs, xcomet_support_langs, metricx_support_langs, two2three, three2two
 
 def print_result(file_path):
     bleu_score, xcomet_score = None, None
@@ -70,7 +70,8 @@ if __name__ == "__main__":
     # dir_path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/LLaMAX3-8B-Alpaca"
     # dir_path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/schedule-LlamaX3-8B-schedule-1M-bsz128/global_step400_hf"
     # dir_path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores_beam/final/Final2-mix-LlamaX3-8B-final_llamax_mix-100k-1M-bsz128"
-    dir_path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Llama-3.2-3B-Instruct"
+    # dir_path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Llama-3.2-3B-Instruct"
+    dir_path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/nllb-200-distilled-1.3B"
     # dir_path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/final/Continue-Final-Llama3.2-3B-post_final_mix-160k-1M-bsz128"
     # dir_path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores/new_eight_directions-Qwen3-4B-new_eight_directions_mix-1m-1M-bsz128/global_step300_hf"
     # dir_path = "/mnt/gemini/data1/yifengliu/qe-lr/output/flores_beam/new_eight_directions-LlamaX3-4B-new_eight_directions-llamax-mix-1m-1M-bsz128/global_step250_hf"
@@ -90,8 +91,11 @@ if __name__ == "__main__":
     # tgt_langs_i_care = ["eng"]
     src_langs_i_care = ["ara"]
     # tgt_langs_i_care = training_langs2
-    tgt_langs_i_care = flores_langs 
-    # tgt_langs_i_care = [tgt for tgt in tgt_langs_i_care if tgt not in metricx_not_support_list]
+    # tgt_langs_i_care = flores_langs 
+    tgt_langs_i_care = xcomet_support_langs
+    tgt_langs_i_care = [two2three[lang] for lang in tgt_langs_i_care]
+    # tgt_langs_i_care = [tgt for tgt in tgt_langs_i_care if tgt in xcomet_support_langs]
+    # tgt_langs_i_care = [tgt for tgt in tgt_langs_i_care if tgt != "lao" and tgt != "khm" and tgt != "mya"]
     # tgt_langs_i_care = high_langs
     # tgt_langs_i_care = llamax_langs
     # tgt_langs_i_care = qwen_langs
@@ -118,7 +122,7 @@ if __name__ == "__main__":
     # import code; code.interact(local=locals())
     # print("Average spBLEU: ", sum([float(whole_dict[f"{src_lang}-{tgt}"][0]) for tgt in tgt_langs_i_care])/len(tgt_langs_i_care))
     # print("Average XComet: ", sum([float(whole_dict[f"{src_lang}-{tgt}"][1]) for tgt in tgt_langs_i_care if whole_dict[f"{src_lang}-{tgt}"][1] is not None and tgt not in xcomet_not_support_list])/len([tgt for tgt in tgt_langs_i_care if whole_dict[f"{src_lang}-{tgt}"][1] is not None and tgt not in xcomet_not_support_list]))
-    
+    print(f"{len(tgt_langs_i_care)}")
     key_list = []
     for key, value in whole_dict.items():
         # import code; code.interact(local=locals())

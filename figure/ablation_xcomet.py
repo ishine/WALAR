@@ -5,11 +5,16 @@ plt.rcParams['font.sans-serif'] = ['SimHei']
 plt.rcParams['axes.unicode_minus'] = False
 plt.style.use('seaborn-v0_8')
 
-steps = [0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100]
-qe = [44.58, 55.95, 76.83, 77.18, 77.7, 72.75, 73.01, 85.31, 74.53, 74.39, 74.33, 74.47]
-qe_lang = [44.58, 47.58, 50.64, 51.95, 52.69, 53.57, 54.09, 54.51, 54.77, 55.08, 55.61, 55.51]
-qe_word_align_lang = [44.58, 47.16, 48.66, 49.02, 49.38, 50.37, 51.15, 51.88, 52.03, 54.59, 55.23, 53.38]
+# steps = [0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100]
+# qe = [44.58, 55.95, 76.83, 77.18, 77.7, 72.75, 73.01, 85.31, 74.53, 74.39, 74.33, 74.47]
+# qe_lang = [44.58, 47.58, 50.64, 51.95, 52.69, 53.57, 54.09, 54.51, 54.77, 55.08, 55.61, 55.51]
+# qe_word_align_lang = [44.58, 47.16, 48.66, 49.02, 49.38, 50.37, 51.15, 51.88, 52.03, 54.59, 55.23, 53.38]
 
+
+steps = [0, 200, 400, 600, 800, 1000]
+qe = [71.71, 90.49, 90.36, 89.98, 89.33, 88.76]
+qe_lang = [71.71, 78.39, 0, 80.33, 80.67]
+qe_word_align_lang = [71.71, 77.13, 77.18, 76.92, 77.31, 77.23]
 # 增大图形尺寸
 fig, ax = plt.subplots(figsize=(17, 10))
 
@@ -35,12 +40,12 @@ ax.set_xlabel('Training Steps', fontsize=axis_label_size, fontweight="bold", lab
 ax.set_ylabel('EN-X', fontsize=axis_label_size, fontweight="bold", labelpad=15)
 
 # 坐标轴范围和刻度
-ax.set_xlim(0, 1150)
-ax.set_ylim(40, 90)
-ax.set_xticks(np.arange(0, 1200, 200))
-ax.set_xticklabels(np.arange(0, 1200, 200), fontsize=tick_size, fontweight='bold')  # 增大坐标轴数字
-ax.set_yticks(np.arange(40, 91, 10))
-ax.set_yticklabels(np.arange(40, 91, 10), fontsize=tick_size, fontweight='bold')  # 增大坐标轴数字
+ax.set_xlim(0, 1050)
+ax.set_ylim(70, 100)
+ax.set_xticks(np.arange(0, 1100, 200))
+ax.set_xticklabels(np.arange(0, 1100, 200), fontsize=tick_size, fontweight='bold')  # 增大坐标轴数字
+ax.set_yticks(np.arange(70, 100, 10))
+ax.set_yticklabels(np.arange(70, 100, 10), fontsize=tick_size, fontweight='bold')  # 增大坐标轴数字
 
 # 设置刻度线粗细和长度
 ax.tick_params(axis='both', which='major', width=2.5, length=8)

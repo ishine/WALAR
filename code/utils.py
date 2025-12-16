@@ -251,7 +251,9 @@ high_langs = ['afr', 'dan', 'nld', 'deu', 'nob', 'swe', 'cat', 'fra', 'glg', 'po
 
 llamax_langs = ['amh', 'azj', 'bel', 'isl', 'jav', 'kan', 'kor', 'kir', 'lit', 'mal', 'mon', 'mar', 'pol', 'pus', 'snd', 'som', 'srp', 'tam', 'tha', 'tur', 'yor']
 
-xcomet_support_langs = ["af", "am", "ar", "hy", "as", "az", "be", "bn", "bs", "bg", "my", "ca", "zh", "zho_trad", "hr", "cs", "da", "nl", "en", "et", "tg", "fi", "fr", "gl", "ka", "de", "el", "gu", "ha", "he", "hi", "hu", "is", "id", "ga", "it", "ja", "jv", "ka", "kk", "km", "ko", "ky", "lo", "lv", "lt", "mk", "ms", "ml", "mr", "mn", "ne", "no", "or", "om", "ps", "fa", "pl", "pt", "pa", "ro", "ru", "sr", "sd", "sk", "sl", "so", "es", "sw", "sv", "ta", "te", "th", "tr", "uk", "ur", "uz", "vi", "cy", "xh"]
+xcomet_support_langs = ["af", "am", "ar", "hy", "as", "az", "be", "bn", "bs", "bg", "my", "ca", "zh", "zho_trad", "hr", "cs", "da", "nl", "en", "et", "fi", "fr", "gl", "de", "el", "gu", "ha", "he", "hi", "hu", "is", "id", "ga", "it", "ja", "jv", "ka", "kk", "km", "kn", "ko", "ky", "lo", "lv", "lt", "mk", "ms", "ml", "mr", "mn", "ne", "no", "or", "om", "ps", "fa", "pl", "pt", "pa", "ro", "ru", "sr", "sd", "sk", "sl", "so", "es", "sw", "sv", "ta", "te", "th", "tr", "uk", "ur", "uz", "vi", "cy", "xh"]
+
+metricx_support_langs = ["af", "da", "nl", "de", "is", "lb", "no", "sv", "en", "ca", "fr", "gl", "pt", "ro", "es", "be", "bg", "cs", "mk", "pl", "ru", "sr", "sk", "sl", "uk", "bn", "gu", "hi", "mr", "ne", "pa", "sd", "ur", "hy", "el", "ga", "cy", "it", "lv", "lt", "ps", "ku", "tg", "ceb", "tl", "id", "jv", "ms", "mi", "ig", "ns", "sn", "sw", "umb", "xh", "yo", "zu", "am", "ar", "mt", "so", "az", "kk", "ky", "tr", "uz", "kn", "ml", "ta", "te", "my", "zh", "zh_trad", "et", "fi", "hu", "ka", "ha", "he", "ja", "km", "vi", "ko", "lo", "th", "mn"]
 # we only care about these languages
 long2lang = {
   "afr_Latn": "Afrikaans",

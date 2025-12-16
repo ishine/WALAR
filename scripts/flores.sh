@@ -36,40 +36,38 @@ MODEL_PATH=${model_path[$MODEL_NAME]}
 # SOURCE_LANGUAGES="ara"  # Comma-separated list: "eng,deu,fra"
 # TARGET_LANGUAGES="ben,guj,hin,mar,pan,hye,ell,lav,lit,fas,tgl,jav,ara,tur,tam,fin"  # Comma-separated list
 source_language_list=(
-    "eng"
-    # "ara"
-    # "tur"
-    # "deu"
+    # "ara" "tur" "hin" "rus" "zho_simpl" "swh"
     # "zho_simpl"
     # "hin"
-    # "bul" "ben" "spa" "est" "fra" "hun" 
-    # "ind" "ita" "nld" "por" "rus" "zho_simpl" "deu" 
-    # "ces" "ron" "isl" "pol" "fin" "ukr" "mkd"
-    # "jpn" "kor" "tha" 
-    # "swh" "ell" "heb" "tgl"
-    # "afr" "ell" "jpn" "tha" "tgl" "kor" "swh" "heb"
+
 
     # "isl" "ltz" "bel" "ces" "mkd" "pol" "slk" "slv" "ukr" "ben"
     # "guj" "hin" "mar" "npi" "pan" "urd" "hye" "ell" "lav" "lit" "fas"
     # "cym" "ceb" "tgl" "jav" "ara" "azj" "tur" "uzb" "kan" "mal"
     # "tam" "tel" "est" "fin" "hun" "kat" "heb" "khm" "kor" "tha"
     # "srp"
-)
-# Legacy target_language_list for backward compatibility (will be converted to TARGET_LANGUAGES if not set)
-target_language_list=(
-    # "ceb"
-    # "eng"
-    # "isl" "ltz" "bel" "ces" "mkd" "pol" "slk" "slv" "ukr" "ben"
-    # "guj" "hin" "mar" "npi" "pan" "urd" "hye" "ell" "lav" "lit"
-    # "fas" "cym" "ceb" "tgl" "jav" "ara" "azj" "tur" "uzb" "kan" 
-    # "mal" "tam" "tel" "est" "fin" "hun" "kat" "heb" "kor" "tha"
-
     'afr' 'amh' 'ara' 'hye' 'asm' 'ast' 'azj' 'bel' 'ben' 'bos' 'bul' 'mya' 'cat' 'ceb' 'zho_simpl' 'hrv' 'ces' 'dan' 
     'nld' 'eng' 'est' 'tgl' 'fin' 'fra' 'ful' 'glg' 'lug' 'kat' 'deu' 'ell' 'guj' 'hau' 'heb' 'hin' 'hun' 'isl' 'ibo' 
     'ind' 'gle' 'ita' 'jpn' 'jav' 'kea' 'kam' 'kan' 'kaz' 'khm' 'kor' 'kir' 'lao' 'lav' 'lin' 'lit' 'luo' 'ltz' 'mkd' 
     'msa' 'mal' 'mlt' 'mri' 'mar' 'mon' 'nob' 'npi' 'nso' 'nya' 'oci' 'ory' 'orm' 'pus' 'fas' 'pol' 'por' 'pan' 'ron' 'rus' 
     'srp' 'sna' 'snd' 'slk' 'slv' 'som' 'ckb' 'spa' 'swh' 'swe' 'tgk' 'tam' 'tel' 'tha' 'tur' 'ukr' 'umb' 'urd' 'uzb' 
     'vie' 'cym' 'wol' 'xho' 'yor' 'zul' 'zho_trad'
+)
+# Legacy target_language_list for backward compatibility (will be converted to TARGET_LANGUAGES if not set)
+target_language_list=(
+    "eng" "ara" "tur" "hin" "rus" "zho_simpl" "swh"
+    # "eng"
+    # "isl" "ltz" "bel" "ces" "mkd" "pol" "slk" "slv" "ukr" "ben"
+    # "guj" "hin" "mar" "npi" "pan" "urd" "hye" "ell" "lav" "lit"
+    # "fas" "cym" "ceb" "tgl" "jav" "ara" "azj" "tur" "uzb" "kan" 
+    # "mal" "tam" "tel" "est" "fin" "hun" "kat" "heb" "kor" "tha"
+    
+    # 'afr' 'amh' 'ara' 'hye' 'asm' 'ast' 'azj' 'bel' 'ben' 'bos' 'bul' 'mya' 'cat' 'ceb' 'zho_simpl' 'hrv' 'ces' 'dan' 
+    # 'nld' 'eng' 'est' 'tgl' 'fin' 'fra' 'ful' 'glg' 'lug' 'kat' 'deu' 'ell' 'guj' 'hau' 'heb' 'hin' 'hun' 'isl' 'ibo' 
+    # 'ind' 'gle' 'ita' 'jpn' 'jav' 'kea' 'kam' 'kan' 'kaz' 'khm' 'kor' 'kir' 'lao' 'lav' 'lin' 'lit' 'luo' 'ltz' 'mkd' 
+    # 'msa' 'mal' 'mlt' 'mri' 'mar' 'mon' 'nob' 'npi' 'nso' 'nya' 'oci' 'ory' 'orm' 'pus' 'fas' 'pol' 'por' 'pan' 'ron' 'rus' 
+    # 'srp' 'sna' 'snd' 'slk' 'slv' 'som' 'ckb' 'spa' 'swh' 'swe' 'tgk' 'tam' 'tel' 'tha' 'tur' 'ukr' 'umb' 'urd' 'uzb' 
+    # 'vie' 'cym' 'wol' 'xho' 'yor' 'zul' 'zho_trad'
 
     # benchmax:
     # "hun" "vie" "spa" "ces" "fra" "deu" "rus" "ben" "srp" "kor" "jpn" "ara" "tha" 

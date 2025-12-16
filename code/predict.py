@@ -26,7 +26,7 @@ from tqdm import *
 
 sys.path.insert(0, "/mnt/gemini/data1/yifengliu/qe-lr/code")
 from utils import write_to_file, preprocess_dataset, my_load_dataset, three2two, two2three
-from utils import mm_dict, lang_dict
+from utils import mm_dict, lang_dict, xcomet_support_langs, metricx_support_langs
 import models
 import datasets
 from typing import Optional, Tuple, Union, List
@@ -663,6 +663,10 @@ def process_single_language_pair(
     
     ds = load_benchmax_json(args.input_file, args.src, args.tgt)
     print(f"Successfully loaded {len(ds)} sentence pairs for {args.src} -> {args.tgt}")
+    if args.model_name == "XComet" and ((args.src not in xcomet_support_langs) or (args.tgt not in xcomet_support_langs)):
+      return
+    if args.model_name == "metricX" and ((args.src not in metricx_support_langs) or (args.tgt not in metricx_support_langs)): 
+      return
     name = "benchmax"
   else:
     ds, name = preprocess_dataset(args.input_file)

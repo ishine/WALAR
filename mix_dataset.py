@@ -32,9 +32,7 @@ tgt_lang_dict = {
     'spa': ['amh', 'ara', 'asm', 'azj', 'bel', 'ben', 'bos', 'ceb', 'zho_simpl', 'hrv', 'est', 'tgl', 'fin', 'kat', 'guj', 'hau', 'heb', 'hin', 'hun', 'isl', 'ibo', 'gle', 'jav', 'kea', 'kam', 'kan', 'kaz', 'kir', 'lav', 'lit', 'ltz', 'mal', 'mri', 'mar', 'mon', 'nob', 'npi', 'nya', 'oci', 'ory', 'pus', 'fas', 'pol', 'pan', 'srp', 'sna', 'snd', 'slk', 'slv', 'som', 'swh', 'tgk', 'tam', 'tel', 'tur', 'urd', 'uzb', 'xho', 'yor', 'zul'],
     'tur': ['amh', 'ara', 'azj', 'bel', 'ben', 'ceb', 'zho_simpl', 'ces', 'est', 'tgl', 'fin', 'kat', 'ell', 'guj', 'hau', 'heb', 'hun', 'isl', 'ibo', 'gle', 'jav', 'kan', 'kaz', 'kir', 'lav', 'lit', 'ltz', 'mal', 'mri', 'mar', 'mon', 'nob', 'npi', 'pus', 'fas', 'pol', 'pan', 'srp', 'sna', 'snd', 'slk', 'slv', 'som', 'swh', 'tgk', 'tam', 'urd', 'uzb', 'cym', 'xho', 'yor', 'zul'],
     'ukr': ['amh', 'ara', 'azj', 'ben', 'ceb', 'zho_simpl', 'est', 'fin', 'guj', 'hau', 'hun', 'isl', 'ibo', 'gle', 'jav', 'kan', 'kaz', 'kir', 'ltz', 'mal', 'mri', 'mar', 'mon', 'npi', 'pus', 'pan', 'srp', 'sna', 'snd', 'som', 'swh', 'tam', 'tur', 'urd', 'uzb', 'xho', 'yor', 'zul'],
-    'zho_simpl': ['afr', 'amh', 'ara', 'hye', 'azj', 'bel', 'ben', 'bul', 'ceb', 'ces', 'nld', 'est', 'tgl', 'fin', 'kat', 'deu', 'ell', 'guj', 'hau', 'heb', 'hin', 'hun', 'isl', 'ibo', 'gle', 'ita', 'jav', 'kan', 'kaz', 'kir', 'lav', 'lit', 'ltz', 'mkd', 'msa', 'mal', 'mri', 'mar', 'mon', 'nob', 'npi', 'pus', 'fas', 'pol', 'pan', 'rus', 'srp', 'sna', 'snd', 'slk', 'slv', 'som', 'spa', 'swh', 'swe', 'tgk', 'tam', 'tel', 'tur', 'ukr', 'urd', 'uzb', 'cym', 'xho', 'yor', 'zul'],
-    
-    
+    'zho_simpl': ['afr', 'amh', 'ara', 'hye', 'azj', 'bel', 'ben', 'bul', 'ceb', 'ces', 'nld', 'est', 'tgl', 'fin', 'kat', 'deu', 'ell', 'guj', 'hau', 'heb', 'hin', 'hun', 'isl', 'ibo', 'gle', 'ita', 'jav', 'kan', 'kaz', 'kir', 'lav', 'lit', 'ltz', 'mkd', 'msa', 'mal', 'mri', 'mar', 'mon', 'nob', 'npi', 'pus', 'fas', 'pol', 'pan', 'rus', 'srp', 'sna', 'snd', 'slk', 'slv', 'som', 'spa', 'swh', 'swe', 'tgk', 'tam', 'tel', 'tur', 'ukr', 'urd', 'uzb', 'cym', 'xho', 'yor', 'zul'], 
 }
 
 def load_dataset(path):

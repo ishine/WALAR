@@ -10,6 +10,7 @@ calculating the rate of non-target language detection.
 import json
 import os
 import argparse
+import re
 import fasttext
 from typing import List, Dict, Tuple, Optional
 from collections import Counter
@@ -17,7 +18,7 @@ from dataclasses import dataclass, field
 
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'code')))
-from utils import lang_dict, mm_dict
+from utils import lang_dict, mm_dict, long2lang, three2two
 
 @dataclass
 class LanguageDetectionArguments:
@@ -52,6 +53,26 @@ class LanguageDetectionArguments:
         default=None,
         metadata={"help": "Path to save detection results for single language pair"}
     )
+    use_glotlid: bool = field(
+        default=False,
+        metadata={"help": "Whether to run detection with the glotLID FastText model outputs"}
+    )
+    glotlid_model_path: Optional[str] = field(
+        default="/mnt/gemini/data1/yifengliu/model/models--cis-lmu--glotlid/snapshots/74cb50b709c9eefe0f790030c6c95c461b4e3b77/model.bin",
+        metadata={"help": "Path to the glotLID FastText model (used when --use_glotlid is set)"}
+    )
+    benchmax_file: Optional[str] = field(
+        default=None,
+        metadata={"help": "Path to BenchMAX style JSON result (e.g., result_en-zh.json)"}
+    )
+    benchmax_target_language: Optional[str] = field(
+        default=None,
+        metadata={"help": "Target language code for BenchMAX result (overrides auto-detected code from filename)"}
+    )
+    benchmax: bool = field(
+        default=False,
+        metadata={"help": "Enable BenchMAX directory mode (iterate result_<src>-<tgt>.json using lang lists)"}
+    )
 
 
 def load_dataset(path: str) -> List[str]:
@@ -82,7 +103,55 @@ def detect_language(text: str, model) -> str:
     return lang_label
 
 
-def process_file(file_path: str, model, target_language: str) -> float:
+def map_predicted_language(label: str, use_glotlid: bool) -> str:
+    """Map a FastText label to a human-readable language name."""
+    cleaned_label = label.replace("__label__", "")
+    if use_glotlid:
+        # glotLID labels are long form like eng_Latn
+        return (
+            long2lang.get(cleaned_label)
+            or lang_dict.get(cleaned_label)
+            or mm_dict.get(cleaned_label, cleaned_label)
+        )
+    return (
+        mm_dict.get(cleaned_label)
+        or lang_dict.get(cleaned_label)
+        or long2lang.get(cleaned_label, cleaned_label)
+    )
+
+
+def convert_to_two_letter(code: str) -> str:
+    """Convert ISO code (two or three letters) to a two-letter code as required for BenchMAX filenames."""
+    if code is None:
+        raise ValueError("Language code cannot be None when converting to two-letter format.")
+    stripped = code.strip()
+    lowered = stripped.lower()
+    if len(lowered) == 2:
+        return lowered
+    mapped = three2two.get(lowered)
+    if mapped:
+        return mapped
+    raise ValueError(f"Unable to convert language code '{code}' to two-letter format required for BenchMAX.")
+
+
+def normalize_target_language(code: Optional[str]) -> Optional[str]:
+    """Convert a target language code to the English name used by detection outputs."""
+    if code is None:
+        return None
+    stripped = code.strip()
+    lowered = stripped.lower()
+    return (
+        lang_dict.get(stripped)
+        or lang_dict.get(lowered)
+        or mm_dict.get(stripped)
+        or mm_dict.get(lowered)
+        or long2lang.get(stripped)
+        or long2lang.get(lowered)
+        or stripped
+    )
+
+
+def process_file(file_path: str, model, target_language: str, use_glotlid: bool = False) -> float:
     """
     Process a single file and return language detection error rate.
     
@@ -107,10 +176,10 @@ def process_file(file_path: str, model, target_language: str) -> float:
     tgts = [tgt.replace("\n", "") for tgt in tgts]
     lang_info = model.predict(tgts)
     cnt = 0
-    target_language = lang_dict.get(target_language, target_language)
+    target_language = normalize_target_language(target_language)
     for language in lang_info[0]:
-        lang_code = language[0].replace("__label__", "")
-        pred_lang = mm_dict.get(lang_code, "")
+        label = language[0] if isinstance(language, (list, tuple)) else language
+        pred_lang = map_predicted_language(label, use_glotlid)
         if pred_lang != target_language:
             cnt += 1
         
@@ -137,7 +206,7 @@ def check_file(file_path):
                 return True
     return False
 
-def detect_single_lang_pair(model, input_dir: str, lang_pair: str, output_file: str = None):
+def detect_single_lang_pair(model, input_dir: str, lang_pair: str, output_file: str = None, use_glotlid: bool = False):
     """Detect language for a single language pair."""
     src_lang, tgt_lang = lang_pair.split("-")
     
@@ -151,7 +220,7 @@ def detect_single_lang_pair(model, input_dir: str, lang_pair: str, output_file: 
         print(f"File already contains Lang_Error_Rate: {file_path}")
         return
     # Process file
-    error_rate = process_file(file_path, model, tgt_lang)
+    error_rate = process_file(file_path, model, tgt_lang, use_glotlid=use_glotlid)
     
     # Append error rate to file
     append_error_rate_to_file(file_path, error_rate)
@@ -164,7 +233,7 @@ def detect_single_lang_pair(model, input_dir: str, lang_pair: str, output_file: 
     #         f.write(f"Lang_Error_Rate: {error_rate:.2f}%\n")
 
 
-def detect_multiple_lang_pairs(model, input_dir: str, source_languages: str, target_languages: str, output_dir: str = None):
+def detect_multiple_lang_pairs(model, input_dir: str, source_languages: str, target_languages: str, output_dir: str = None, use_glotlid: bool = False):
     """Detect language for multiple language pairs."""
     # Parse language lists
     src_langs = [lang.strip() for lang in source_languages.split(',')]
@@ -186,8 +255,94 @@ def detect_multiple_lang_pairs(model, input_dir: str, source_languages: str, tar
         
         detect_single_lang_pair(
              model, input_dir,
-            lang_pair, output_file
+            lang_pair, output_file,
+            use_glotlid=use_glotlid
         )
+
+
+def infer_lang_pair_from_filename(path: str) -> Tuple[Optional[str], Optional[str]]:
+    """Try to infer (source, target) from filenames like result_en-zh.json."""
+    filename = os.path.basename(path)
+    match = re.search(r"result_([A-Za-z]+)-([A-Za-z_]+)", filename)
+    if match:
+        return match.group(1), match.group(2)
+    return None, None
+
+
+def detect_benchmax_file(model, benchmax_file: str, target_language: str, use_glotlid: bool = False):
+    """Process BenchMAX style result JSON and append Lang Consistency score."""
+    if not os.path.exists(benchmax_file):
+        raise FileNotFoundError(f"BenchMAX file not found: {benchmax_file}")
+
+    with open(benchmax_file, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    outputs = data.get("outputs", [])
+    if not outputs:
+        print(f"No outputs found in {benchmax_file}. Skipping language detection.")
+        return
+    try:
+        lang_info = model.predict(outputs)
+    except:
+        outputs = [output['text'] for output in outputs]
+        # import code; code.interact(local=locals())
+        lang_info = model.predict(outputs)
+    # import code; code.interact(local=locals())
+    total_samples = len(outputs)
+    target_language = normalize_target_language(target_language)
+
+    mismatch = 0
+    for language in lang_info[0]:
+        label = language[0] if isinstance(language, (list, tuple)) else language
+        pred_lang = map_predicted_language(label, use_glotlid)
+        if pred_lang not in target_language:
+            mismatch += 1
+
+    consistency = ((total_samples - mismatch) / total_samples) * 100 if total_samples > 0 else 0.0
+    data["Lang Consistency"] = round(consistency, 2)
+
+    with open(benchmax_file, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+    print(f"{benchmax_file}: Lang Consistency = {consistency:.2f}%")
+
+
+def detect_benchmax_from_dir(
+    model,
+    benchmax_dir: str,
+    source_languages: str,
+    target_languages: str,
+    use_glotlid: bool = False,
+):
+    """Iterate BenchMAX directory files using lang lists."""
+    if not os.path.isdir(benchmax_dir):
+        raise ValueError(f"BenchMAX directory not found: {benchmax_dir}")
+
+    src_langs = [lang.strip() for lang in source_languages.split(',') if lang.strip()]
+    tgt_langs = [lang.strip() for lang in target_languages.split(',') if lang.strip()]
+    if not src_langs or not tgt_langs:
+        raise ValueError("Both source_languages and target_languages must be provided in BenchMAX mode.")
+
+    processed_files = 0
+    for src in src_langs:
+        src_code = convert_to_two_letter(src)
+        for tgt in tgt_langs:
+            tgt_code = convert_to_two_letter(tgt)
+            file_name = f"result_{src_code}-{tgt_code}.json"
+            file_path = os.path.join(benchmax_dir, file_name)
+            if not os.path.exists(file_path):
+                print(f"[BenchMAX] Skipping missing file: {file_path}")
+                continue
+            detect_benchmax_file(
+                model,
+                file_path,
+                tgt_code,
+                use_glotlid=use_glotlid,
+            )
+            processed_files += 1
+
+    if processed_files == 0:
+        print("[BenchMAX] No files processed. Please verify language codes (two-letter) and directory contents.")
 
 
 def main():
@@ -195,17 +350,32 @@ def main():
     parser = transformers.HfArgumentParser(LanguageDetectionArguments)
     args = parser.parse_args_into_dataclasses()[0]
     
-    # Load FastText model
-    model = fasttext.load_model(args.model_path)
+    # Load FastText model (glotLID override when requested)
+    model_path = args.glotlid_model_path if args.use_glotlid and args.glotlid_model_path else args.model_path
+    model = fasttext.load_model(model_path)
     
-    # Determine detection mode
+
+    if args.benchmax:
+        if not args.input_dir:
+            raise ValueError("BenchMAX mode requires --input_dir pointing to the BenchMAX output directory.")
+        detect_benchmax_from_dir(
+            model,
+            args.input_dir,
+            args.source_languages or "",
+            args.target_languages or "",
+            use_glotlid=args.use_glotlid,
+        )
+        return
+
+    # Determine detection mode for legacy flows
     if args.lang_pair:
         # Single language pair mode
         detect_single_lang_pair(
             model,
             args.input_dir,
             args.lang_pair,
-            args.output_file
+            args.output_file,
+            use_glotlid=args.use_glotlid
         )
     elif args.source_languages and args.target_languages:
         # Multiple language pairs mode
@@ -214,7 +384,8 @@ def main():
             args.input_dir,
             args.source_languages,
             args.target_languages,
-            args.output_dir
+            args.output_dir,
+            use_glotlid=args.use_glotlid
         )
     else:
         raise ValueError("Either lang_pair or both source_languages and target_languages must be provided")

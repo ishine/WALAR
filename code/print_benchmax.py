@@ -1,7 +1,7 @@
 import json
 import os
 from typing import Any, Dict, List, Optional, Tuple
-from utils import training_langs, training_langs2, llamax_langs, high_langs, flores_langs, qwen_langs, xcomet_support_langs
+from utils import training_langs, training_langs2, llamax_langs, high_langs, flores_langs, qwen_langs, xcomet_support_langs, metricx_support_langs
 
 
 def _find_key_recursively(obj: Any, target_key: str) -> Optional[Any]:
@@ -50,53 +50,58 @@ def iter_result_files(dir_path: str) -> List[Tuple[str, str, str]]:
     return results
 
 if __name__ == "__main__":
-    # dir_path = "/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/global_step550_hf/flores"
-    dir_path = "/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/schedule_mix-LlamaX3-8B-schedule_mix-1M-bsz128_global_step1050_hf/flores"
-    # dir_path = "/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/schedule_mix-LlamaX3-8B-schedule_mix-1M-bsz128_global_step950_hf/flores"
     # dir_path = "/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/Final2-mix-LlamaX3-8B-final_llamax_mix-100k-1M-bsz128/flores"
     # dir_path = "/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/final_Final2-mix-LlamaX3-8B-final_llamax_mix-100k-1M-bsz128/flores"
-    # dir_path = "/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/schedule_no_pl-LlamaX3-8B-schedule_no_pl-1M-bsz128_global_step50_hf/flores"
     # dir_path = "/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/LLaMAX3-8B-Alpaca/flores"
+    dir_path = "/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/schedule1024-LlamaX3-8B-schedule_mix10k-1M-bsz128_global_step1800_hf/flores"
+    # dir_path = "/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/pure_qe-LlamaX3-8B-schedule_mix10k-1M-bsz128_global_step800_hf/flores"
+    # dir_path = "/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/qe+lang_detect-LlamaX3-8B-schedule_mix10k-1M-bsz128_global_step1000_hf/flores"
+    # dir_path = "/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/schedule-LlamaX3-8B-schedule-1M-bsz128_global_step800_hf/flores"
+    # dir_path = "/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/schedule_mix-LlamaX3-8B-schedule_mix-1M-bsz128_global_step150_hf/flores"
     # dir_path = "/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/aya-expanse-8b/flores"
-    # dir_path = "/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/bsz1536_schedule-llamax3-8B-schedule_mix2-bsz128_global_step200_hf/flores"
-    # dir_path = "/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/aya-expanse-8b/flores"
+    # dir_path = "/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/aya-expanse-32b/flores"
     # dir_path = "/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/Tower-Plus-9B/flores"
     # dir_path = "/mnt/gemini/data1/yatish/BenchMAX/tasks/translation/output/LLaMAX3-8B-Alpaca/flores/flores"
-    # dir_path = "/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/schedule_reward-LlamaX3-8B-schedule_no_pl-1M-bsz128_global_step550_hf/flores"
     # dir_path = "/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/Llama-3.2-3B-Instruct/flores"
     # dir_path = "/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/schedule-LlamaX3-8B-schedule-1M-bsz128_global_step550_hf/flores"
     # dir_path = "/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/final_Continue-Final-Llama3.2-3B-post_final_mix-160k-1M-bsz128/flores"
     # Leave these as None to use all available pairs discovered from filenames
     # Otherwise, set to lists like ["en", "ar"] using codes as in the filenames
-    src_langs_i_care: Optional[List[str]] = ["en"]
-    tgt_langs_i_care: Optional[List[str]] = ["ar", "az", "be", "bn", "ceb", "cs", "cy", "el", "fa", "gu", "hi", "hy", "is", "jv", "lb", "lt", "lv", "mk", "mr", "ne", "pa", "sk", "sl", "tl", "tr", "uk", "uz", "uz"]
+    # src_langs_i_care: Optional[List[str]] = ["en"] # az, ne
+    # tgt_langs_i_care: Optional[List[str]] = ["zh", "ja", "de", "es", "fr", "ru"]
+    # tgt_langs_i_care: Optional[List[str]] = ["ar", "az", "be", "bn", "ceb", "cs", "cy", "el", "fa", "gu", "hi", "hy", "is", "jv", "lb", "lt", "lv", "mk", "mr", "ne", "pa", "sk", "sl", "tl", "tr", "uk", "uz", "uz"]
     # tgt_langs_i_care: Optional[List[str]] = ["zh", "kn","is","lb","be","cs","mk","sk","sl","uk","bn","gu","hi","mr","ne","pa","ur","hy","el","lv","lt","fa","cy","ceb","tl","jv","ar","az","tr","uz"]  # e.g., ["ar", "az", "uk"]
     # tgt_langs_i_care: Optional[List[str]] = ["ar", "bn", "cs", "de", "es", "fr", "hu", "ja", "ko", "ru", "sr", "sw", "te", "th", "vi", "zh"]
     # tgt_langs_i_care: Optional[List[str]] = ['af','am','ar','hy','as','ast','az','be','bn','bs','bg','my','ca','ceb','zh','zho_trad','hr','cs','da','nl','en','et','tl','fi','fr','ff','gl','lg','ka','de','el','gu','ha','he','hi','hu','is','ig','id','ga','it','ja','jv','kea','kam','kn','kk','km','ko','ky','lo','lv','ln','lt','luo','lb','mk','ms','ml','mt','mi','mr','mn','ne','ns','no','ny','oc','or','om','ps','fa','pl','pt','pa','ro','ru','sr','sn','sd','sk','sl','so','ku','es','sw','sv','tg','ta','te','th','tr','uk','umb','ur','uz','vi','cy','wo','xh','yo','zu']
-    # tgt_langs_i_care: Optional[List[str]] = ["is", "lb", "be", "cs", "mk", "sk", "sl", "uk", "bn", "gu", "hi", "mr", "ne", "pa", "ur", "hy", "el", "lv", "lt", "fa", "cy", "ceb", "tl", "jv", "ar", "az", "tr", "uz"]
 
-    # src_langs_i_care: Optional[List[str]] = ['af','am','ar','hy','as','ast','az','be','bn','bs','bg','my','ca','ceb','zh','zho_trad','hr','cs','da','nl','en','et','tl','fi','fr','ff','gl','lg','ka','de','el','gu','ha','he','hi','hu','is','ig','id','ga','it','ja','jv','kea','kam','kn','kk','km','ko','ky','lo','lv','ln','lt','luo','lb','mk','ms','ml','mt','mi','mr','mn','ne','ns','no','ny','oc','or','om','ps','fa','pl','pt','pa','ro','ru','sr','sn','sd','sk','sl','so','ku','es','sw','sv','tg','ta','te','th','tr','uk','umb','ur','uz','vi','cy','wo','xh','yo','zu']
+    src_langs_i_care: Optional[List[str]] = ['af','am','ar','hy','as','ast','az','be','bn','bs','bg','my','ca','ceb','zh','zho_trad','hr','cs','da','nl','en','et','tl','fi','fr','ff','gl','lg','ka','de','el','gu','ha','he','hi','hu','is','ig','id','ga','it','ja','jv','kea','kam','kn','kk','km','ko','ky','lo','lv','ln','lt','luo','lb','mk','ms','ml','mt','mi','mr','mn','ne','ns','no','ny','oc','or','om','ps','fa','pl','pt','pa','ro','ru','sr','sn','sd','sk','sl','so','ku','es','sw','sv','tg','ta','te','th','tr','uk','umb','ur','uz','vi','cy','wo','xh','yo','zu']
     # src_langs_i_care: Optional[List[str]] = ["ar", "bn", "cs", "de", "es", "fr", "hu", "ja", "ko", "ru", "sr", "sw", "te", "th", "vi", "zh"]
-    # tgt_langs_i_care: Optional[List[str]] = ["zh"]
+    tgt_langs_i_care: Optional[List[str]] = ["ne"]
     results_by_pair: Dict[str, Optional[float]] = {}
-    key = "metricx_score"
-    # key="xcomet_score"
+    # key = "Lang Consistency"
+    # key = "metricx_score"
+    key = "xcomet_score"
     # key = "spBLEU"
     print(dir_path)
     print(f"Direction\t{key}")
     # import code; code.interact(local=locals())
+    check_list = []
     for src, tgt, path in iter_result_files(dir_path):
         if src_langs_i_care is not None and src not in src_langs_i_care:
             continue
         if tgt_langs_i_care is not None and tgt not in tgt_langs_i_care:
             continue
-        if tgt not in xcomet_support_langs:
+        if key == "xcomet_score" and (tgt not in xcomet_support_langs or src not in xcomet_support_langs):
+            continue
+        if key == "metricx_score" and (tgt not in metricx_support_langs or src not in metricx_support_langs):
             continue
         score = read_spbleu_from_json(path, key)
         pair_key = f"{src}-{tgt}"
         results_by_pair[pair_key] = score
+        if score is not None: 
+            check_list.append(tgt)
         print(f"{pair_key}\t{score if score is not None else ''}")
-
+    # import code; code.interact(local=locals())
     print("\n" + "=" * 50)
     print("STATISTICS")
     print("=" * 50)

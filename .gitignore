@@ -1,14 +1,25 @@
-data/
-output/
-config/
+# data/
+# output/
+# config/
 
-data/train/base_en-zh-1m.parquet
-data/train/base_en-sw-1m.jsonl
-data/train/base_en-zh-1m.jsonl
+# data/train/base_en-zh-1m.parquet
+# data/train/base_en-sw-1m.jsonl
+# data/train/base_en-zh-1m.jsonl
 
-code/gemba.py
+# code/gemba.py
 
-logs/
-wandb/
-__pycache__/
-*.pyc
+# logs/
+# wandb/
+# __pycache__/
+# *.pyc
+
+*
+
+!code/lang_detect.py
+!code/predict.py
+!openrlhf/
+!scripts/benchmax.sh
+!scripts/lang_detect.sh
+!scripts/predict.sh
+!scripts/serve_rm.sh
+!README.md

@@ -183,16 +183,6 @@ class Arguments:
       metadata={"help": "Rule to use \\n as a reward or not"}
   )
   
-  truncate: bool = dataclasses.field(
-    default=False,
-    metadata={"help": "Truncate the reward or not"}
-  )
-  
-  bleu: bool = dataclasses.field(
-    default=False,
-    metadata={"help": "Enable BLEU metric"}
-  )
-  
   align: bool = dataclasses.field(
     default=False,
     metadata={"help": "Enable alignment model"}
@@ -231,16 +221,6 @@ class Arguments:
   use_ms: bool = dataclasses.field(
       default=False,
       metadata={"help": "Enable ModelScope usage"}
-  )
-  
-  src: str = dataclasses.field(
-      default="en",
-      metadata={"help": "Source language for translation"}
-  )
-  
-  tgt: str = dataclasses.field(
-      default="zh",
-      metadata={"help": "Target language for translation"}
   )
 
 def get_dataset(
@@ -331,34 +311,8 @@ def get_dataset(
 
   return ds
 
-def get_spBLEU(hyps, refs):
-    if len(hyps) != len(refs):
-        return None
-    hyps = [hyp.strip() for hyp in hyps]
-    refs = [ref.strip() for ref in refs]
-    result = sacrebleu.corpus_bleu(hyps, [refs], tokenize="spm", force=True).score
-    return result
 
-def simple_align(srcs, tgts, aligner):
-  align_score_list = []
-  for i in tqdm(range(len(srcs))):
-    src_sentence = srcs[i]
-    trg_sentence = tgts[i]
-
-    # The output is a dictionary with different matching methods.
-    # Each method has a list of pairs indicating the indexes of aligned words (The alignments are zero-indexed).
-    alignments = aligner.get_word_aligns(src_sentence, trg_sentence)
-    # import code; code.interact(local=locals())
-    src_words = set({t[0]: t for t in sorted(alignments['mwmf'])}.values())
-    tgt_words = set({t[1]: t for t in sorted(alignments['mwmf'])}.values())
-
-    precision = min(len(tgt_words) / len(trg_sentence), 1)
-    recall = min(len(src_words) / len(src_sentence), 1)
-    f1 = 2 * precision * recall / (precision + recall)
-    align_score_list.append(f1)
-  return align_score_list
-
-def align_score(srcs, tgts, target_languages, model, tokenizer, lang_detect_model, batch_size=16):
+def align_score(srcs, tgts, model, tokenizer, batch_size=16):
     align_score_list = []
     align_layer = 24
     threshold = 1e-3
@@ -374,31 +328,11 @@ def align_score(srcs, tgts, target_languages, model, tokenizer, lang_detect_mode
     # 预处理所有数据
     for i in tqdm(range(len(srcs))):
         sent_src, sent_tgt = srcs[i], tgts[i]
-        tgt_lang = target_languages[i]
+        
         # 同时处理源语言和目标语言
         token_src = [tokenizer.tokenize(word) for word in sent_src]
         token_tgt = [tokenizer.tokenize(word) for word in sent_tgt]
-        temp_tgt = " ".join([" ".join(token) for token in token_tgt])
-        ans = lang_detect_model.predict_codeswitch(temp_tgt, beta = 20 , alpha = 3, max_lambda = 4, min_length = 10, min_prob = 0.90, max_retry=3, alpha_step_increase = 3, beta_step_increase = 5)
-        ans = {key.replace("__label__", ""): value for key, value in ans.items()}
-        long_lang_id = lang2long.get(tgt_lang, None)
-        if long_lang_id is None:
-            raise ValueError(f"Language code {tgt_lang} not found in lang2long.")
-        lang_translation = ans.get(long_lang_id, None)
-        if lang_translation is None:
-            lang_translation = ""
-        if i <= 2:
-          print(lang_translation)
-        translation_set = set(lang_translation.split())
-
-        # 过滤 token_tgt
-        token_tgt = [
-            [token for token in sublist if token in translation_set]
-            for sublist in token_tgt
-            if any(token in translation_set for token in sublist)  # 确保子列表不为空
-        ]
-        if i <= 2:
-          print(token_tgt)
+        
         # 转换为ID
         wid_src = [tokenizer.convert_tokens_to_ids(x) for x in token_src]
         wid_tgt = [tokenizer.convert_tokens_to_ids(x) for x in token_tgt]
@@ -695,26 +629,6 @@ class RewardModelProxy:
         extra_logs = {}
         extra_logs['metric_score'] = sum(scores) / len(scores)
           
-        if self.args.truncate:
-          self.length_tokenizer = AutoTokenizer.from_pretrained("/mnt/gemini/data1/yifengliu/model/Qwen3-4B")
-          src_length = self.length_tokenizer(srcs)['input_ids']
-          tgt_length = self.length_tokenizer(tgts)['input_ids']
-      
-          ratio_list = [len(tgt)/len(src) for src, tgt in zip(src_length, tgt_length)]
-          new_score_list = [float('inf') if (1.3 <= ratio <= 3) else self.min_reward for ratio in ratio_list]
-          scores = [min(score, new_score) for score, new_score in zip(scores, new_score_list)]
-        if self.args.bleu:
-          bleu_score_list = []
-          for tgt, label in zip(tgts, labels):
-            print(f"tgt: {tgt}")
-            print(f"label: {label}")
-            bleu_score = get_spBLEU([tgt], [label])
-            bleu_score_list.append(bleu_score)
-          print(f"bleu_score_list: {bleu_score_list}")
-          scores = [4*score + bleu for score, bleu in zip(scores, bleu_score_list)]
-          print(f"scores: {scores}")
-          extra_logs['mean_bleu_score'] = sum(bleu_score_list) / len(bleu_score_list)
-          
         if self.args.align:
           print(srcs[0])
           print(tgts[0])
@@ -728,26 +642,27 @@ class RewardModelProxy:
             target_languages = [re.search(pattern, query).group(2).strip() for query in queries if re.search(pattern, query)]
             
           tgts = [tgt.replace("\n", "") for tgt in tgts]
-          # if self.args.masklid:
-          #   new_tgts = []
-          #   for tgt, tgt_lang in zip(tgts, target_languages):
-          #     ans = self.lang_detect_model.predict_codeswitch(tgt, beta = 20 , alpha = 3, max_lambda = 3, min_length = 10, min_prob = 0.90, max_retry=3, alpha_step_increase = 3, beta_step_increase = 5)
-          #     ans = {key.replace("__label__", ""): value for key, value in ans.items()}
-          #     long_lang_id = lang2long.get(tgt_lang, None)
-          #     if long_lang_id is None:
-          #       print(f"Language {tgt_lang} not found in lang2long.")
-          #       raise ValueError(f"Language code {tgt_lang} not found in lang2long.")
-          #     lang_translation = ans.get(long_lang_id, None)
-          #     # print(tgt_lang, long_lang_id, ans, lang_translation)
-          #     if lang_translation is None:
-          #       lang_translation = ""
-          #     new_tgts.append(lang_translation)
-          #   tgts = new_tgts
+          if self.args.masklid:
+            new_tgts = []
+            for tgt, tgt_lang in zip(tgts, target_languages):
+              ans = self.lang_detect_model.predict_codeswitch(tgt, beta = 20 , alpha = 3, max_lambda = 3, min_length = 10, min_prob = 0.90, max_retry=3, alpha_step_increase = 3, beta_step_increase = 5)
+              ans = {key.replace("__label__", ""): value for key, value in ans.items()}
+              long_lang_id = lang2long.get(tgt_lang, None)
+              if long_lang_id is None:
+                print(f"Language {tgt_lang} not found in lang2long.")
+                raise ValueError(f"Language code {tgt_lang} not found in lang2long.")
+              lang_translation = ans.get(long_lang_id, None)
+              # print(tgt_lang, long_lang_id, ans, lang_translation)
+              if lang_translation is None:
+                lang_translation = ""
+              new_tgts.append(lang_translation)
+            tgts = new_tgts
               
           src_sentences = zh_tokenize(source_languages, srcs, self.han)
           tgt_sentences = zh_tokenize(target_languages, tgts, self.han)
-          align_score_list = align_score(src_sentences, tgt_sentences, target_languages, self.align_model, self.align_tokenizer, self.lang_detect_model)
-          # align_score_list = simple_align(srcs, tgts, self.aligner)
+          # align_score_list = align_score(src_sentences, tgt_sentences, target_languages, self.align_model, self.align_tokenizer, self.lang_detect_model)
+          align_score_list = align_score(src_sentences, tgt_sentences, self.align_model, self.align_tokenizer)
+          
           align_score_list = [score*25 for score in align_score_list]
           print(align_score_list[:20])
           scores = [score + align_score for score, align_score in zip(scores, align_score_list)]
