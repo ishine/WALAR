@@ -517,9 +517,12 @@ class RewardModelProxy:
         model_path_dict = {
           "Qwen": "/mnt/gemini/data1/yifengliu/model/Qwen3-4B",
           "Llama": "/mnt/gemini/data1/yifengliu/model/Llama-3.2-3B-Instruct",
+          "LlamaX": "/mnt/gemini/data1/yifengliu/model/LLaMAX3-8B-Alpaca",
         }
         if "Qwen" in args.base_model:
           self.base_tokenizer = AutoTokenizer.from_pretrained(model_path_dict["Qwen"])
+        elif "LlamaX" in args.base_model:
+          self.base_tokenizer = AutoTokenizer.from_pretrained(model_path_dict["LlamaX"])
         elif "Llama" in args.base_model:
           self.base_tokenizer = AutoTokenizer.from_pretrained(model_path_dict["Llama"])
         else:

@@ -1,8 +1,47 @@
 # Running Guideline
 
+## Step 0: Configure environment & Download models
+
+
+
+
+
+**Download Models**
+
+LlamaX: https://huggingface.co/LLaMAX/LLaMAX3-8B
+
+MetricX: https://huggingface.co/google/metricx-24-hybrid-xl-v2p6-bfloat16
+
+MetricX Tokenizer: https://huggingface.co/google/mt5-xl
+
+Masklid model: 
+
+```
+# !wget https://raw.githubusercontent.com/cisnlp/MaskLID/main/masklid.py
+# !wget https://huggingface.co/cis-lmu/glotlid/resolve/main/model_v3.bin
+```
+
+Language Detector: https://huggingface.co/cis-lmu/glotlid
+
+Word-alignment (Bge-m3): https://huggingface.co/BAAI/bge-m3
+
+hanlp (Chinese tokenizer): https://file.hankcs.com/hanlp/tok/coarse_electra_small_20220616_012050.zip
+
+
+
+
+
+
+
+
+
 ## Step 1: Set up Hybrid Reward
 
 **Prerequisite: 1 gpu needed**
+
+Replace all the paths in `RewardModelProxy.__init__` with the models you downloaded in Step 0.
+
+
 
 Run `bash serve_rm.sh`  under `scripts/`
 
