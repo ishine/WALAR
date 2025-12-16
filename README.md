@@ -2,6 +2,12 @@
 
 ## Step 0: Configure environment & Download models
 
+**Configure the environment**
+
+```
+pip install -r requirements.txt
+```
+
 
 
 
