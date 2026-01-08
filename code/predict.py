@@ -670,6 +670,16 @@ def process_single_language_pair(
     name = "benchmax"
   else:
     ds, name = preprocess_dataset(args.input_file)
+
+  ds = [
+    {
+      "source": "On Monday, Sara Danius, permanent secretary of the Nobel Committee for Literature at the Swedish Academy, publicly announced during a radio program on Sveriges Radio in Sweden the committee, unable to reach Bob Dylan directly about winning the 2016 Nobel Prize in Literature, had abandoned its efforts to reach him.",
+      "reference": "周一，瑞典学院诺贝尔文学委员会常务秘书萨拉·丹尼尔斯在瑞典广播电台的一档节目中向公众宣布，委员会因无法直接联系到鲍勃·迪伦，通知他获得了 2016 年诺贝尔文学奖，已经放弃了与他联系的尝试。",
+      "hypothesis": "星期一，Sara Danius——瑞典学院文学奖委员会的常务秘书，在瑞典Sveriges Radio电台的一个节目中公开宣布：由于无法直接与Bob Dylan联系，关于他获得２０１６年诺贝尔文学奖的决定，委员会已经放弃了尝试联系他的努力。"
+      # "hypothesis": "星期一，瑞典学院的文学奖委员会秘书长萨拉·达尼斯(Sara Danius)在瑞典电台(Sveriges Radio)的一档节目中宣布，委员会无法直接联系鲍勃·迪伦(Bob Dylan)，因此放弃了联系他的努力。"
+    }
+  ]
+  # import code; code.interact(local=locals())
   dirname = args.output_dir
   if not args.alignment:
     dirname = os.path.join(dirname, args.model_name + "-" + args.model_size + "-" + args.dtype)
@@ -679,9 +689,12 @@ def process_single_language_pair(
     if name == "benchmax":
       with open(args.input_file, 'r') as f:
         data = json.load(f)
-      if data.get('xcomet_score', None) is not None and args.model_name == "XComet":
-        print(f"Benchmax file {args.input_file} already has XComet score. Skipping...")
-        return
+      # if data.get('xcomet_score', None) is not None and args.model_name == "XComet":
+      #   print(f"Benchmax file {args.input_file} already has XComet score. Skipping...")
+      #   return
+      # if data.get('metricx_score', None) is not None and args.model_name == "metricX":
+      #   print(f"Benchmax file {args.input_file} already has MetricX score. Skipping...")
+      #   return
         
     else:
       if dirname:
@@ -693,6 +706,10 @@ def process_single_language_pair(
       if has_content2(output_file):
         print(f"Output file {output_file} already exists and is non-empty. Skipping...")
         return
+  else:
+    if has_content(args.model_name, args.input_file):
+      print(f"Flores file {args.input_file} already has {args.model_name} score. Skipping...")
+      return
   dt = datasets.Dataset.from_list(ds)
   dt, data_collator = get_dataset(
       dt,
@@ -727,26 +744,27 @@ def process_single_language_pair(
   # Save results
   print(f"prediction: {sum(predictions)/len(predictions)}")
   # import code; code.interact(local=locals())
-  if name == "benchmax":
-    # For benchmax, save results back to the same JSON file
-    save_benchmax_results(args.input_file, ds, predictions, args.model_name)
-  elif name != "flores":
-    if dirname:
-      os.makedirs(dirname, exist_ok=True)
-    output_file = os.path.join(
-        dirname,
-        f"{args.src}-{args.tgt}.jsonl",
-    )
-    write_to_file(output_file, ds, predictions, args.model_name)
-  else:
-    with open(args.input_file, 'a') as f:
-      mean_score = sum(predictions) / len(predictions)
-      if args.model_name == "metricX":
-        f.write(f"MetricX Score: {mean_score:.4f}\n")
-        print(f"{args.src}-{args.tgt}: MetricX Score: {mean_score:.4f}")
-      if args.model_name == "XComet":
-        f.write(f"XComet Score: {mean_score:.4f}\n")
-        print(f"{args.src}-{args.tgt}: XComet Score: {mean_score:.4f}")
+  # if name == "benchmax":
+  #   # For benchmax, save results back to the same JSON file
+  #   save_benchmax_results(args.input_file, ds, predictions, args.model_name)
+  # elif name != "flores":
+  #   if dirname:
+  #     os.makedirs(dirname, exist_ok=True)
+  #   output_file = os.path.join(
+  #       dirname,
+  #       f"{args.src}-{args.tgt}.jsonl",
+  #   )
+  #   write_to_file(output_file, ds, predictions, args.model_name)
+  # else:
+  #   with open(args.input_file, 'a') as f:
+  #     mean_score = sum(predictions) / len(predictions)
+  #     if args.model_name == "metricX":
+  #       f.write(f"MetricX Score: {mean_score:.4f}\n")
+  #       print(f"{args.src}-{args.tgt}: MetricX Score: {mean_score:.4f}")
+  #     if args.model_name == "XComet":
+  #       f.write(f"XComet Score: {mean_score:.4f}\n")
+  #       print(f"{args.src}-{args.tgt}: XComet Score: {mean_score:.4f}")
+
            
 def main() -> None:
   parser = transformers.HfArgumentParser(Arguments)

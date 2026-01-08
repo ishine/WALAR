@@ -1,6 +1,7 @@
 *
 
 !code/
+!code/utils.py
 !code/lang_detect.py
 !code/predict.py
 !openrlhf/

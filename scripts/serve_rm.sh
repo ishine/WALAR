@@ -1,3 +1,5 @@
+export CUDA_VISIBLE_DEVICES=3
+
 CONDA_PATH=/mnt/gemini/data1/yifengliu/miniconda3
 OPENRLHF_PATH=/mnt/gemini/data1/yifengliu/qe-lr/openrlhf
 
@@ -14,7 +16,7 @@ cd $OPENRLHF_PATH
 base_model="LlamaX"
 lang_detect=True
 rule=True       # '\n' for metricX
-masklid=False
+masklid=True
 align=False
 
 python -m openrlhf.cli.serve_rm \

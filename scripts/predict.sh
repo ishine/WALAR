@@ -6,10 +6,10 @@ cd /mnt/gemini/data1/yifengliu/qe-lr/code
 # xxl, xl
 # Xcomet
 data_name="benchmax"
-# model_name="XComet" # XComet
-# model_size="xl"  ### model_size can be discarded if your model_name is not XComet or metricX
-model_name="metricX" # XComet
-model_size="xxl"  ### model_size can be discarded if your model_name is not XComet or metricX
+model_name="XComet" # XComet
+model_size="xl"  ### model_size can be discarded if your model_name is not XComet or metricX
+# model_name="metricX" # XComet
+# model_size="xxl"  ### model/_size can be discarded if your model_name is not XComet or metricX
 dtype="bf16"  ### dtype can be discarded if your model_name is not metricX
 batch_size=16 ### Should be divisible by the number of GPUs
 
@@ -17,7 +17,7 @@ batch_size=16 ### Should be divisible by the number of GPUs
 src_list=()  # Will be populated based on data_name
 tgt_list=()  # Will be populated based on data_name
 
-export CUDA_VISIBLE_DEVICES=3
+export CUDA_VISIBLE_DEVICES=7
 num_gpus=$(echo "$CUDA_VISIBLE_DEVICES" | awk -F',' '{print NF}')
 # en->indic
 #/mnt/data1/yifengliu/data/IndicMT/zero_shot/assamese.jsonl
@@ -82,12 +82,12 @@ process_language_pairs() {
       # input_file_pattern="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/global_step1250_hf/flores"
       # input_file_pattern="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/LLaMAX3-8B-Alpaca/flores"
       # input_file_pattern="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/pure_qe-LlamaX3-8B-schedule_mix10k-1M-bsz128_global_step1000_hf/flores"
-      # input_file_pattern="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/qe+lang_detect-LlamaX3-8B-schedule_mix10k-1M-bsz128_global_step600_hf/flores"
-
+      input_file_pattern="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/schedule1024-LlamaX3-8B-schedule_mix10k-1M-bsz128_global_step1800_hf/flores"
+      # input_file_pattern="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/nllb-200-1.3B-yf"
       # input_file_pattern="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/schedule-LlamaX3-8B-schedule-1M-bsz128_global_step800_hf/flores"
       # input_file_pattern="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/aya-expanse-32b/flores"
       # input_file_pattern="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/Tower-Plus-9B/flores"
-      input_file_pattern="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/schedule1024-LlamaX3-8B-schedule_mix10k-1M-bsz128_global_step1800_hf/flores"
+      # input_file_pattern="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/schedule1024-LlamaX3-8B-schedule_mix10k-1M-bsz128_global_step1800_hf/flores"
       # input_file_pattern="/mnt/gemini/data1/yatish/BenchMAX/tasks/translation/output/LLaMAX3-8B-Alpaca/flores/flores"
       ;;
   esac
@@ -170,19 +170,19 @@ elif [ $data_name == "flores" ]; then
   # Use provided language lists or default values
   if [ ${#src_list[@]} -eq 0 ]; then
     src_list=(
-      "eng" "ara" "tur" "hin" "rus" "zho_simpl" "swh"
+      # "eng" "ara" "tur" "hin" "rus" "zho_simpl" "swh"
       # "tur" "hin"
       # "isl" "ltz" "bel" "ces" "mkd" "pol" "slk" "slv" "ukr" "ben"
       # "guj" "hin" "mar" "npi" "pan" "urd" "hye" "ell" "lav" "lit" "fas"
       # "cym" "ceb" "tgl" "jav" "ara" "azj" "tur" "uzb" "kan" "mal"
       # "tam" "tel" "est" "fin" "hun" "kat" "heb" "khm" "kor" "tha"
     
-    # 'afr' 'amh' 'ara' 'hye' 'asm' 'ast' 'azj' 'bel' 'ben' 'bos' 'bul' 'mya' 'cat' 'ceb' 'zho_simpl' 'hrv' 'ces' 'dan' 
-    # 'nld' 'eng' 'est' 'tgl' 'fin' 'fra' 'ful' 'glg' 'lug' 'kat' 'deu' 'ell' 'guj' 'hau' 'heb' 'hin' 'hun' 'isl' 'ibo' 
-    # 'ind' 'gle' 'ita' 'jpn' 'jav' 'kea' 'kam' 'kan' 'kaz' 'khm' 'kor' 'kir' 'lao' 'lav' 'lin' 'lit' 'luo' 'ltz' 'mkd' 
-    # 'msa' 'mal' 'mlt' 'mri' 'mar' 'mon' 'nob' 'npi' 'nso' 'nya' 'oci' 'ory' 'orm' 'pus' 'fas' 'pol' 'por' 'pan' 'ron' 'rus' 
-    # 'srp' 'sna' 'snd' 'slk' 'slv' 'som' 'ckb' 'spa' 'swh' 'swe' 'tgk' 'tam' 'tel' 'tha' 'tur' 'ukr' 'umb' 'urd' 'uzb' 
-    # 'vie' 'cym' 'wol' 'xho' 'yor' 'zul' 'zho_trad'
+    'afr' 'amh' 'ara' 'hye' 'asm' 'ast' 'azj' 'bel' 'ben' 'bos' 'bul' 'mya' 'cat' 'ceb' 'zho_simpl' 'hrv' 'ces' 'dan' 
+    'nld' 'eng' 'est' 'tgl' 'fin' 'fra' 'ful' 'glg' 'lug' 'kat' 'deu' 'ell' 'guj' 'hau' 'heb' 'hin' 'hun' 'isl' 'ibo' 
+    'ind' 'gle' 'ita' 'jpn' 'jav' 'kea' 'kam' 'kan' 'kaz' 'khm' 'kor' 'kir' 'lao' 'lav' 'lin' 'lit' 'luo' 'ltz' 'mkd' 
+    'msa' 'mal' 'mlt' 'mri' 'mar' 'mon' 'nob' 'npi' 'nso' 'nya' 'oci' 'ory' 'orm' 'pus' 'fas' 'pol' 'por' 'pan' 'ron' 'rus' 
+    'srp' 'sna' 'snd' 'slk' 'slv' 'som' 'ckb' 'spa' 'swh' 'swe' 'tgk' 'tam' 'tel' 'tha' 'tur' 'ukr' 'umb' 'urd' 'uzb' 
+    'vie' 'cym' 'wol' 'xho' 'yor' 'zul' 'zho_trad'
     )
   fi
   if [ ${#tgt_list[@]} -eq 0 ]; then
@@ -194,13 +194,17 @@ elif [ $data_name == "flores" ]; then
       # "isl"
       # "eng" "ara" "tur" "hin"
       # 'afr' 'dan' 'nld' 'deu' 'nob' 'swe' 'cat' 'fra' 'glg' 'por' 'ron' 'spa' 'bul' 'rus' 'ita' 'ind' 'msa' 'zho_simpl' 'jpn' 'vie'
-    # "eng" "ara" "tur" "hin" "rus" "zho_simpl" "swh"
-    'afr' 'amh' 'ara' 'hye' 'asm' 'ast' 'azj' 'bel' 'ben' 'bos' 'bul' 'mya' 'cat' 'ceb' 'zho_simpl' 'hrv' 'ces' 'dan' 
-    'nld' 'eng' 'est' 'tgl' 'fin' 'fra' 'ful' 'glg' 'lug' 'kat' 'deu' 'ell' 'guj' 'hau' 'heb' 'hin' 'hun' 'isl' 'ibo' 
-    'ind' 'gle' 'ita' 'jpn' 'jav' 'kea' 'kam' 'kan' 'kaz' 'khm' 'kor' 'kir' 'lao' 'lav' 'lin' 'lit' 'luo' 'ltz' 'mkd' 
-    'msa' 'mal' 'mlt' 'mri' 'mar' 'mon' 'nob' 'npi' 'nso' 'nya' 'oci' 'ory' 'orm' 'pus' 'fas' 'pol' 'por' 'pan' 'ron' 'rus' 
-    'srp' 'sna' 'snd' 'slk' 'slv' 'som' 'ckb' 'spa' 'swh' 'swe' 'tgk' 'tam' 'tel' 'tha' 'tur' 'ukr' 'umb' 'urd' 'uzb' 
-    'vie' 'cym' 'wol' 'xho' 'yor' 'zul' 'zho_trad'
+    # "eng" "ara" 
+    # "tur" "hin" 
+    # "rus" "zho_simpl"
+    # "swh"
+
+    # 'afr' 'amh' 'ara' 'hye' 'asm' 'ast' 'azj' 'bel' 'ben' 'bos' 'bul' 'mya' 'cat' 'ceb' 'zho_simpl' 'hrv' 'ces' 'dan' 
+    # 'nld' 'eng' 'est' 'tgl' 'fin' 'fra' 'ful' 'glg' 'lug' 'kat' 'deu' 'ell' 'guj' 'hau' 'heb' 'hin' 'hun' 'isl' 'ibo' 
+    # 'ind' 'gle' 'ita' 'jpn' 'jav' 'kea' 'kam' 'kan' 'kaz' 'khm' 'kor' 'kir' 'lao' 'lav' 'lin' 'lit' 'luo' 'ltz' 'mkd' 
+    # 'msa' 'mal' 'mlt' 'mri' 'mar' 'mon' 'nob' 'npi' 'nso' 'nya' 'oci' 'ory' 'orm' 'pus' 'fas' 'pol' 'por' 'pan' 'ron' 'rus' 
+    # 'srp' 'sna' 'snd' 'slk' 'slv' 'som' 'ckb' 'spa' 'swh' 'swe' 'tgk' 'tam' 'tel' 'tha' 'tur' 'ukr' 'umb' 'urd' 'uzb' 
+    # 'vie' 'cym' 'wol' 'xho' 'yor' 'zul' 'zho_trad'
     )
   fi
   
@@ -231,10 +235,11 @@ elif [ $data_name == "benchmax" ]; then
   # Use provided language lists or default values (ISO 2-character codes)
   if [ ${#src_list[@]} -eq 0 ]; then
     src_list=(
-      # "en" "ar" "tr" "hi"
-      # "ru" "sw" "zh"
-      # "en"
-      'af' 'am' 'ar' 'hy' 'as' 'ast' 'az' 'be' 'bn' 'bs' 'bg' 'my' 'ca' 'ceb' 'zh' 'zho_trad' 'hr' 'cs' 'da' 'nl' 'en' 'et' 'tl' 'fi' 'fr' 'ff' 'gl' 'lg' 'ka' 'de' 'el' 'gu' 'ha' 'he' 'hi' 'hu' 'is' 'ig' 'id' 'ga' 'it' 'ja' 'jv' 'kea' 'kam' 'kn' 'kk' 'km' 'ko' 'ky' 'lo' 'lv' 'ln' 'lt' 'luo' 'lb' 'mk' 'ms' 'ml' 'mt' 'mi' 'mr' 'mn' 'ne' 'ns' 'no' 'ny' 'oc' 'or' 'om' 'ps' 'fa' 'pl' 'pt' 'pa' 'ro' 'ru' 'sr' 'sn' 'sd' 'sk' 'sl' 'so' 'ku' 'es' 'sw' 'sv' 'tg' 'ta' 'te' 'th' 'tr' 'uk' 'umb' 'ur' 'uz' 'vi' 'cy' 'wo' 'xh' 'yo' 'zu'
+      "en" 
+      # "ar" "tr" "hi" "ru" "zh" "sw"
+ 
+      # "az" "ja" "ne"
+      # 'af' 'am' 'ar' 'hy' 'as' 'ast' 'az' 'be' 'bn' 'bs' 'bg' 'my' 'ca' 'ceb' 'zh' 'zho_trad' 'hr' 'cs' 'da' 'nl' 'en' 'et' 'tl' 'fi' 'fr' 'ff' 'gl' 'lg' 'ka' 'de' 'el' 'gu' 'ha' 'he' 'hi' 'hu' 'is' 'ig' 'id' 'ga' 'it' 'ja' 'jv' 'kea' 'kam' 'kn' 'kk' 'km' 'ko' 'ky' 'lo' 'lv' 'ln' 'lt' 'luo' 'lb' 'mk' 'ms' 'ml' 'mt' 'mi' 'mr' 'mn' 'ne' 'ns' 'no' 'ny' 'oc' 'or' 'om' 'ps' 'fa' 'pl' 'pt' 'pa' 'ro' 'ru' 'sr' 'sn' 'sd' 'sk' 'sl' 'so' 'ku' 'es' 'sw' 'sv' 'tg' 'ta' 'te' 'th' 'tr' 'uk' 'umb' 'ur' 'uz' 'vi' 'cy' 'wo' 'xh' 'yo' 'zu'
       # "ja" "az" "ne"
     #  'ig' 'id' 'ga' 'it' 'ja' 'jv' 'kea' 'kam' 'kn' 'kk' 'km' 'ko' 'ky' 'lo' 'lv' 'ln' 'lt' 'luo' 'lb' 'mk' 'ms' 'ml' 'mt' 'mi' 'mr' 'mn' 'ne' 'ns' 'no' 'ny' 'oc' 'or' 'om' 'ps' 'fa' 'pl' 'pt' 'pa' 'ro' 'ru' 'sr' 'sn' 'sd' 'sk' 'sl' 'so' 'ku' 'es' 'sw' 'sv' 'tg' 'ta' 'te' 'th' 'tr' 'uk' 'umb' 'ur' 'uz' 'vi' 'cy' 'wo' 'xh' 'yo' 'zu'
 
@@ -242,12 +247,12 @@ elif [ $data_name == "benchmax" ]; then
   fi
   if [ ${#tgt_list[@]} -eq 0 ]; then
     tgt_list=(
-      # "ja" 
-      # "az"
-      "ne"
+      # "ja" "az" "ne"
+      "af"
       # 'af' 'am' 'ar' 'hy' 'as' 'ast' 'az' 'be' 'bn' 'bs' 'bg' 'my' 'ca' 'ceb' 'zh' 'zho_trad' 'hr' 'cs' 'da' 'nl' 'en' 'et' 'tl' 'fi' 'fr' 'ff' 'gl' 'lg' 'ka' 'de' 'el' 'gu' 'ha' 'he' 'hi' 'hu' 'is' 'ig' 'id' 'ga' 'it' 'ja' 'jv' 'kea' 'kam' 'kn' 'kk' 'km' 'ko' 'ky' 'lo' 'lv' 'ln' 'lt' 'luo' 'lb' 'mk' 'ms' 'ml' 'mt' 'mi' 'mr' 'mn' 'ne' 'ns' 'no' 'ny' 'oc' 'or' 'om' 'ps' 'fa' 'pl' 'pt' 'pa' 'ro' 'ru' 'sr' 'sn' 'sd' 'sk' 'sl' 'so' 'ku' 'es' 'sw' 'sv' 'tg' 'ta' 'te' 'th' 'tr' 'uk' 'umb' 'ur' 'uz' 'vi' 'cy' 'wo' 'xh' 'yo' 'zu'
-      # "en" "ar" "tr" "hi" 
-      # "ru" "sw" "zh"
+
+      # "en" "ar" "tr" "hi" "ru" "zh" "sw"
+
       # "zh" "kn" "is" "lb" "be" "cs" "mk" "sk" "sl" "uk" "bn" "gu" "hi" "mr" "ne" "pa" "ur" "hy" "el" "lv" "lt" "fa" "cy" "ceb" "tl" "jv" "ar" "az" "tr" "uz"
       # "ar" "az" "be" "bn" "ceb" "cs" "cy" "el" "fa" "gu" "hi" "hy" "is" "jv" "lb" "lt" "lv" "mk" "mr" "ne" "pa" "sk" "sl" "tl" "tr" "uk" "uz" "uz"
     )

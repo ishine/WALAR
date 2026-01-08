@@ -1,4 +1,4 @@
-
+export CUDA_VISIBLE_DEVICES=4,5,6,7
 num_gpus=$(echo "$CUDA_VISIBLE_DEVICES" | awk -F',' '{print NF}')
 ray start --head --node-ip-address 0.0.0.0 --num-gpus ${num_gpus}
 
@@ -31,12 +31,14 @@ path_dict["LlamaX"]="/mnt/gemini/data1/yifengliu/model/LLaMAX3-8B-Alpaca"
 model="LlamaX"
 dataname="schedule_mix10k"
 size="8B"
-reward_name="qe+lang_detect"
+reward_name="new_qe+lang_detect"
 
 # remote_rm_url
 # remote_rm_url2
 # remote_comet_url
 # remote_metric_reference_url
+
+# ${path_dict[$model]}
 
 #--remote_comet_url http://localhost:4000/get_reward \
 # --pretrain /mnt/gemini/data1/yifengliu/model/Qwen${version}-${size} \
@@ -53,7 +55,7 @@ ray job submit --address="http://127.0.0.1:8265" \
     --colocate_all_models \
     --vllm_gpu_memory_utilization 0.6 \
     --ref_reward_offload \
-    --pretrain ${path_dict[$model]} \
+    --pretrain /mnt/gemini/data1/yifengliu/checkpoints/qe+lang_detect-LlamaX3-8B-schedule_mix10k-1M-bsz128/global_step1000_hf \
     --remote_rm_url http://localhost:2000/get_reward \
     --remote_comet_url http://localhost:5555/get_reward \
     --micro_train_batch_size 16 \
