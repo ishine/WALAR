@@ -15,17 +15,17 @@ We propose **WALAR**, a reinforcement training method using only monolingual tex
 
 
 
-<img src="./fig/qe-rl2.drawio.png" alt="Figure 1: WALAR Framework Illustration" title="WALAR Framework Illustration"  />
+<img src="./fig/walar.png" alt="Figure 1: WALAR Framework Illustration" title="WALAR Framework Illustration"  />
 
 
 
-## Experimental Results
+## 📐 Experimental Results
 
-### 📊 **Flores-101**
+### 📊 **FLORES-101**
 
-| Model | ---- | ---- | ---- |      |      |      |      |
-| ----- | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
-|       |      |      |      |      |      |      |      |
+We conducted extensive experiments on FLORES-101 and reported xCOMET and MetricX scores for over 1400 language directions. Results demonstrate that WALAR improves LLM translation quality by a large margin. Specifically, WALAR-trained LLaMAX demonstrated superior performance on 27 out of 28 reported metrics, including both English-centric and low-resource-centric translation directions.
+
+![Figure 1: Main Table Results](./fig/main_tab.png "Main Table Results")
 
 
 
@@ -35,20 +35,16 @@ We propose **WALAR**, a reinforcement training method using only monolingual tex
 
 We also conduct LLM-as-a-Judge using Gemini 3 Flash. Gemini 3 Flash demonstrated superior performance and earned first-place in WMT25 metric shared task. Results show that WALAR-trained LLaMAX outperforms the original model by a large margin across more than 1400 language directions.
 
-| Directions       | LLaMAX3-8B-Alpaca | WALAR     |
-| ---------------- | ----------------- | --------- |
-| en$\rightarrow$x | 54.87             | **62.14** |
-| ar$\rightarrow$x | 55.72             | **63.88** |
-| tr$\rightarrow$x | 55.06             | **63.67** |
-| hi$\rightarrow$x | 56.99             | **63.69** |
-| ru$\rightarrow$x | 58.87             | **65.39** |
-| zh$\rightarrow$x | 57.66             | **66.24** |
-| sw$\rightarrow$x | 52.36             | **60.07** |
-| Avg              | 55.93             | **63.58** |
-
-
-
-
+| Directions                           | LLaMAX3-8B-Alpaca | WALAR     |
+| ------------------------------------ | ----------------- | --------- |
+| $\mathrm{en} \rightarrow \mathrm{x}$ | 54.87             | **62.14** |
+| $\mathrm{ar} \rightarrow \mathrm{x}$ | 55.72             | **63.88** |
+| $\mathrm{tr} \rightarrow \mathrm{x}$ | 55.06             | **63.67** |
+| $\mathrm{hi} \rightarrow \mathrm{x}$ | 56.99             | **63.69** |
+| $\mathrm{ru} \rightarrow \mathrm{x}$ | 58.87             | **65.39** |
+| $\mathrm{zh} \rightarrow \mathrm{x}$ | 57.66             | **66.24** |
+| $\mathrm{sw} \rightarrow \mathrm{x}$ | 52.36             | **60.07** |
+| Avg                                  | 55.93             | **63.58** |
 
 
 
@@ -56,9 +52,9 @@ We also conduct LLM-as-a-Judge using Gemini 3 Flash. Gemini 3 Flash demonstrated
 
 ### 📄 Language Consistency
 
-To systematically assess an LLM's ability to generate translations in the desired target language, we define the *Language Consistency Rate(LCR)* as $\mathrm{LCR}=\frac{\#\{\mathrm{Lang\_detect}(y) = \mathrm{tgt}\}}{\#\text{test data}}$, where $\mathrm{Lang\_detect}(\cdot)$ is the language detection function, tgt denotes the desired target language. As shown in the figure below, WALAR also improves language consistency by a large margin, especially for low-resource target language, such as Swahili. 
+To systematically assess an LLM's ability to generate translations in the desired target language, we define the *Language Consistency Rate* (LCR) as the proportion of test instances whose outputs are identified as being in the correct target language. As shown in the figure below, WALAR also improves language consistency by a large margin, especially for low-resource target language, such as Swahili. 
 
-<img src="./fig/lang_consistency.png" alt="Figure 3: Generalization of WALAR" title="Generalization of WALAR" style="zoom: 25%;" />
+<img src="./fig/lang_consistency.png" alt="Figure 3: Lang Consistency of WALAR" title="Lang Consistency of WALAR" style="zoom: 25%;" />
 
 
 
@@ -70,7 +66,7 @@ Our model trained with WALAR also demonstrated strong generalization ability on 
 
 
 
-<img src="./fig/generalization_xcomet.png" alt="Figure 1: R-PRM Framework Illustration" title="R-PRM Framework Illustration" style="zoom: 33%;" />
+<img src="./fig/generalization_xcomet.png" alt="Figure 4: Generalization" title="Generalization" style="zoom: 33%;" />
 
 
 
@@ -78,9 +74,9 @@ Our model trained with WALAR also demonstrated strong generalization ability on 
 
 
 
-# 🔧 Training Guideline
+## 🔧 Training Guideline
 
-## Step 0: Configure environment & Download models
+### Step 0: Configure environment & Download models
 
 **Configure the environment**
 
@@ -103,25 +99,21 @@ MetricX Tokenizer: https://huggingface.co/google/mt5-xl
 Masklid model: 
 
 ```
-# !wget https://raw.githubusercontent.com/cisnlp/MaskLID/main/masklid.py
-# !wget https://huggingface.co/cis-lmu/glotlid/resolve/main/model_v3.bin
+wget https://raw.githubusercontent.com/cisnlp/MaskLID/main/masklid.py
+wget https://huggingface.co/cis-lmu/glotlid/resolve/main/model_v3.bin
 ```
 
 Language Detector: https://huggingface.co/cis-lmu/glotlid
 
 Word-alignment (Bge-m3): https://huggingface.co/BAAI/bge-m3
 
-hanlp (Chinese tokenizer): https://file.hankcs.com/hanlp/tok/coarse_electra_small_20220616_012050.zip
+HanLP (Chinese tokenizer): https://file.hankcs.com/hanlp/tok/coarse_electra_small_20220616_012050.zip
 
 
 
 
 
-
-
-
-
-## Step 1: Set up WALAR's Reward
+### Step 1: Set up WALAR's Reward
 
 **Prerequisite: 1 gpu needed**
 
@@ -157,7 +149,7 @@ bash serve_rm.sh
 
 
 
-## Step 2: Run RL
+### Step 2: Run RL
 
 **Prerequisite: 4 or more gpus recommended**
 
