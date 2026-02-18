@@ -580,62 +580,31 @@ class RewardModelProxy:
           self.model = load_from_checkpoint(model_path)
 
 
-    def get_reward(
-        self,
-        queries=None,
-        prompts=None,
-        labels=None,
-        srcs=None,
-        tgts=None,
-        source_languages=None,
-        target_languages=None,
-    ):
-        """Compute rewards for translation quality.
-
-        Supports two input modes:
-        1. Query mode: pass `queries` (full conversation strings); srcs and tgts
-           are parsed via get_source/get_target.
-        2. Direct mode: pass `srcs` and `tgts` directly (source and hypothesis).
-           Use this when calling from rollout_with_reward or when query format
-           parsing is not needed.
-
-        For lang_detect/align with direct mode, pass source_languages and
-        target_languages (lists of language names, e.g. "English", "Chinese").
-        """
-        if srcs is not None and tgts is not None:
-            # Direct mode: use srcs and tgts as provided
-            use_direct = True
-            if labels is None:
-                labels = [""] * len(srcs)
-            elif len(labels) != len(srcs):
-                labels = list(labels) + [""] * (len(srcs) - len(labels))
+    def get_reward(self, queries, prompts, labels):
+        if self.batch_size is None:
+            batch_size = len(queries)
         else:
-            # Query mode: parse from queries
-            use_direct = False
-            if queries is None:
-                raise ValueError("Either (queries) or (srcs, tgts) must be provided")
-            srcs = get_source(self.base_model, queries)
-            tgts = get_target(self.base_model, queries)
-            if labels is None:
-                labels = [""] * len(srcs)
-            elif len(labels) != len(srcs):
-                labels = list(labels) + [""] * (len(srcs) - len(labels))
+            batch_size = self.batch_size
 
-        batch_size = self.batch_size if self.batch_size is not None else len(srcs)
+        logger.info(f"queries[0]: {queries[0]}")
+        logger.info(f"queries[1]: {queries[1]}")
         extra_logs = {}
+        
+        # batch
+        srcs = get_source(self.base_model, queries)
+        tgts = get_target(self.base_model, queries)
         
         # initialize score list
         scores = [float('inf')] * len(tgts)
         
-        if self.args.lang_detect and not (use_direct and target_languages is None):
-          if use_direct:
-            pass  # target_languages already provided
-          elif 'llamax' in self.base_model.lower():
+        if self.args.lang_detect:
+          if 'llamax' in self.base_model.lower():
             pattern = r"Translate the following sentences from ([^\n<]+) to ([^\n<]+)."
-            target_languages = [re.search(pattern, q, re.DOTALL).group(2).strip() for q in queries if re.search(pattern, q, re.DOTALL)]
+            target_languages = [re.search(pattern, query).group(2).strip() for query in queries if re.search(pattern, query)]
           else:
             pattern = r"Translate from ([^\n<]+) to ([^\n<]+):"
-            target_languages = [re.search(pattern, q, re.DOTALL).group(2).strip() for q in queries if re.search(pattern, q, re.DOTALL)]
+            target_languages = [re.search(pattern, query).group(2).strip() for query in queries if re.search(pattern, query)]
+          
           # lid model only accepts sentences
           tgts = [tgt.replace("\n", "") for tgt in tgts]
           lang_info = self.lang_detect_model2.predict(tgts)
@@ -683,8 +652,9 @@ class RewardModelProxy:
         elif 'Comet' in self.model_name:
           min_reward = -25 if 'metricX' in self.model_name else 0
           ds = []
-          if queries is not None and len(queries) > 0:
-            print(f"queries[0]: {queries[0]}")
+          # Match tgt between "<|im_start|>assistant\n" and "<|im_end|>"
+          # tgt_pattern = r"<\|im_start\|>assistant\n<think>(.*?)</think>(.*?)<\|im_end\|>"
+          print(f"queries[0]: {queries[0]}")
           inputs = [{"src": src, "mt": mt, "ref": ref} for src, mt, ref in zip(srcs, tgts, labels)]
     
           output = self.model.predict(inputs, batch_size=8, gpus=1)
@@ -694,19 +664,17 @@ class RewardModelProxy:
           metric_scores = output.scores
           extra_logs['metric_score'] = sum(metric_scores) / len(metric_scores)
           
-        if self.args.align and not (use_direct and (source_languages is None or target_languages is None)):
+        if self.args.align:
           print(srcs[0])
           print(tgts[0])
-          if use_direct:
-            pass  # use provided source_languages, target_languages
-          elif 'llamax' in self.base_model.lower():
+          if 'llamax' in self.base_model.lower():
             pattern = r"Translate the following sentences from ([^\n<]+) to ([^\n<]+)."
-            source_languages = [re.search(pattern, q, re.DOTALL).group(1).strip() for q in queries if re.search(pattern, q, re.DOTALL)]
-            target_languages = [re.search(pattern, q, re.DOTALL).group(2).strip() for q in queries if re.search(pattern, q, re.DOTALL)]
+            source_languages = [re.search(pattern, query).group(1).strip() for query in queries if re.search(pattern, query)]
+            target_languages = [re.search(pattern, query).group(2).strip() for query in queries if re.search(pattern, query)]
           else:
             pattern = r"Translate from ([^\n<]+) to ([^\n<]+):"
-            source_languages = [re.search(pattern, q, re.DOTALL).group(1).strip() for q in queries if re.search(pattern, q, re.DOTALL)]
-            target_languages = [re.search(pattern, q, re.DOTALL).group(2).strip() for q in queries if re.search(pattern, q, re.DOTALL)]
+            source_languages = [re.search(pattern, query).group(1).strip() for query in queries if re.search(pattern, query)]
+            target_languages = [re.search(pattern, query).group(2).strip() for query in queries if re.search(pattern, query)]
             
           # masklid needs sentences
           tgts = [tgt.replace("\n", "") for tgt in tgts]
@@ -758,22 +726,12 @@ if __name__ == "__main__":
     @app.post("/get_reward")
     async def get_reward(request: Request):
         data = await request.json()
+        # import code; code.interact(local=locals())
         queries = data.get("query")
         prompts = data.get("prompts")
         labels = data.get("labels", None)
-        srcs = data.get("srcs", None)
-        tgts = data.get("tgts", None)
-        source_languages = data.get("source_languages", None)
-        target_languages = data.get("target_languages", None)
-        rewards, extra_logs = reward_model.get_reward(
-            queries=queries,
-            prompts=prompts,
-            labels=labels,
-            srcs=srcs,
-            tgts=tgts,
-            source_languages=source_languages,
-            target_languages=target_languages,
-        )
+        # import code; code.interact(local=locals())
+        rewards, extra_logs = reward_model.get_reward(queries, prompts, labels)
         # rewards = torch.tensor([float(reward) for reward in rewards])
         rewards = [float(reward) for reward in rewards]
         result = {"rewards": rewards, "scores": rewards, "extra_logs": extra_logs}

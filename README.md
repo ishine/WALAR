@@ -3,7 +3,7 @@
 <p align="center">
   <a href="null"> 📃 Paper</a> | 
   <a href="https://github.com/LeiLiLab/qe-rl"> ⚙️ Code</a> | 
-  <a href="https://huggingface.co/kevinpro/R-PRM-7B-DPO"> 🤖 Model</a> | 
+  <!-- <a href="https://huggingface.co/kevinpro/R-PRM-7B-DPO"> 🤖 Model</a> |  -->
   <a href="https://huggingface.co/datasets/kevinpro/R-PRM"> 🤗 Dataset</a> | 
   <a href="yfliu@smail.nju.edu.cn"> 📭 Contact</a> 
 </p>
@@ -90,9 +90,9 @@ pip install -r requirements.txt
 
 **Download Models**
 
-LLaMAX: https://huggingface.co/LLaMAX/LLaMAX3-8B
+LLaMAX: https://huggingface.co/LLaMAX/LLaMAX3-8B-Alpaca
 
-MetricX: https://huggingface.co/google/metricx-24-hybrid-xl-v2p6-bfloat16
+MetricX: https://huggingface.co/google/metricx-24-hybrid-xxl-v2p6-bfloat16
 
 MetricX Tokenizer: https://huggingface.co/google/mt5-xl
 
