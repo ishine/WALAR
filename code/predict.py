@@ -136,7 +136,7 @@ def get_tokenizer_and_model(
     path_dict = {
       "XComet": {
         "xl": "/mnt/gemini/data1/yifengliu/model/models--Unbabel--XCOMET-XL/snapshots/6a123c5e8e6dccab25e5fcffa3c8b417abadb462/checkpoints/model.ckpt",
-        "xxl": "/mnt/gemini/data1/yifengliu/model/models--Unbabel--XCOMET-XXL/snapshots/873bac1b1c461e410c4a6e379f6790d3d1c7c214/checkpoints/model.ckpt"
+        "xxl": "/mnt/gemini/data1/yifengliu/model/models--Unbabel--XCOMET-XXL/checkpoints/model.ckpt"
       },
       "Comet-qe-da": "/mnt/gemini/data1/yifengliu/model/models--Unbabel--wmt20-comet-qe-da/snapshots/2e7ffc84fb67d99cf92506611766463bb9230cfb/checkpoints/model.ckpt",
       "Cometkiwi": "/mnt/gemini/data1/yifengliu/model/wmt22-cometkiwi-da/checkpoints/model.ckpt"
@@ -489,16 +489,19 @@ def load_benchmax_json(file_path, src_lang, tgt_lang):
 def save_benchmax_results(file_path, ds, predictions, model_name):
   """Save benchmax results back to the same JSON file with scores added."""
   # Load the original JSON file
+  # turn to a serialable list
+  predictions = [float(x) for x in predictions]
   with open(file_path, 'r', encoding='utf-8') as f:
     original_data = json.load(f)
-  
   
   # Add overall score information
   mean_score = sum(predictions) / len(predictions)
   if model_name == "metricX":
     original_data["metricx_score"] = float(mean_score)
+    original_data["metricx_score_list"] = predictions
   elif model_name == "XComet":
     original_data["xcomet_score"] = float(mean_score)
+    original_data['xcomet_score_list'] = predictions
   else:
     original_data[f"{model_name.lower()}_score"] = float(mean_score)
   
@@ -664,21 +667,29 @@ def process_single_language_pair(
     ds = load_benchmax_json(args.input_file, args.src, args.tgt)
     print(f"Successfully loaded {len(ds)} sentence pairs for {args.src} -> {args.tgt}")
     if args.model_name == "XComet" and ((args.src not in xcomet_support_langs) or (args.tgt not in xcomet_support_langs)):
+      print(f"Not supported by xCOMET")
       return
     if args.model_name == "metricX" and ((args.src not in metricx_support_langs) or (args.tgt not in metricx_support_langs)): 
+      print(f"Not supported by metricx")
       return
     name = "benchmax"
   else:
+    if args.model_name == "XComet" and ((three2two[args.src] not in xcomet_support_langs) or (three2two[args.tgt] not in xcomet_support_langs)):
+      print(f"Not supported by xCOMET")
+      return
+    if args.model_name == "metricX" and ((three2two[args.src] not in metricx_support_langs) or (three2two[args.tgt] not in metricx_support_langs)): 
+      print(f"Not supported by metricx")
+      return
     ds, name = preprocess_dataset(args.input_file)
 
-  ds = [
-    {
-      "source": "On Monday, Sara Danius, permanent secretary of the Nobel Committee for Literature at the Swedish Academy, publicly announced during a radio program on Sveriges Radio in Sweden the committee, unable to reach Bob Dylan directly about winning the 2016 Nobel Prize in Literature, had abandoned its efforts to reach him.",
-      "reference": "周一，瑞典学院诺贝尔文学委员会常务秘书萨拉·丹尼尔斯在瑞典广播电台的一档节目中向公众宣布，委员会因无法直接联系到鲍勃·迪伦，通知他获得了 2016 年诺贝尔文学奖，已经放弃了与他联系的尝试。",
-      "hypothesis": "星期一，Sara Danius——瑞典学院文学奖委员会的常务秘书，在瑞典Sveriges Radio电台的一个节目中公开宣布：由于无法直接与Bob Dylan联系，关于他获得２０１６年诺贝尔文学奖的决定，委员会已经放弃了尝试联系他的努力。"
-      # "hypothesis": "星期一，瑞典学院的文学奖委员会秘书长萨拉·达尼斯(Sara Danius)在瑞典电台(Sveriges Radio)的一档节目中宣布，委员会无法直接联系鲍勃·迪伦(Bob Dylan)，因此放弃了联系他的努力。"
-    }
-  ]
+  # ds = [
+  #   {
+  #     "source": "On Monday, Sara Danius, permanent secretary of the Nobel Committee for Literature at the Swedish Academy, publicly announced during a radio program on Sveriges Radio in Sweden the committee, unable to reach Bob Dylan directly about winning the 2016 Nobel Prize in Literature, had abandoned its efforts to reach him.",
+  #     "reference": "周一，瑞典学院诺贝尔文学委员会常务秘书萨拉·丹尼尔斯在瑞典广播电台的一档节目中向公众宣布，委员会因无法直接联系到鲍勃·迪伦，通知他获得了 2016 年诺贝尔文学奖，已经放弃了与他联系的尝试。",
+  #     "hypothesis": "星期一，Sara Danius——瑞典学院文学奖委员会的常务秘书，在瑞典Sveriges Radio电台的一个节目中公开宣布：由于无法直接与Bob Dylan联系，关于他获得２０１６年诺贝尔文学奖的决定，委员会已经放弃了尝试联系他的努力。"
+  #     # "hypothesis": "星期一，瑞典学院的文学奖委员会秘书长萨拉·达尼斯(Sara Danius)在瑞典电台(Sveriges Radio)的一档节目中宣布，委员会无法直接联系鲍勃·迪伦(Bob Dylan)，因此放弃了联系他的努力。"
+  #   }
+  # ]
   # import code; code.interact(local=locals())
   dirname = args.output_dir
   if not args.alignment:
@@ -689,12 +700,12 @@ def process_single_language_pair(
     if name == "benchmax":
       with open(args.input_file, 'r') as f:
         data = json.load(f)
-      # if data.get('xcomet_score', None) is not None and args.model_name == "XComet":
-      #   print(f"Benchmax file {args.input_file} already has XComet score. Skipping...")
-      #   return
-      # if data.get('metricx_score', None) is not None and args.model_name == "metricX":
-      #   print(f"Benchmax file {args.input_file} already has MetricX score. Skipping...")
-      #   return
+      if data.get('xcomet_score_list', None) is not None and args.model_name == "XComet":
+        print(f"Benchmax file {args.input_file} already has XComet score. Skipping...")
+        return
+      if data.get('metricx_score_list', None) is not None and args.model_name == "metricX":
+        print(f"Benchmax file {args.input_file} already has MetricX score. Skipping...")
+        return
         
     else:
       if dirname:
@@ -744,26 +755,28 @@ def process_single_language_pair(
   # Save results
   print(f"prediction: {sum(predictions)/len(predictions)}")
   # import code; code.interact(local=locals())
-  # if name == "benchmax":
-  #   # For benchmax, save results back to the same JSON file
-  #   save_benchmax_results(args.input_file, ds, predictions, args.model_name)
-  # elif name != "flores":
-  #   if dirname:
-  #     os.makedirs(dirname, exist_ok=True)
-  #   output_file = os.path.join(
-  #       dirname,
-  #       f"{args.src}-{args.tgt}.jsonl",
-  #   )
-  #   write_to_file(output_file, ds, predictions, args.model_name)
-  # else:
-  #   with open(args.input_file, 'a') as f:
-  #     mean_score = sum(predictions) / len(predictions)
-  #     if args.model_name == "metricX":
-  #       f.write(f"MetricX Score: {mean_score:.4f}\n")
-  #       print(f"{args.src}-{args.tgt}: MetricX Score: {mean_score:.4f}")
-  #     if args.model_name == "XComet":
-  #       f.write(f"XComet Score: {mean_score:.4f}\n")
-  #       print(f"{args.src}-{args.tgt}: XComet Score: {mean_score:.4f}")
+  if name == "benchmax":
+    # For benchmax, save results back to the same JSON file
+    save_benchmax_results(args.input_file, ds, predictions, args.model_name)
+  elif name != "flores":
+    if dirname:
+      os.makedirs(dirname, exist_ok=True)
+    output_file = os.path.join(
+        dirname,
+        f"{args.src}-{args.tgt}.jsonl",
+    )
+    write_to_file(output_file, ds, predictions, args.model_name)
+  else:
+    with open(args.input_file, 'a') as f:
+      mean_score = sum(predictions) / len(predictions)
+      if args.model_name == "metricX":
+        f.write(f"MetricX Score: {mean_score:.4f}\n")
+        f.write(f"metricx_score_list: {predictions}\n")
+        print(f"{args.src}-{args.tgt}: MetricX Score: {mean_score:.4f}")
+      if args.model_name == "XComet":
+        f.write(f"XComet Score: {mean_score:.4f}\n")
+        f.write(f"xcomet_score_list: {predictions}\n")
+        print(f"{args.src}-{args.tgt}: XComet Score: {mean_score:.4f}")
 
            
 def main() -> None:

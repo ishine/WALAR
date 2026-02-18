@@ -151,7 +151,7 @@ def normalize_target_language(code: Optional[str]) -> Optional[str]:
     )
 
 
-def process_file(file_path: str, model, target_language: str, use_glotlid: bool = False) -> float:
+def process_file(file_path: str, model, target_language: str, use_glotlid: bool = False) -> list:
     """
     Process a single file and return language detection error rate.
     
@@ -175,34 +175,34 @@ def process_file(file_path: str, model, target_language: str, use_glotlid: bool 
     tgts = [data['pred'] for data in dataset]
     tgts = [tgt.replace("\n", "") for tgt in tgts]
     lang_info = model.predict(tgts)
+    # import code; code.interact(local=locals())
     cnt = 0
     target_language = normalize_target_language(target_language)
+    pred_list = []
     for language in lang_info[0]:
         label = language[0] if isinstance(language, (list, tuple)) else language
         pred_lang = map_predicted_language(label, use_glotlid)
-        if pred_lang != target_language:
-            cnt += 1
-        
+        pred_list.append(pred_lang in target_language)
         
     # import code; code.interact(local=locals())
     # Calculate error rate
-    total_samples = len(dataset)
-    error_rate = cnt / total_samples * 100
     # import code; code.interact(local=locals())
-    return error_rate
+    return pred_list
 
 
-def append_error_rate_to_file(file_path: str, error_rate: float):
+def append_error_rate_to_file(file_path: str, pred_list: list):
     """Append error rate to the end of the file."""
     with open(file_path, 'a', encoding='utf-8') as f:
-        f.write(f"Lang_Error_Rate: {error_rate:.2f}%\n")
+        lcr = sum(pred_list) / len(pred_list) * 100
+        f.write(f"Lang Consistency Rate: {lcr:.2f}\n")
+        f.write(f"lang_consistency_list: {pred_list}\n")
 
 def check_file(file_path):
     """Check if the file already contains a language error rate."""
     with open(file_path, 'r', encoding='utf-8') as f:
         lines = f.readlines()
         for line in lines:
-            if "Lang_Error_Rate: " in line:
+            if "Lang Consistency Rate: " in line:
                 return True
     return False
 
@@ -220,12 +220,12 @@ def detect_single_lang_pair(model, input_dir: str, lang_pair: str, output_file: 
         print(f"File already contains Lang_Error_Rate: {file_path}")
         return
     # Process file
-    error_rate = process_file(file_path, model, tgt_lang, use_glotlid=use_glotlid)
+    pred_list = process_file(file_path, model, tgt_lang, use_glotlid=use_glotlid)
     
     # Append error rate to file
-    append_error_rate_to_file(file_path, error_rate)
-    
-    print(f"{lang_pair}: {error_rate:.2f}% language error rate")
+    append_error_rate_to_file(file_path, pred_list)
+    lcr = sum(pred_list) / len(pred_list) * 100
+    print(f"{lang_pair}: {lcr:.2f}%")
     
     # Save to output file if specified
     # if output_file:
@@ -292,14 +292,17 @@ def detect_benchmax_file(model, benchmax_file: str, target_language: str, use_gl
     target_language = normalize_target_language(target_language)
 
     mismatch = 0
+    lang_consistency_list = []
     for language in lang_info[0]:
         label = language[0] if isinstance(language, (list, tuple)) else language
         pred_lang = map_predicted_language(label, use_glotlid)
         if pred_lang not in target_language:
             mismatch += 1
+        lang_consistency_list.append(pred_lang in target_language)
 
     consistency = ((total_samples - mismatch) / total_samples) * 100 if total_samples > 0 else 0.0
     data["Lang Consistency"] = round(consistency, 2)
+    data['Lang Consistency List'] = lang_consistency_list
 
     with open(benchmax_file, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)

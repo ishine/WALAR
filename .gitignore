@@ -4,6 +4,7 @@
 !code/utils.py
 !code/lang_detect.py
 !code/predict.py
+!code/masklid.py
 !openrlhf/
 !scripts/
 !scripts/lang_detect.sh

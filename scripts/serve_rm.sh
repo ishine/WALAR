@@ -13,21 +13,21 @@ cd $OPENRLHF_PATH
 # base_model="Qwen3-4B"
 # base_model="Llama-3.2-3B-Instruct"
 # LlamaX
-base_model="LlamaX"
+base_model="Qwen"
 lang_detect=True
-rule=True       # '\n' for metricX
 masklid=True
-align=False
+align=True
+alpha=20
 
 python -m openrlhf.cli.serve_rm \
     --model_name  metricX \
     --base_model $base_model \
     --port 2000 \
     --max_len 512 \
-    --rule $rule \
     --lang_detect $lang_detect \
     --align $align \
     --masklid $masklid \
+    --alpha $alpha \
     --batch_size 16 &
 
 

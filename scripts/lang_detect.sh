@@ -13,19 +13,19 @@ GLOTLID_MODEL_PATH="/mnt/gemini/data1/yifengliu/model/models--cis-lmu--glotlid/s
 BENCHMAX_FILE=""
 BENCHMAX_TARGET_LANGUAGE=""
 USE_BENCHMAX_DIR=true
+# USE_BENCHMAX_DIR=false
 
 # Language pairs configuration (similar to flores.sh)
 source_language_list=(
-    # "eng" "tur" "ara" "hin" "rus" "zho_simpl" "swh"
+    "eng" "tur" "ara" "hin" "rus" "zho_simpl" "swh"
+    # "ara"
 
-    # "eng" "tur" "ara" "hin" "rus" "zho_simpl" "swh"
-
-    'afr' 'amh' 'ara' 'hye' 'asm' 'ast' 'azj' 'bel' 'ben' 'bos' 'bul' 'mya' 'cat' 'ceb' 'zho_simpl' 'hrv' 'ces' 'dan' 
-    'nld' 'eng' 'est' 'tgl' 'fin' 'fra' 'ful' 'glg' 'lug' 'kat' 'deu' 'ell' 'guj' 'hau' 'heb' 'hin' 'hun' 'isl' 'ibo' 
-    'ind' 'gle' 'ita' 'jpn' 'jav' 'kea' 'kam' 'kan' 'kaz' 'khm' 'kor' 'kir' 'lao' 'lav' 'lin' 'lit' 'luo' 'ltz' 'mkd' 
-    'msa' 'mal' 'mlt' 'mri' 'mar' 'mon' 'nob' 'npi' 'nso' 'nya' 'oci' 'ory' 'orm' 'pus' 'fas' 'pol' 'por' 'pan' 'ron' 'rus' 
-    'srp' 'sna' 'snd' 'slk' 'slv' 'som' 'ckb' 'spa' 'swh' 'swe' 'tgk' 'tam' 'tel' 'tha' 'tur' 'ukr' 'umb' 'urd' 'uzb' 
-    'vie' 'cym' 'wol' 'xho' 'yor' 'zul' 'zho_trad'
+    # 'afr' 'amh' 'ara' 'hye' 'asm' 'ast' 'azj' 'bel' 'ben' 'bos' 'bul' 'mya' 'cat' 'ceb' 'zho_simpl' 'hrv' 'ces' 'dan' 
+    # 'nld' 'eng' 'est' 'tgl' 'fin' 'fra' 'ful' 'glg' 'lug' 'kat' 'deu' 'ell' 'guj' 'hau' 'heb' 'hin' 'hun' 'isl' 'ibo' 
+    # 'ind' 'gle' 'ita' 'jpn' 'jav' 'kea' 'kam' 'kan' 'kaz' 'khm' 'kor' 'kir' 'lao' 'lav' 'lin' 'lit' 'luo' 'ltz' 'mkd' 
+    # 'msa' 'mal' 'mlt' 'mri' 'mar' 'mon' 'nob' 'npi' 'nso' 'nya' 'oci' 'ory' 'orm' 'pus' 'fas' 'pol' 'por' 'pan' 'ron' 'rus' 
+    # 'srp' 'sna' 'snd' 'slk' 'slv' 'som' 'ckb' 'spa' 'swh' 'swe' 'tgk' 'tam' 'tel' 'tha' 'tur' 'ukr' 'umb' 'urd' 'uzb' 
+    # 'vie' 'cym' 'wol' 'xho' 'yor' 'zul' 'zho_trad'
 )
 
 target_language_list=(
@@ -40,14 +40,17 @@ target_language_list=(
     # 'mon' 'mar' 'mya' 'pol' 'pus' 'snd' 'som' 'srp' 'tam' 'tha'
     # 'tur' 'yor'
 
-    "eng" "tur" "ara" "hin" "rus" "zho_simpl" "swh"
+    # "eng" "tur" "ara" "hin" "rus" "zho_simpl" "swh"
 
-    # 'afr' 'amh' 'ara' 'hye' 'asm' 'ast' 'azj' 'bel' 'ben' 'bos' 'bul' 'mya' 'cat' 'ceb' 'zho_simpl' 'hrv' 'ces' 'dan' 
-    # 'nld' 'eng' 'est' 'tgl' 'fin' 'fra' 'ful' 'glg' 'lug' 'kat' 'deu' 'ell' 'guj' 'hau' 'heb' 'hin' 'hun' 'isl' 'ibo' 
-    # 'ind' 'gle' 'ita' 'jpn' 'jav' 'kea' 'kam' 'kan' 'kaz' 'khm' 'kor' 'kir' 'lao' 'lav' 'lin' 'lit' 'luo' 'ltz' 'mkd' 
-    # 'msa' 'mal' 'mlt' 'mri' 'mar' 'mon' 'nob' 'npi' 'nso' 'nya' 'oci' 'ory' 'orm' 'pus' 'fas' 'pol' 'por' 'pan' 'ron' 'rus' 
-    # 'srp' 'sna' 'snd' 'slk' 'slv' 'som' 'ckb' 'spa' 'swh' 'swe' 'tgk' 'tam' 'tel' 'tha' 'tur' 'ukr' 'umb' 'urd' 'uzb' 
-    # 'vie' 'cym' 'wol' 'xho' 'yor' 'zul' 'zho_trad'
+    'afr' 'amh' 'ara' 'hye' 'asm' 'ast' 'azj' 'bel' 'ben' 'bos' 'bul' 'mya' 'cat' 'ceb' 'zho_simpl' 'hrv' 'ces' 'dan' 
+    'nld' 'eng' 'est' 'tgl' 'fin' 'fra' 'ful' 'glg' 'lug' 'kat' 'deu' 'ell' 'guj' 'hau' 'heb' 'hin' 'hun' 'isl' 'ibo' 
+    'ind' 'gle' 'ita' 'jpn' 'jav' 'kea' 'kam' 'kan' 'kaz' 'khm' 'kor' 'kir' 'lao' 'lav' 'lin' 'lit' 'luo' 'ltz' 'mkd' 
+    'msa' 'mal' 'mlt' 'mri' 'mar' 'mon' 'nob' 'npi' 'nso' 'nya' 'oci' 'ory' 'orm' 'pus' 'fas' 'pol' 'por' 'pan' 'ron' 'rus' 
+    'srp' 'sna' 'snd' 'slk' 'slv' 'som' 'ckb' 'spa' 'swh' 'swe' 'tgk' 'tam' 'tel' 'tha' 'tur' 'ukr' 'umb' 'urd' 'uzb' 
+    'vie' 'cym' 'wol' 'xho' 'yor' 'zul' 'zho_trad'
+    # "ara"
+    # "zho_simpl"
+    # "amh"
 )
 
 # Input directory for flores files
@@ -55,10 +58,33 @@ target_language_list=(
 # INPUT_DIR="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/final/Final-Qwen3-4B-post_final_mix-320k-1M-bsz128"
 # INPUT_DIR="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Llama-3.2-3B-Instruct"
 # INPUT_DIR="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/LLaMAX3-8B-Alpaca"
+# INPUT_DIR="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/schedule1024-LlamaX3-8B-schedule_mix10k-1M-bsz128/global_step1800_hf/dev"
+# INPUT_DIR="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/final/alpha20-LlamaX-8B-final_llamax_mix2k-bsz1024/dev"
+# INPUT_DIR="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/final/alpha15-LlamaX-8B-final_llamax_mix2k-bsz1024/dev"
+# INPUT_DIR="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/final/alpha10-LlamaX-8B--bsz1024/dev"
+# INPUT_DIR="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/final/alpha5-LlamaX-8B-final_llamax_mix2k-bsz1024/dev"
+# INPUT_DIR="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/new_qe+lang_detect-LlamaX-8B-schedule_mix10k-1M-bsz128/global_step1000_hf/dev"
+# INPUT_DIR="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/nllb-200-distilled-1.3B"
+# INPUT_DIR="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/nllb-200-1.3B-yf"
+INPUT_DIR="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/pure_qe-LlamaX3-8B-schedule_mix10k-1M-bsz128_global_step1200_hf/flores"
+# INPUT_DIR="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/nllb-200-1.3B"
+# INPUT_DIR="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/LLaMAX3-8B-Alpaca/flores"
+# INPUT_DIR="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/nllb-200-1.3B-yf"
+# INPUT_DIR="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/hunyuan-mt/flores"
+# INPUT_DIR="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/Tower-Plus-9B/flores"
 # INPUT_DIR="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/aya-expanse-8b/flores"
-INPUT_DIR=""/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/Tower-Plus-9B/flores""
+# INPUT_DIR="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/pure_qe-LlamaX3-8B-schedule_mix10k-1M-bsz128_global_step1200_hf/flores"
+# INPUT_DIR="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/final_alpha10-LlamaX-8B--bsz1024/flores"
+
+# INPUT_DIR="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/aya-expanse-8b/flores"
+# INPUT_DIR=""/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/Tower-Plus-9B/flores""
 # INPUT_DIR="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/thinking_training-Qwen3-4B-thinking_mix-1m-1M-bsz128/global_step350_hf_thinking"
 # INPUT_DIR="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/LLaMAX3-8B-Alpaca/flores"
+# INPUT_DIR="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/new_qe+lang_detect-LlamaX-8B-schedule_mix10k-1M-bsz128_global_step1000_hf/flores"
+# INPUT_DIR=""/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/final_alpha5-LlamaX-8B-final_llamax_mix2k-bsz1024/flores""
+# INPUT_DIR="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/final_alpha10-LlamaX-8B--bsz1024/flores"
+# INPUT_DIR="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/final_alpha15-LlamaX-8B-final_llamax_mix2k-bsz1024/flores"
+# INPUT_DIR="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/final_alpha20-LlamaX-8B-final_llamax_mix2k-bsz1024/flores"
 # INPUT_DIR="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/schedule1024-LlamaX3-8B-schedule_mix10k-1M-bsz128_global_step1800_hf/flores"
 # INPUT_DIR="/mnt/gemini/data1/yatish/BenchMAX/tasks/translation/output/LLaMAX3-8B-Alpaca/flores/flores"
 # INPUT_DIR="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/final/Continue-Final-Llama3.2-3B-post_final_mix-160k-1M-bsz128"
