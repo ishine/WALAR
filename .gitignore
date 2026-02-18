@@ -5,6 +5,7 @@
 !code/lang_detect.py
 !code/predict.py
 !code/masklid.py
+!code/models.py
 !openrlhf/
 !scripts/
 !scripts/lang_detect.sh

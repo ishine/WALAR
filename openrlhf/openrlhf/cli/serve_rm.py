@@ -3,7 +3,6 @@ import argparse
 import os
 import sys
 import re
-import jieba
 import hanlp
 # import hanlp_restful
 # from hanlp_restful import HanLPClient
