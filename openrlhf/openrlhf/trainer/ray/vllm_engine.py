@@ -125,7 +125,7 @@ def create_vllm_engines(
 ):
     import vllm
 
-    assert vllm.__version__ > "0.8.2", "OpenRLHF only supports vllm > 0.8.2"
+    # assert vllm.__version__ > "0.8.2", "OpenRLHF only supports vllm > 0.8.2"
 
     vllm_engines = []
     distributed_executor_backend = "uni" if tensor_parallel_size == 1 else "ray"

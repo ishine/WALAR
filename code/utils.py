@@ -96,7 +96,7 @@ lang_dict = {
     "slk": "Slovak",
     "slv": "Slovenian",
     "som": "Somali",
-    "ckb": "Sorani Kurdish",
+    "ckb": "Kurdish",
     "spa": "Spanish",
     "swh": "Swahili",
     "swe": "Swedish",
@@ -204,7 +204,7 @@ mm_dict = {
   "sk": "Slovak",
   "sl": "Slovenian",
   "so": "Somali",
-  "ku": "Sorani Kurdish",
+  "ku": "Kurdish",
   "es": "Spanish",
   "sw": "Swahili",
   "sv": "Swedish",
@@ -253,7 +253,7 @@ llamax_langs = ['amh', 'azj', 'bel', 'isl', 'jav', 'kan', 'kor', 'kir', 'lit', '
 
 xcomet_support_langs = ["af", "am", "ar", "hy", "as", "az", "be", "bn", "bs", "bg", "my", "ca", "zh", "zho_trad", "hr", "cs", "da", "nl", "en", "et", "fi", "fr", "gl", "de", "el", "gu", "ha", "he", "hi", "hu", "is", "id", "ga", "it", "ja", "jv", "ka", "kk", "km", "kn", "ko", "ku", "ky", "lo", "lv", "lt", "mk", "ms", "ml", "mr", "mn", "ne", "no", "or", "om", "ps", "fa", "pl", "pt", "pa", "ro", "ru", "sr", "sd", "sk", "sl", "so", "es", "sw", "sv", "ta", "te", "th", "tl", "tr", "uk", "ur", "uz", "vi", "cy", "xh"]
 
-metricx_support_langs = ["af", "da", "nl", "de", "is", "lb", "no", "sv", "en", "ca", "fr", "gl", "pt", "ro", "es", "be", "bg", "cs", "mk", "pl", "ru", "sr", "sk", "sl", "uk", "bn", "gu", "hi", "mr", "ne", "pa", "sd", "ur", "hy", "el", "ga", "cy", "it", "lv", "lt", "ps", "ku", "tg", "ceb", "tl", "id", "jv", "ms", "mi", "ig", "ns", "sn", "sw", "umb", "xh", "yo", "zu", "am", "ar", "mt", "so", "az", "kk", "ky", "tr", "uz", "kn", "ml", "ta", "te", "my", "zh", "zh_trad", "et", "fi", "hu", "ka", "ha", "he", "ja", "km", "vi", "ko", "lo", "th", "mn"]
+metricx_support_langs = ["af", "da", "nl", "de", "is", "lb", "no", "sv", "en", "ca", "fr", "gl", "pt", "ro", "es", "be", "bg", "cs", "mk", "pl", "ru", "sr", "sk", "sl", "uk", "bn", "gu", "hi", "mr", "ne", "pa", "sd", "ur", "hy", "el", "ga", "cy", "it", "lv", "lt", "ps", "ku", "tg", "ceb", "tl", "id", "jv", "ms", "mi", "ig", "ns", "sn", "sw", "umb", "xh", "yo", "zu", "am", "ar", "mt", "so", "az", "kk", "ky", "tr", "uz", "kn", "ml", "ta", "te", "my", "zh", "zh_trad", "et", "fi", "hu", "ka", "ha", "he", "ja", "km", "vi", "ko", "lo", "th", "mn", "zho_trad"]
 # we only care about these languages
 long2lang = {
   "afr_Latn": "Afrikaans",
@@ -338,7 +338,7 @@ long2lang = {
   "slk_Latn": "Slovak",
   "slv_Latn": "Slovenian",
   "som_Latn": "Somali",
-  "ckb_Arab": "Sorani Kurdish",
+  "ckb_Arab": "Kurdish",
   "spa_Latn": "Spanish",
   "swh_Latn": "Swahili",
   "swe_Latn": "Swedish",

@@ -8,6 +8,7 @@ import hanlp
 # from hanlp_restful import HanLPClient
 
 sys.path.insert(0, "/mnt/gemini/data1/yifengliu/qe-lr/code")
+import numpy as np
 import masklid
 from masklid import MaskLID
 from utils import lang2long, long2lang
@@ -21,7 +22,6 @@ import transformers
 import datasets
 import uvicorn
 import fasttext
-import sacrebleu
 import itertools
 from transformers import AutoTokenizer, AutoModel
 # from simalign import SentenceAligner
@@ -368,7 +368,7 @@ def align_score(srcs, tgts, model, tokenizer, batch_size=16):
             'src_len': len(sent_src),
             'tgt_len': len(sent_tgt)
         })
-    
+    print(f"Preprocessing completed. Total sentences: {len(tokenized_data)}")
     # 批量处理
     model.eval()
     with torch.no_grad():
@@ -479,23 +479,61 @@ def get_source(model_name, queries):
     src_pattern = r"### Instruction:(.*?)### Input:\n(.*?)### Response:"
     # src_pattern = r"Translate the following sentences from (.*?) to (.*?).\n### Input:\n(.*?)\n"
     srcs = [re.search(src_pattern, q, re.DOTALL).group(2).strip() for q in queries]
-    logger.info(f"src len: {len(srcs)}")
+  elif 'Gemma' == model_name:
+    # src_pattern = r"<bos><start_of_turn>user(.*?)Translate from(.*?)to(.*?):<end_of_turn>"
+    # srcs = [re.search(src_pattern, q, re.DOTALL).group(1).strip() for q in queries]
+    src_pattern = r"Please translate the following (.*?) text into (.*?):(.*?)<end_of_turn>"
+    srcs = [re.search(src_pattern, q, re.DOTALL).group(3).strip() for q in queries]
+  elif 'Aya' == model_name:
+    # src_pattern = r"<BOS_TOKEN><\|START_OF_TURN_TOKEN\|><\|USER_TOKEN\|>(.*?)Translate from (.*?) to (.*?).<\|END_OF_TURN_TOKEN\|>"
+    src_pattern = r"<BOS_TOKEN><\|START_OF_TURN_TOKEN\|><\|USER_TOKEN\|>Translate the following text from (.*?) to (.*?).\n\n(.*?) source:\n(.*?)\n\n(.*?) translation:<\|END_OF_TURN_TOKEN\|>"
+    srcs = [re.search(src_pattern, q, re.DOTALL).group(1).strip() for q in queries]
   return srcs
 
 def get_target(model_name, queries):
-  if 'Qwen3' in model_name:
-    tgt_pattern = r"<\|im_start\|>assistant\n(.*?)<\|im_end\|>"
-    tgts = [re.search(tgt_pattern, q, re.DOTALL).group(1).strip() if re.search(tgt_pattern, q, re.DOTALL) is not None else "" for q in queries]
+  if 'Qwen' in model_name:
+    # tgt_pattern = r"<\|im_start\|>assistant\n(.*?)<\|im_end\|>"
+    # tgts = [re.search(tgt_pattern, q, re.DOTALL).group(1).strip() if re.search(tgt_pattern, q, re.DOTALL) is not None else "" for q in queries]
+    tgt_pattern = r"<\|im_start\|>assistant\n<think>(.*?)</think>\n\n(.*?)<\|im_end\|>"
+    tgts = [re.search(tgt_pattern, q, re.DOTALL).group(2).strip() if re.search(tgt_pattern, q, re.DOTALL) is not None else "" for q in queries]
   elif 'Llama' == model_name:
     tgt_pattern = r"<\|start_header_id\|>assistant<\|end_header_id\|>\n\n(.*?)<\|eot_id\|>"
     tgts = [re.search(tgt_pattern, q, re.DOTALL).group(1).strip() for q in queries]
   elif 'LlamaX' == model_name:
     tgt_pattern = r"### Response:(.*?)<\|end_of_text\|>"
     tgts = [re.search(tgt_pattern, q, re.DOTALL).group(1).strip() for q in queries]
+  elif "Gemma" == model_name:
+    tgt_pattern = r"<start_of_turn>model(.*?)<end_of_turn>"
+    tgts = [re.search(tgt_pattern, q, re.DOTALL).group(1).strip() if re.search(tgt_pattern, q, re.DOTALL) is not None else "" for q in queries]
+  elif "Aya" == model_name:
+    tgt_pattern = r"<\|START_OF_TURN_TOKEN\|><\|CHATBOT_TOKEN\|>(.*?)<\|END_OF_TURN_TOKEN\|>"
+    tgts = [re.search(tgt_pattern, q, re.DOTALL).group(1).strip() if re.search(tgt_pattern, q, re.DOTALL) is not None else "" for q in queries]
   else:
     tgt_pattern = r"<\|im_start\|>assistant\n(.*?)<\|im_end\|>"
     tgts = [re.search(tgt_pattern, q, re.DOTALL).group(1).strip() for q in queries]
   return tgts
+
+def get_source_and_target_languages(base_model, queries):
+  if 'llamax' in base_model.lower():
+    pattern = r"Translate the following sentences from ([^\n<]+) to ([^\n<]+)."
+    source_languages = [re.search(pattern, query).group(1).strip() for query in queries if re.search(pattern, query)]
+    target_languages = [re.search(pattern, query).group(2).strip() for query in queries if re.search(pattern, query)]
+  elif 'Gemma' in base_model:
+    # pattern = r"Translate from(.*?)to(.*?):"
+    pattern = r"Please translate the following (.*?) text into (.*?):"
+    source_languages = [re.search(pattern, query).group(1).strip() for query in queries if re.search(pattern, query)]
+    target_languages = [re.search(pattern, query).group(2).strip() for query in queries if re.search(pattern, query)]
+  elif 'Aya' in base_model:
+    pattern = r"Translate the following text from (.*?) to (.*?).\n\n"
+    source_languages = [re.search(pattern, query).group(1).strip() for query in queries if re.search(pattern, query)]
+    target_languages = [re.search(pattern, query).group(2).strip() for query in queries if re.search(pattern, query)]
+  else:
+    pattern = r"Translate from ([^\n<]+) to ([^\n<]+):"
+    source_languages = [re.search(pattern, query).group(1).strip() for query in queries if re.search(pattern, query)]
+    target_languages = [re.search(pattern, query).group(2).strip() for query in queries if re.search(pattern, query)]
+  return source_languages, target_languages
+
+
 
 def zh_tokenize(lang_list, text_list, tokenizer):
   return_list = []
@@ -517,6 +555,8 @@ class RewardModelProxy:
           "Qwen": "/mnt/gemini/data1/yifengliu/model/Qwen3-4B",
           "Llama": "/mnt/gemini/data1/yifengliu/model/Llama-3.2-3B-Instruct",
           "LlamaX": "/mnt/gemini/data1/yifengliu/model/LLaMAX3-8B-Alpaca",
+          "Gemma": "/mnt/gemini/data1/yifengliu/model/translategemma-4b-it",
+          "Aya": "/mnt/gemini/data1/yifengliu/model/aya-expanse-8b"
         }
         if "Qwen" in args.base_model:
           self.base_tokenizer = AutoTokenizer.from_pretrained(model_path_dict["Qwen"])
@@ -524,6 +564,10 @@ class RewardModelProxy:
           self.base_tokenizer = AutoTokenizer.from_pretrained(model_path_dict["LlamaX"])
         elif "Llama" in args.base_model:
           self.base_tokenizer = AutoTokenizer.from_pretrained(model_path_dict["Llama"])
+        elif "Gemma" in args.base_model:
+          self.base_tokenizer = AutoTokenizer.from_pretrained(model_path_dict["Gemma"])
+        elif "Aya" in args.base_model:
+          self.base_tokenizer = AutoTokenizer.from_pretrained(model_path_dict["Aya"])
         else:
           raise ValueError(f"Unsupported base model: {args.base_model}")
         if args.lang_detect:
@@ -586,7 +630,7 @@ class RewardModelProxy:
             batch_size = self.batch_size
 
         logger.info(f"queries[0]: {queries[0]}")
-        logger.info(f"queries[1]: {queries[1]}")
+        # logger.info(f"queries[1]: {queries[1]}")
         extra_logs = {}
         
         # batch
@@ -597,12 +641,16 @@ class RewardModelProxy:
         scores = [float('inf')] * len(tgts)
         
         if self.args.lang_detect:
-          if 'llamax' in self.base_model.lower():
-            pattern = r"Translate the following sentences from ([^\n<]+) to ([^\n<]+)."
-            target_languages = [re.search(pattern, query).group(2).strip() for query in queries if re.search(pattern, query)]
-          else:
-            pattern = r"Translate from ([^\n<]+) to ([^\n<]+):"
-            target_languages = [re.search(pattern, query).group(2).strip() for query in queries if re.search(pattern, query)]
+          _, target_languages = get_source_and_target_languages(self.base_model, queries)
+          # if 'llamax' in self.base_model.lower():
+          #   pattern = r"Translate the following sentences from ([^\n<]+) to ([^\n<]+)."
+          #   target_languages = [re.search(pattern, query).group(2).strip() for query in queries if re.search(pattern, query)]
+          # elif 'Gemma' in self.base_model:
+          #   pattern = r"Please translate the following (.*?) text into (.*?):\n\n\n"
+          #   target_languages = [re.search(pattern, query).group(2).strip() for query in queries if re.search(pattern, query)]
+          # else:
+          #   pattern = r"Translate from ([^\n<]+) to ([^\n<]+):"
+          #   target_languages = [re.search(pattern, query).group(2).strip() for query in queries if re.search(pattern, query)]
           
           # lid model only accepts sentences
           tgts = [tgt.replace("\n", "") for tgt in tgts]
@@ -647,7 +695,7 @@ class RewardModelProxy:
               predictions, _, _ = self.trainer.predict(test_dataset=dataset)
               scores = [-pred if score > min_reward else score for score, pred in zip(scores, predictions)]
               metric_scores = -predictions
-              extra_logs['metric_score'] = sum(metric_scores) / len(metric_scores)
+              extra_logs['metric_score'] = float(sum(metric_scores) / len(metric_scores))
         elif 'Comet' in self.model_name:
           min_reward = -25 if 'metricX' in self.model_name else 0
           ds = []
@@ -666,14 +714,19 @@ class RewardModelProxy:
         if self.args.align:
           print(srcs[0])
           print(tgts[0])
-          if 'llamax' in self.base_model.lower():
-            pattern = r"Translate the following sentences from ([^\n<]+) to ([^\n<]+)."
-            source_languages = [re.search(pattern, query).group(1).strip() for query in queries if re.search(pattern, query)]
-            target_languages = [re.search(pattern, query).group(2).strip() for query in queries if re.search(pattern, query)]
-          else:
-            pattern = r"Translate from ([^\n<]+) to ([^\n<]+):"
-            source_languages = [re.search(pattern, query).group(1).strip() for query in queries if re.search(pattern, query)]
-            target_languages = [re.search(pattern, query).group(2).strip() for query in queries if re.search(pattern, query)]
+          source_languages, target_languages = get_source_and_target_languages(self.base_model, queries)
+          # if 'llamax' in self.base_model.lower():
+          #   pattern = r"Translate the following sentences from ([^\n<]+) to ([^\n<]+)."
+          #   source_languages = [re.search(pattern, query).group(1).strip() for query in queries if re.search(pattern, query)]
+          #   target_languages = [re.search(pattern, query).group(2).strip() for query in queries if re.search(pattern, query)]
+          # elif 'Gemma' in self.base_model:
+          #   pattern = r"Please translate the following (.*?) text into (.*?):\n\n\n"
+          #   source_languages = [re.search(pattern, query).group(1).strip() for query in queries if re.search(pattern, query)]
+          #   target_languages = [re.search(pattern, query).group(2).strip() for query in queries if re.search(pattern, query)]
+          # else:
+          #   pattern = r"Translate from ([^\n<]+) to ([^\n<]+):"
+          #   source_languages = [re.search(pattern, query).group(1).strip() for query in queries if re.search(pattern, query)]
+          #   target_languages = [re.search(pattern, query).group(2).strip() for query in queries if re.search(pattern, query)]
             
           # masklid needs sentences
           tgts = [tgt.replace("\n", "") for tgt in tgts]
@@ -692,9 +745,12 @@ class RewardModelProxy:
                 lang_translation = ""
               new_tgts.append(lang_translation)
             tgts = new_tgts
-              
+          print(f"Before tokenize, len(srcs): {len(srcs)}, len(tgts): {len(tgts)}")
+          print(f"len(source_languages): {len(source_languages)}, len(target_languages): {len(target_languages)}")
           src_sentences = zh_tokenize(source_languages, srcs, self.han)
           tgt_sentences = zh_tokenize(target_languages, tgts, self.han)
+          print(f"After tokenize, len(srcs): {len(srcs)}, len(tgts): {len(tgts)}")
+          print(f"len(src_sentences): {len(src_sentences)}, len(tgt_sentences): {len(tgt_sentences)}")
           # align_score_list = align_score(src_sentences, tgt_sentences, target_languages, self.align_model, self.align_tokenizer, self.lang_detect_model)
           align_score_list = align_score(src_sentences, tgt_sentences, self.align_model, self.align_tokenizer)
           
@@ -703,6 +759,7 @@ class RewardModelProxy:
           # scores = [score + align_score for score, align_score in zip(scores, align_score_list)]
           scores = [score + align_score if score > min_reward else score for score, align_score in zip(scores, align_score_list)]
           extra_logs['mean_align_score'] = sum(align_score_list) / len(align_score_list)
+        
         return scores, extra_logs
 
 
@@ -735,5 +792,6 @@ if __name__ == "__main__":
         rewards = [float(reward) for reward in rewards]
         result = {"rewards": rewards, "scores": rewards, "extra_logs": extra_logs}
         logger.info(f"Sent JSON: {result['rewards'][:20]}")
+        # import code; code.interact(local=locals())
         return JSONResponse(result)
     uvicorn.run(app, host=args.host, port=args.port, log_level="info")

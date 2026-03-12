@@ -12,20 +12,20 @@ GLOTLID_MODEL_PATH="/mnt/gemini/data1/yifengliu/model/models--cis-lmu--glotlid/s
 # Optional BenchMAX JSON result file (e.g., result_en-zh.json) for one-off detection
 BENCHMAX_FILE=""
 BENCHMAX_TARGET_LANGUAGE=""
-USE_BENCHMAX_DIR=true
-# USE_BENCHMAX_DIR=false
+# USE_BENCHMAX_DIR=true
+USE_BENCHMAX_DIR=false
 
 # Language pairs configuration (similar to flores.sh)
 source_language_list=(
-    "eng" "tur" "ara" "hin" "rus" "zho_simpl" "swh"
-    # "ara"
+    # "eng" "tur" "ara" "hin" "rus" "zho_simpl" "swh"
+    # "eng"
 
-    # 'afr' 'amh' 'ara' 'hye' 'asm' 'ast' 'azj' 'bel' 'ben' 'bos' 'bul' 'mya' 'cat' 'ceb' 'zho_simpl' 'hrv' 'ces' 'dan' 
-    # 'nld' 'eng' 'est' 'tgl' 'fin' 'fra' 'ful' 'glg' 'lug' 'kat' 'deu' 'ell' 'guj' 'hau' 'heb' 'hin' 'hun' 'isl' 'ibo' 
-    # 'ind' 'gle' 'ita' 'jpn' 'jav' 'kea' 'kam' 'kan' 'kaz' 'khm' 'kor' 'kir' 'lao' 'lav' 'lin' 'lit' 'luo' 'ltz' 'mkd' 
-    # 'msa' 'mal' 'mlt' 'mri' 'mar' 'mon' 'nob' 'npi' 'nso' 'nya' 'oci' 'ory' 'orm' 'pus' 'fas' 'pol' 'por' 'pan' 'ron' 'rus' 
-    # 'srp' 'sna' 'snd' 'slk' 'slv' 'som' 'ckb' 'spa' 'swh' 'swe' 'tgk' 'tam' 'tel' 'tha' 'tur' 'ukr' 'umb' 'urd' 'uzb' 
-    # 'vie' 'cym' 'wol' 'xho' 'yor' 'zul' 'zho_trad'
+    'afr' 'amh' 'ara' 'hye' 'asm' 'ast' 'azj' 'bel' 'ben' 'bos' 'bul' 'mya' 'cat' 'ceb' 'zho_simpl' 'hrv' 'ces' 'dan' 
+    'nld' 'eng' 'est' 'tgl' 'fin' 'fra' 'ful' 'glg' 'lug' 'kat' 'deu' 'ell' 'guj' 'hau' 'heb' 'hin' 'hun' 'isl' 'ibo' 
+    'ind' 'gle' 'ita' 'jpn' 'jav' 'kea' 'kam' 'kan' 'kaz' 'khm' 'kor' 'kir' 'lao' 'lav' 'lin' 'lit' 'luo' 'ltz' 'mkd' 
+    'msa' 'mal' 'mlt' 'mri' 'mar' 'mon' 'nob' 'npi' 'nso' 'nya' 'oci' 'ory' 'orm' 'pus' 'fas' 'pol' 'por' 'pan' 'ron' 'rus' 
+    'srp' 'sna' 'snd' 'slk' 'slv' 'som' 'ckb' 'spa' 'swh' 'swe' 'tgk' 'tam' 'tel' 'tha' 'tur' 'ukr' 'umb' 'urd' 'uzb' 
+    'vie' 'cym' 'wol' 'xho' 'yor' 'zul' 'zho_trad'
 )
 
 target_language_list=(
@@ -40,14 +40,14 @@ target_language_list=(
     # 'mon' 'mar' 'mya' 'pol' 'pus' 'snd' 'som' 'srp' 'tam' 'tha'
     # 'tur' 'yor'
 
-    # "eng" "tur" "ara" "hin" "rus" "zho_simpl" "swh"
+    "eng" "tur" "ara" "hin" "rus" "zho_simpl" "swh"
 
-    'afr' 'amh' 'ara' 'hye' 'asm' 'ast' 'azj' 'bel' 'ben' 'bos' 'bul' 'mya' 'cat' 'ceb' 'zho_simpl' 'hrv' 'ces' 'dan' 
-    'nld' 'eng' 'est' 'tgl' 'fin' 'fra' 'ful' 'glg' 'lug' 'kat' 'deu' 'ell' 'guj' 'hau' 'heb' 'hin' 'hun' 'isl' 'ibo' 
-    'ind' 'gle' 'ita' 'jpn' 'jav' 'kea' 'kam' 'kan' 'kaz' 'khm' 'kor' 'kir' 'lao' 'lav' 'lin' 'lit' 'luo' 'ltz' 'mkd' 
-    'msa' 'mal' 'mlt' 'mri' 'mar' 'mon' 'nob' 'npi' 'nso' 'nya' 'oci' 'ory' 'orm' 'pus' 'fas' 'pol' 'por' 'pan' 'ron' 'rus' 
-    'srp' 'sna' 'snd' 'slk' 'slv' 'som' 'ckb' 'spa' 'swh' 'swe' 'tgk' 'tam' 'tel' 'tha' 'tur' 'ukr' 'umb' 'urd' 'uzb' 
-    'vie' 'cym' 'wol' 'xho' 'yor' 'zul' 'zho_trad'
+    # 'afr' 'amh' 'ara' 'hye' 'asm' 'ast' 'azj' 'bel' 'ben' 'bos' 'bul' 'mya' 'cat' 'ceb' 'zho_simpl' 'hrv' 'ces' 'dan' 
+    # 'nld' 'eng' 'est' 'tgl' 'fin' 'fra' 'ful' 'glg' 'lug' 'kat' 'deu' 'ell' 'guj' 'hau' 'heb' 'hin' 'hun' 'isl' 'ibo' 
+    # 'ind' 'gle' 'ita' 'jpn' 'jav' 'kea' 'kam' 'kan' 'kaz' 'khm' 'kor' 'kir' 'lao' 'lav' 'lin' 'lit' 'luo' 'ltz' 'mkd' 
+    # 'msa' 'mal' 'mlt' 'mri' 'mar' 'mon' 'nob' 'npi' 'nso' 'nya' 'oci' 'ory' 'orm' 'pus' 'fas' 'pol' 'por' 'pan' 'ron' 'rus' 
+    # 'srp' 'sna' 'snd' 'slk' 'slv' 'som' 'ckb' 'spa' 'swh' 'swe' 'tgk' 'tam' 'tel' 'tha' 'tur' 'ukr' 'umb' 'urd' 'uzb' 
+    # 'vie' 'cym' 'wol' 'xho' 'yor' 'zul' 'zho_trad'
     # "ara"
     # "zho_simpl"
     # "amh"
@@ -66,15 +66,26 @@ target_language_list=(
 # INPUT_DIR="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/new_qe+lang_detect-LlamaX-8B-schedule_mix10k-1M-bsz128/global_step1000_hf/dev"
 # INPUT_DIR="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/nllb-200-distilled-1.3B"
 # INPUT_DIR="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/nllb-200-1.3B-yf"
-INPUT_DIR="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/pure_qe-LlamaX3-8B-schedule_mix10k-1M-bsz128_global_step1200_hf/flores"
+# INPUT_DIR="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/pure_qe-LlamaX3-8B-schedule_mix10k-1M-bsz128_global_step1200_hf/flores"
+# INPUT_DIR="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/Qwen2.5-0.5B-Instruct"
+# INPUT_DIR="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/Qwen3-4B-Instruct-2507/flores"
+# INPUT_DIR="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/alpha20-Qwen-4B-final_qwen_mix250-bsz1024_global_step1500_hf/flores"
 # INPUT_DIR="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/nllb-200-1.3B"
 # INPUT_DIR="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/LLaMAX3-8B-Alpaca/flores"
 # INPUT_DIR="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/nllb-200-1.3B-yf"
 # INPUT_DIR="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/hunyuan-mt/flores"
 # INPUT_DIR="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/Tower-Plus-9B/flores"
+# INPUT_DIR="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/llamax_sft/flores"
+# INPUT_DIR="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/llamax_data/flores"
 # INPUT_DIR="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/aya-expanse-8b/flores"
 # INPUT_DIR="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/pure_qe-LlamaX3-8B-schedule_mix10k-1M-bsz128_global_step1200_hf/flores"
 # INPUT_DIR="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/final_alpha10-LlamaX-8B--bsz1024/flores"
+# INPUT_DIR="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/nllb-200-1.3B"
+# INPUT_DIR="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/Qwen3-8B/flores"
+# INPUT_DIR="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/alpha20-Qwen-8B-final_aya_mix250-bsz1024_global_step2000_hf/flores"
+
+# INPUT_DIR="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/translategemma-4b-it"
+INPUT_DIR="/mnt/gemini/data1/yifengliu/qe-lr/output/flores/final/alpha20-gemma-8B-final_gemma_mix250-bsz1024"
 
 # INPUT_DIR="/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/aya-expanse-8b/flores"
 # INPUT_DIR=""/mnt/gemini/data1/yifengliu/BenchMAX/tasks/translation/output/Tower-Plus-9B/flores""

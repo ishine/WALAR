@@ -684,9 +684,13 @@ def process_single_language_pair(
 
   # ds = [
   #   {
-  #     "source": "On Monday, Sara Danius, permanent secretary of the Nobel Committee for Literature at the Swedish Academy, publicly announced during a radio program on Sveriges Radio in Sweden the committee, unable to reach Bob Dylan directly about winning the 2016 Nobel Prize in Literature, had abandoned its efforts to reach him.",
-  #     "reference": "周一，瑞典学院诺贝尔文学委员会常务秘书萨拉·丹尼尔斯在瑞典广播电台的一档节目中向公众宣布，委员会因无法直接联系到鲍勃·迪伦，通知他获得了 2016 年诺贝尔文学奖，已经放弃了与他联系的尝试。",
-  #     "hypothesis": "星期一，Sara Danius——瑞典学院文学奖委员会的常务秘书，在瑞典Sveriges Radio电台的一个节目中公开宣布：由于无法直接与Bob Dylan联系，关于他获得２０１６年诺贝尔文学奖的决定，委员会已经放弃了尝试联系他的努力。"
+  #     "source": "USA Gymnastics and the USOC have the same goal — making the sport of gymnastics, and others, as safe as possible for athletes to follow their dreams in a safe, positive and empowered environment.",
+  #     # "reference": "周一，瑞典学院诺贝尔文学委员会常务秘书萨拉·丹尼尔斯在瑞典广播电台的一档节目中向公众宣布，委员会因无法直接联系到鲍勃·迪伦，通知他获得了 2016 年诺贝尔文学奖，已经放弃了与他联系的尝试。",
+  #     # "hypothesis": "நிலையத்தின் வலைத்தளத்தில், நிகழ்ச்சியை “புதிய மற்றும் ஆச்சரியமான ஜீக்கி(geeky) பாணியுடன் பழைய பள்ளி-வகை(‘old வானொலி-நாடகமாக” விவரிக்கப்பட்டுள்ளது!"
+  #     "hypothesis": "미국 체조 대표팀과 USOC는 같은 목표를 가지고 있습니다. 선수들이 안전하고 긍정적이며 격려 받는 환경에서 꿈을 좇을 수 있도록 체조 등의 스포츠를 가능한 한 안전하게 만드는 것입니다.",
+  #     # "hypothesis": "அவள் அதிகாரிகளுக்கு தனது கருப்பு ஓல்ட்ஸ்மோபில் இன்ட்ரிக்யூ(Oldsmobile Intrigue) காரின் இடத்தை காட்டினாள்; அது ५०० அடி தொலைவிலேயே இருந்தது."
+  #     # "hypothesis": "அவர் ஒரு வை-ஃபை(Wi-Fi) கதவு-பீல்(doorbell)யை கட்டினார்,”—அவர் கூறினார்."
+  #     # "hypothesis": "星期一，Sara Danius——瑞典学院文学奖委员会的常务秘书，在瑞典Sveriges Radio电台的一个节目中公开宣布：由于无法直接与Bob Dylan联系，关于他获得２０１６年诺贝尔文学奖的决定，委员会已经放弃了尝试联系他的努力。"
   #     # "hypothesis": "星期一，瑞典学院的文学奖委员会秘书长萨拉·达尼斯(Sara Danius)在瑞典电台(Sveriges Radio)的一档节目中宣布，委员会无法直接联系鲍勃·迪伦(Bob Dylan)，因此放弃了联系他的努力。"
   #   }
   # ]
@@ -700,12 +704,12 @@ def process_single_language_pair(
     if name == "benchmax":
       with open(args.input_file, 'r') as f:
         data = json.load(f)
-      if data.get('xcomet_score_list', None) is not None and args.model_name == "XComet":
-        print(f"Benchmax file {args.input_file} already has XComet score. Skipping...")
-        return
-      if data.get('metricx_score_list', None) is not None and args.model_name == "metricX":
-        print(f"Benchmax file {args.input_file} already has MetricX score. Skipping...")
-        return
+      # if data.get('xcomet_score_list', None) is not None and args.model_name == "XComet":
+      #   print(f"Benchmax file {args.input_file} already has XComet score. Skipping...")
+      #   return
+      # if data.get('metricx_score_list', None) is not None and args.model_name == "metricX":
+      #   print(f"Benchmax file {args.input_file} already has MetricX score. Skipping...")
+      #   return
         
     else:
       if dirname:
@@ -731,7 +735,7 @@ def process_single_language_pair(
       args.qe,
   )
   predictions = get_predictions(dt, model, data_collator, per_device_batch_size, args.model_name, args.output_dir)
-  
+  # import code; code.interact(local=locals())
   if args.alignment:
     align_path = "/mnt/gemini/data1/yifengliu/model/bge-m3"
     align_model = AutoModel.from_pretrained(align_path)
@@ -740,9 +744,9 @@ def process_single_language_pair(
     srcs, tgts = [d['source'] for d in ds], [d['hypothesis'] for d in ds]
     src_copy = [src.split() for src in srcs]
     tgt_copy = [tgt.split() for tgt in tgts]
-    scores = align_score(src_copy, tgt_copy, align_model, align_tokenizer, batch_size=16)
+    word_align_scores = align_score(src_copy, tgt_copy, align_model, align_tokenizer, batch_size=16)
     # import code; code.interact(local=locals())
-    predictions = [prediction + score*25 for prediction, score in zip(predictions, scores)]
+    predictions = [prediction + score*25 for prediction, score in zip(predictions, word_align_scores)]
   
   if args.lang:
     srcs, tgts = [d['source'] for d in ds], [d['hypothesis'] for d in ds]
