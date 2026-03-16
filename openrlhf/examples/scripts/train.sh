@@ -6,7 +6,7 @@ ray start --head --node-ip-address 0.0.0.0 --num-gpus ${num_gpus}
 CONDA_PATH=/mnt/gemini/data1/yifengliu/miniconda3
 eval "$(${CONDA_PATH}/bin/conda shell.bash hook)"
 which python
-source ${CONDA_PATH}/bin/activate qe-rl
+source ${CONDA_PATH}/bin/activate openrlhf
 
 OPENRLHF_PATH=/mnt/gemini/data1/yifengliu/qe-lr/openrlhf
 
@@ -20,6 +20,7 @@ export HF_HUB_CACHE=/mnt/gemini/data2/yifengliu/.cache/huggingface/hub
 export DS_SKIP_CUDA_CHECK=1
 export RAY_DEBUG_POST_MORTEM=1
 
+wandb_token=5bebcc325992863eb55622d9ad2e7c85c95a1f15
 
 declare -A path_dict
 path_dict["Llama"]="/mnt/gemini/data1/yifengliu/model/Llama-3.2-3B-Instruct"
@@ -29,15 +30,16 @@ path_dict["LlamaX"]="/mnt/gemini/data1/yifengliu/model/LLaMAX3-8B-Alpaca"
 path_dict["gemma"]="/mnt/gemini/data1/yifengliu/model/translategemma-4b-it"
 path_dict["aya"]="/mnt/gemini/data1/yifengliu/model/aya-expanse-8b"
 
+# an example of training gemma
 # model="gemma"
 # dataname="final_gemma_mix250"
 # size="8B"
-# reward_name="temp2"
+# reward_name="temp"
 
 model="Qwen"
 dataname="final_qwen_mix250"
 size="8B"
-reward_name="alpha20"
+reward_name="temp3"
 
 
 ray job submit --address="http://127.0.0.1:8265" \

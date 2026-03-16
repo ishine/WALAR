@@ -2,14 +2,10 @@
 
 !code/
 !code/utils.py
-!code/lang_detect.py
-!code/predict.py
 !code/masklid.py
 !code/models.py
 !openrlhf/
 !scripts/
-!scripts/lang_detect.sh
-!scripts/predict.sh
 !scripts/serve_rm.sh
 !fig/
 !fig/*

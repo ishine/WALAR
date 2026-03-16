@@ -2,16 +2,18 @@ absl-py==2.3.0
 accelerate==1.7.0
 aiofiles==24.1.0
 aiohappyeyeballs==2.6.1
-aiohttp==3.12.12
+aiohttp==3.13.3
 aiohttp-cors==0.8.1
 aiolimiter==1.2.1
-aiosignal==1.3.2
+aiosignal==1.4.0
 airportsdata==20250523
+annotated-doc==0.0.4
 annotated-types==0.7.0
-anthropic==0.55.0
+anthropic==0.82.0
 antlr4-python3-runtime==4.8
 anyio==4.9.0
 apache-beam==2.65.0
+apache-tvm-ffi==0.1.8.post2
 appdirs==1.4.4
 astor==0.8.1
 asttokens==3.0.0
@@ -25,15 +27,16 @@ bidict==0.23.1
 bitarray==3.6.0
 bitsandbytes==0.46.0
 blake3==1.0.5
-BLEURT @ file:///mnt/gemini/data1/yifengliu/bleurt
+blessed==1.27.0
 blis==1.3.0
 blobfile==3.0.0
 bs4==0.0.2
 cachetools==5.5.2
 catalogue==2.0.10
 cbor==1.0.0
+cbor2==5.8.0
 certifi==2025.4.26
-cffi==1.17.1
+cffi==2.0.0
 chardet==5.2.0
 charset-normalizer==3.4.2
 click==8.2.1
@@ -49,7 +52,9 @@ compressed-tensors==0.10.1
 confection==0.1.5
 contourpy==1.3.2
 crcmod==1.7
-cuda-bindings==12.9.0
+cryptography==46.0.5
+cuda-bindings==12.9.4
+cuda-pathfinder==1.3.4
 cuda-python==12.9.0
 cupy-cuda12x==13.4.1
 cycler==0.12.1
@@ -64,7 +69,7 @@ decord==0.6.0
 deepspeed==0.17.1
 Deprecated==1.2.18
 depyf==0.18.0
-dill==0.3.8
+dill==0.3.1.1
 diskcache==5.6.3
 Distance==0.1.3
 distlib==0.3.9
@@ -75,15 +80,15 @@ docstring_parser==0.16
 einops==0.8.1
 email_validator==2.2.0
 emoji==1.2.0
-en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl#sha256=1932429db727d4bff3deed6b34cfc05df17794f4a52eeb26cf8928f7c1a0fb85
 entmax==1.3
 et_xmlfile==2.0.0
 evaluate==0.4.4
 exceptiongroup==1.3.0
 executing==2.2.0
-fairseq==0.12.2
-fastapi==0.115.12
-fastapi-cli==0.0.7
+fastapi==0.129.0
+fastapi-cli==0.0.23
+fastapi-cloud-cli==0.13.0
+fastar==0.8.0
 fastavro==1.11.1
 fastchat==0.1.0
 fasteners==0.19
@@ -95,7 +100,7 @@ ffmpy==0.6.0
 filelock==3.18.0
 fire==0.7.0
 FlagEmbedding==1.3.5
-flash_attn==2.8.0.post2
+flash_attn @ https://github.com/Dao-AILab/flash-attention/releases/download/v2.7.4.post1/flash_attn-2.7.4.post1+cu12torch2.7cxx11abiFALSE-cp310-cp310-linux_x86_64.whl#sha256=f09928f2c7e4dfbe6efca5a997862898495263c87afe662c18fb1936eb192eab
 flashinfer-python==0.2.6.post1
 flatbuffers==25.2.10
 fonttools==4.58.2
@@ -105,15 +110,18 @@ gast==0.6.0
 gguf==0.17.1
 gitdb==4.0.12
 GitPython==3.1.44
+google==3.0.0
 google-api-core==2.25.0
-google-auth==2.40.3
-google-genai==1.32.0
+google-auth==2.45.0
+google-genai==1.56.0
 google-pasta==0.2.0
 googleapis-common-protos==1.70.0
+gpustat==1.1.1
 gradio==5.31.0
 gradio_client==1.10.1
 groovy==0.1.2
-grpcio==1.65.5
+grpcio==1.78.0
+grpcio-reflection==1.78.0
 grpclib==0.4.8
 h11==0.16.0
 h2==4.3.0
@@ -133,7 +141,8 @@ httpcore==1.0.9
 httplib2==0.22.0
 httptools==0.6.4
 httpx==0.28.1
-huggingface-hub==0.32.5
+httpx-sse==0.4.3
+huggingface_hub==0.36.2
 hydra-core==1.0.7
 hyperframe==6.1.0
 idna==3.10
@@ -153,6 +162,7 @@ jedi==0.19.2
 jieba==0.42.1
 Jinja2==3.1.6
 jiter==0.10.0
+jmespath==1.1.0
 joblib==1.5.1
 jsonargparse==3.13.1
 jsonlines==4.0.0
@@ -176,11 +186,10 @@ liger_kernel==0.5.10
 lightning-utilities==0.14.3
 lit==15.0.7
 litellm==1.73.0
-llamafactory @ file:///mnt/data1/yifengliu/LLaMA-Factory
-llguidance==0.7.29
+llguidance==0.7.30
 llvmlite==0.44.0
-lm-format-enforcer==0.10.11
--e git+https://github.com/EleutherAI/lm-evaluation-harness@ab3acc731781d219191c751c3c46450e2296a0ea#egg=lm_eval
+lm-format-enforcer==0.10.12
+loguru==0.7.3
 loralib==0.1.2
 lxml==5.4.0
 lz4==4.4.4
@@ -191,19 +200,20 @@ MarkupSafe==3.0.2
 matplotlib==3.10.3
 matplotlib-inline==0.1.7
 mbstrdecoder==1.1.4
+mcp==1.26.0
 mdurl==0.1.2
 mecab-ko==1.0.1
 mecab-ko-dic==1.0.0
 mecab-python3==1.0.10
-mistral_common==1.6.0
+mistral_common==1.9.1
 ml_dtypes==0.5.3
 modal==1.1.4
+model-hosting-container-standards==0.1.13
 modelscope==1.27.1
 more-itertools==10.7.0
 mpmath==1.3.0
 msgpack==1.1.0
 msgspec==0.19.0
-mt-metrics-eval @ file:///mnt/gemini/data1/yifengliu/mt-metrics-eval
 multidict==6.4.4
 multiprocess==0.70.16
 murmurhash==1.0.13
@@ -221,25 +231,30 @@ nvidia-cuda-cupti-cu12==12.6.80
 nvidia-cuda-nvrtc-cu12==12.6.77
 nvidia-cuda-runtime-cu12==12.6.77
 nvidia-cudnn-cu12==9.5.1.17
+nvidia-cudnn-frontend==1.18.0
 nvidia-cufft-cu12==11.3.0.4
 nvidia-cufile-cu12==1.11.1.6
 nvidia-curand-cu12==10.3.7.77
 nvidia-cusolver-cu12==11.7.1.2
 nvidia-cusparse-cu12==12.5.4.2
 nvidia-cusparselt-cu12==0.6.3
+nvidia-cutlass-dsl==4.4.0
+nvidia-cutlass-dsl-libs-base==4.4.0
 nvidia-ml-py==12.575.51
 nvidia-nccl-cu12==2.26.2
 nvidia-nvjitlink-cu12==12.6.85
+nvidia-nvshmem-cu12==3.4.5
 nvidia-nvtx-cu12==12.6.77
+nvitop==1.6.2
 objsize==0.7.1
 omegaconf==2.0.6
-openai==1.86.0
+openai==2.21.0
+openai-harmony==0.0.8
 opencensus==0.11.4
 opencensus-context==0.1.3
-opencv-python-headless==4.11.0.86
+opencv-python-headless==4.13.0.92
 openpyxl==3.1.2
-# Editable install with no version control (openrlhf==0.8.5)
--e /mnt/data1/yifengliu/OpenRLHF
+-e git+https://github.com/OpenRLHF/OpenRLHF.git@8722e16aabf151ddf23d255f848c9856f135c7d7#egg=openrlhf
 opentelemetry-api==1.26.0
 opentelemetry-exporter-otlp==1.26.0
 opentelemetry-exporter-otlp-proto-common==1.26.0
@@ -277,7 +292,7 @@ prometheus_client==0.22.1
 prompt_toolkit==3.0.51
 propcache==0.3.2
 proto-plus==1.26.1
-protobuf==5.29.5
+protobuf==4.25.8
 psutil==7.0.0
 ptyprocess==0.7.0
 pure_eval==0.2.3
@@ -288,16 +303,19 @@ pyarrow==20.0.0
 pyarrow-hotfix==0.7
 pyasn1==0.6.1
 pyasn1_modules==0.4.2
+pybase64==1.4.3
 pybind11==2.13.6
 pycountry==24.6.1
 pycparser==2.22
 pycryptodomex==3.23.0
 pydantic==2.10.6
+pydantic-extra-types==2.11.0
+pydantic-settings==2.13.0
 pydantic_core==2.27.2
 pydot==1.4.2
 pydub==0.25.1
 Pygments==2.19.1
-PyJWT==2.9.0
+PyJWT==2.11.0
 pylatexenc==2.10
 pymongo==4.13.0
 pynvml==12.0.0
@@ -320,7 +338,8 @@ referencing==0.36.2
 regex==2024.11.6
 requests==2.32.4
 rich==14.1.0
-rich-toolkit==0.14.7
+rich-toolkit==0.19.4
+rignore==0.7.6
 ring-flash-attn==0.1.5
 rouge_score==0.1.2
 rpds-py==0.25.1
@@ -359,7 +378,8 @@ sqlitedict==2.1.0
 srsly==2.5.1
 sse-starlette==2.3.6
 stack-data==0.6.3
-starlette==0.46.2
+starlette==0.52.1
+supervisor==4.3.0
 sympy==1.14.0
 synchronicity==0.10.2
 tabledata==1.3.4
@@ -369,7 +389,6 @@ tenacity==9.1.2
 tensorboard==2.19.0
 tensorboard-data-server==0.7.2
 tensordict==0.6.2
-tensorflow==2.19.1
 tensorflow-io-gcs-filesystem==0.37.1
 termcolor==3.1.0
 tf-slim==1.1.0
@@ -402,8 +421,8 @@ typepy==1.3.4
 typer==0.16.0
 types-certifi==2021.10.8.3
 types-toml==0.10.8.20240310
-typing-inspection==0.4.1
-typing_extensions==4.14.0
+typing-inspection==0.4.2
+typing_extensions==4.15.0
 tyro==0.8.14
 tzdata==2025.2
 unbabel-comet==2.2.6
@@ -414,8 +433,6 @@ urllib3==2.4.0
 uv==0.7.14
 uvicorn==0.34.3
 uvloop==0.21.0
-# Editable install with no version control (verl==0.3.1.dev0)
--e /mnt/gemini/data1/yifengliu/verl
 virtualenv==20.31.2
 vllm==0.9.1
 vllm-flash-attn==2.6.1
@@ -424,7 +441,7 @@ warc3-wet==0.2.5
 warc3-wet-clueweb09==0.2.5
 wasabi==1.1.3
 watchfiles==1.0.5
-wcwidth==0.2.13
+wcwidth==0.3.1
 weasel==0.4.1
 websockets==15.0.1
 Werkzeug==3.1.3
@@ -434,7 +451,6 @@ wrapt==1.17.2
 xformers==0.0.30
 xgrammar==0.1.19
 xlrd==1.2.0
-xx_ent_wiki_sm @ https://github.com/explosion/spacy-models/releases/download/xx_ent_wiki_sm-3.8.0/xx_ent_wiki_sm-3.8.0-py3-none-any.whl#sha256=6f3c4b853852ea9e9d2dc76cc950dddb10a7e4c42d813308caefe6c5e8be2f0a
 xxhash==3.5.0
 yarl==1.20.1
 zipp==3.23.0

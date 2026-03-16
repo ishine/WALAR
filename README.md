@@ -75,16 +75,15 @@ pip install -r requirements.txt
 
 **Download Models**
 
-LLaMAX: https://huggingface.co/LLaMAX/LLaMAX3-8B
+LLaMAX: https://huggingface.co/LLaMAX/LLaMAX3-8B-Alpaca
 
-MetricX: https://huggingface.co/google/metricx-24-hybrid-xl-v2p6-bfloat16
+MetricX: https://huggingface.co/google/metricx-24-hybrid-xxl-v2p6-bfloat16
 
 MetricX Tokenizer: https://huggingface.co/google/mt5-xl
 
 Masklid model: 
 
 ```
-wget https://raw.githubusercontent.com/cisnlp/MaskLID/main/masklid.py
 wget https://huggingface.co/cis-lmu/glotlid/resolve/main/model_v3.bin
 ```
 
@@ -117,17 +116,13 @@ bash serve_rm.sh
 **Parameter Explanation**
 
 * `model_name`: the Quality Estimation (QE) model you would like to use. Could be set to `metricX` or `XComet`
-
-* `base_model`: the base model you want to evaluate. The paths for the models are hard-coded in line 517-526 in `openrlhf/openrlhf/cli/serve_rm.py`.
+* `base_model`: the base model you want to evaluate. The paths for the models are hard-coded in `model_path_dict`.
 * `port`: The port of the reward model on your machine.
 * `max_len`: The maximum input sequence length.
-* `rule`: whether to penalize  `\n` in the translation outputs. Set `True` will give the lowest reward if `\n`  be generated in the output. (It's recommended to be True if and only if the qe model is a hybrid model)
-
 * `lang_detect`: whether to turn on language detector or not. Set `True` to turn it on.
-
 * `align`: whether to use word-alignment or not. Set `True` will turn it on.
-
 * `masklid`: whether to mask the code-mixing part in the translation outputs. Set `True` will turn it on.
+* `alpha`: The word alignment score weight. The default value is 20.
 * `batch_size`: the batch size for the qe model to evaluate each time
 
 
@@ -148,10 +143,10 @@ bash examples/scripts/train.sh
 
 **Parameter Explanation**
 
-* `model`: The model you want to use. Please follow the `path_dict` in line 27-29. (You can add more models by directly modifying `path_dict`)
-* `dataname`: The dataset you want to use. Please refer to the line 76 `prompt_data` for further info. (e.g., The dataset you want to use is called: `abc.jsonl`, then you simply set `dataname=abc`)
-* `size`: The model size you want to use. You can set whatever you want. It won't affect the final results and it will only affect the name appears on your checkpoint directory and wandb.
-* `reward_name`: The reward name you want to use.  You can set whatever you want. It won't affect the final results and it will only affect the name appears on your checkpoint directory and wandb.
+* `model`: The model you want to use. Please follow the `path_dict`. (You can add more models by directly modifying `path_dict`)
+* `dataname`: The dataset you want to use. (e.g., The dataset you want to use is called: `abc.jsonl`, then please set `dataname=abc`)
+* `size`: The model size you want to use. You can set whatever you want. It will only affect the name of your checkpoint directory and wandb logging, and won't affect the final results.
+* `reward_name`: The reward name you want to use.  You can set whatever you want. It will only affect the name of your checkpoint directory and wandb logging, and won't affect the final results.
 
 For the usage of other parameters, please refer to the documnetation of OpenRLHF
 
