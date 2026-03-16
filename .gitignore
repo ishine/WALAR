@@ -4,6 +4,10 @@
 !code/utils.py
 !code/masklid.py
 !code/models.py
+!data/
+!data/train
+!data/train/final_qwen_mix250.jsonl
+!data/train/final_llamax_mix250.jsonl
 !openrlhf/
 !scripts/
 !scripts/serve_rm.sh

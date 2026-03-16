@@ -1,10 +1,9 @@
 # WALAR
 
 <p align="center">
-  <a href="null"> 📃 Paper</a> | 
+  <a href="https://arxiv.org/abs/2603.13045"> 📃 Paper</a> | 
   <a href="https://github.com/LeiLiLab/qe-rl"> ⚙️ Code</a> | 
-  <a href="https://huggingface.co/kevinpro/R-PRM-7B-DPO"> 🤖 Model</a> | 
-  <a href="https://huggingface.co/datasets/kevinpro/R-PRM"> 🤗 Dataset</a> | 
+  <a href="https://huggingface.co/collections/lyf07/walar"> 🤗 Model</a> | 
   <a href="yfliu@smail.nju.edu.cn"> 📭 Contact</a> 
 </p>
 
