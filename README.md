@@ -1,4 +1,4 @@
-# WALAR
+<h1 align="center">WALAR</h1>
 
 <p align="center">
   <a href="https://arxiv.org/abs/2603.13045"> 📃 Paper</a> | 
